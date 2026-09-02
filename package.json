@@ -1,0 +1,52 @@
+{
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.51",
+    "@resvg/resvg-js": "^2.6.2",
+    "cookie-parser": "^1.4.7",
+    "coupon-code": "^0.4.5",
+    "currency-formatter": "^1.5.9",
+    "discord-banners": "^1.0.1",
+    "discord.js": "^14.14.1",
+    "express": "^5.2.1",
+    "firebase": "^8.10.1",
+    "firebase-admin": "^14.2.0",
+    "fs": "^0.0.1-security",
+    "lucide-react": "^1.23.0",
+    "moment": "^2.30.1",
+    "moment-duration-format": "^2.3.2",
+    "moment-timezone": "^0.5.45",
+    "motion": "^12.42.2",
+    "ms": "^2.1.3",
+    "node-cron": "^4.6.0",
+    "parse-ms": "^2.1.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "satori": "^0.29.0",
+    "satori-html": "^0.3.2",
+    "sourcebin-api": "^1.0.6",
+    "zod": "^4.4.3"
+  },
+  "name": "discordbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "build": "vite build",
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.3",
+    "clinic": "^13.0.0",
+    "tailwindcss": "^4.3.2",
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.3"
+  }
+}

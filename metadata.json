@@ -1,0 +1,6 @@
+{
+  "name": "Sistine Bot",
+  "description": "Dashboard interativo de moderação e proteção para o Sistine Bot (logs, bloqueador de convites, punições automáticas e mensagens customizadas de entrada/saída).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

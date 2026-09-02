@@ -1,0 +1,181 @@
+
+{
+  "armacaça": {
+    "db": "/Equipamentos/",
+    "nome": ["Arma de Caça", "Arma Caça"],
+    "imagem": "https://i.postimg.cc/BQDPwzxR/5-i-QSSSF5.png",
+    "valor": 15000,
+    "tipo": 1
+  },
+  "arma": {
+    "db": "/Equipamentos/",
+    "0": { "nome": ["Nenhuma arma"] },
+    "1": { "nome": ["Glock"], "imagem": "https://i.postimg.cc/DfRb6hbq/6-p-JHzj-G7.png", "valor": 20000 },
+    "2": { "nome": ["MP5"], "imagem": "https://i.postimg.cc/rsRMsvVT/7-w-CY4o-Gh.png", "valor": 30000 },
+    "3": { "nome": ["M4-A1"], "imagem": "https://i.postimg.cc/MGsnQJSf/3-8ef-NGd-U.png", "valor": 38500 },
+    "4": { "nome": ["Ak-47"], "imagem": "https://i.postimg.cc/MpSfkY5H/4-j-Xd51yt.png", "valor": 50000 },
+    "tipo": 1
+  },
+  
+  "porte": {
+    "db": "/Equipamentos/",
+    "nome": ["Porte de Armas", "Porte"],
+    "valor": 12000,
+    "tipo": 1
+  },
+  "anelcasamento": {
+    "db": "/Equipamentos/",
+    "nome": ["Anel de Casamento", "Anel"],
+    "imagem": "https://i.postimg.cc/J7skj0tr/8-Gp-Mfe7-F.png",
+    "valor": 1000,
+    "tipo": 1
+  },
+  "vara": {
+    "db": "/Equipamentos/", 
+    "nome": ["Vara de Pescar", "Vara"],
+    "imagem": "https://i.postimg.cc/8s8D6tc6/9-Rtm-NAp-F.png",
+    "valor": 3000,
+    "tipo": 1
+  },
+  
+  "baú": {
+    "db": "/Consumíveis/",
+    "3": { "nome": ["epico"], "imagem": "https://i.postimg.cc/Pqh1cdvs/Frame-5-1.png", "valor": 30000 },
+    "2": { "nome": ["raro"], "imagem": "https://i.postimg.cc/yd8c1nTL/Frame-5.png", "valor": 25000 },
+    "1": { "nome": ["comum"], "imagem": "https://i.postimg.cc/HL2b1FbJ/Frame-5-2.png", "valor": 20000 },
+    "tipo": 2
+  },
+  "chave": {
+    "db": "/Consumíveis/",
+    "imagem": "https://i.postimg.cc/zBnFk9FS/image.png",
+    "valor": 5000,
+    "tipo": 2
+  },
+  "munição": {
+    "db": "/Consumíveis/",
+    "nome": ["Munição", "Munições"],
+    "imagem": "https://i.postimg.cc/RZL6vnpR/1-Cn-V6ukr.png",
+    "valor": 200,
+    "tipo": 2
+  },
+  "backgroundticket": {
+    "db": "/Consumíveis/", 
+    "nome": ["Background Ticket", "Bg Ticket"],
+    "imagem": "https://i.postimg.cc/bJBqzzjL/12-LSmo502.png",
+    "valor": 500000,
+    "tipo": 2
+  },
+  "carne": {
+    "db": "/Consumíveis/",
+    "nome": ["Carne", "Carnes"],
+    "imagem": "https://i.postimg.cc/nLnF2RkK/14-f69r-FRA.png",
+    "valor": 35,
+    "tipo": 2
+  },
+  "Trigo": {
+    "db": "/Consumíveis/",
+    "nome": ["Trigo", "Trigos"],
+    "imagem": "https://i.postimg.cc/2SR8b8LK/15-h3-Nc-Zl6.png",
+    "valor": 250,
+    "tipo": 2
+  },
+  "Milho": {
+    "db": "/Consumíveis/",
+    "nome": ["Milho", "Milhos"],
+    "imagem": "https://i.postimg.cc/L6Z88Z5P/16-45-Js-Got.png",
+    "valor": 500,
+    "tipo": 2
+  },
+  "Feijão": {
+    "db": "/Consumíveis/",
+    "nome": ["Feijão", "Feijões"],
+    "imagem": "https://i.postimg.cc/FF6Kvxrm/17-Qb-C9-L1r.png",
+    "valor": 1200,
+    "tipo": 2
+  },
+  "Cenoura": {
+    "db": "/Consumíveis/",
+    "nome": ["Cenoura", "Cenouras"],
+    "imagem": "https://i.postimg.cc/qqNMnNG9/19-p-Yv-Cc-HZ.png",
+    "valor": 2500,
+    "tipo": 2
+  },
+  "Abóbora": {
+    "db": "/Consumíveis/",
+    "nome": ["Abóbora", "Abóboras"],
+    "imagem": "https://i.postimg.cc/tTS4Y3F3/20-s7xhl-LI.png",
+    "valor": 5000,
+    "tipo": 2
+  },
+  "Ovo": {
+    "db": "/Consumíveis/",
+    "nome": ["Ovo", "Ovos"],
+    "imagem": "https://i.postimg.cc/635QWj46/21-TTNm-Zx-A.png",
+    "valor": 60,
+    "tipo": 2
+  },
+  "Leite": {
+    "db": "/Consumíveis/",
+    "nome": ["Leite", "Leites"],
+    "imagem": "https://i.postimg.cc/bvPJMNzt/22-x-Wk-MVYG.png",
+    "valor": 200,
+    "tipo": 2
+  },
+  "Bacon": {
+    "db": "/Consumíveis/",
+    "nome": ["Bacon", "Bacons"],
+    "imagem": "https://i.postimg.cc/vm81THpd/2-h-Uwk-XZd.png",
+    "valor": 550,
+    "tipo": 2
+  },
+  "ração_animal": {
+    "db": "/Consumíveis/",
+    "nome": ["Ração Animal", "Rações Animal"],
+    "imagem": "https://i.postimg.cc/g2VcvFvk/13-Tku-W2bb.png",
+    "valor": 3000,
+    "tipo": 2
+  },
+  "isca": {
+    "db": "/Consumíveis/",
+    "nome": ["Isca", "Iscas"],
+    "imagem": "https://i.postimg.cc/qRRkVNWz/10-Ie-Q0-ZFG.png",
+    "valor": 500,
+    "tipo": 2
+  },
+  "peixe": {
+    "db": "/Consumíveis/",
+    "nome": ["Peixe", "Peixes"],
+    "imagem": "https://i.postimg.cc/vmXQNrqJ/11-Ci84ze-F.png",
+    "valor": 20,
+    "tipo": 2
+  },
+  "CanaDeAçucar": {
+    "db": "/Consumíveis/",
+    "nome": ["Cana-de-açúcar", "Canas-de-açúcar"],
+    "imagem": "https://i.postimg.cc/FzwFxhW1/18-u-YIS78k.png",
+    "valor": 2000,
+    "tipo": 2
+  },
+  
+  "Galinha": {
+    "db": "economia/Fazenda/${interaction.user.id}/Animal",
+    "nome": ["Galinha", "Galinhas"],
+    "imagem": "",
+    "valor": 15e3,
+    "tipo": 2
+  },
+  "Vaca": {
+    "db": "economia/Fazenda/${interaction.user.id}/Animal",
+    "nome": ["Vaca", "Vacas"],
+    "imagem": "",
+    "valor": 40e3,
+    "tipo": 2
+  },
+  "Porco": {
+    "db": "economia/Fazenda/${interaction.user.id}/Animal",
+    "nome": ["Porco", "Porcos"],
+    "imagem": "",
+    "valor": 50e3,
+    "tipo": 2
+  }
+}
