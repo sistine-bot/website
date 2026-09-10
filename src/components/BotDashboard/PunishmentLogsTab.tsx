@@ -29,14 +29,14 @@ interface DiscordChannel {
 interface PunishmentLogsTabProps {
   dbState: any;
   discordMembers: DiscordMember[];
-  channels: DiscordChannel[]; // Padronizado igual ao WelcomeTab!
+  discordChannels: DiscordChannel[]; // Padronizado igual ao WelcomeTab!
   serverId: string;
   csrfToken: string;
   onUpdateDb: (key: string, value: any) => Promise<void>;
   onTriggerSaveStatus: (type: 'success' | 'error', message: string) => void;
 }
 
-export default function PunishmentLogsTab({ dbState, discordMembers, channels, serverId, csrfToken, onUpdateDb, onTriggerSaveStatus }: PunishmentLogsTabProps) {
+export default function PunishmentLogsTab({ dbState, discordMembers, serverId, csrfToken, onUpdateDb, onTriggerSaveStatus, discordChannels }: PunishmentLogsTabProps) {
   
   const punishmentList: Punishment[] = Array.isArray(dbState?.punishments) 
     ? dbState.punishments 
@@ -231,7 +231,7 @@ export default function PunishmentLogsTab({ dbState, discordMembers, channels, s
             className="w-full bg-zinc-950/80 border border-zinc-800 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 rounded-xl px-3 py-2.5 text-xs text-white cursor-pointer"
           >
             <option value="">Não enviar no Discord (Apenas manter no painel)</option>
-            {Array.isArray(channels) && channels.map((canal) => (
+            {Array.isArray(discordChannels) && discordChannels.map((canal) => (
               <option key={canal.id} value={canal.id}>#{canal.name}</option>
             ))}
           </select>

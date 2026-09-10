@@ -9,7 +9,6 @@ interface CoinShopProps {
 export default function CoinShop({ dbState, user }: CoinShopProps) {
   const carteira = dbState?.saldo?.carteira || 0;
   const banco = dbState?.saldo?.banco || 0;
-  const total = Number(carteira) + Number(banco);
 
   return (
     <div className="space-y-6">
@@ -26,47 +25,65 @@ export default function CoinShop({ dbState, user }: CoinShopProps) {
         </div>
 
         {/* STATUS FINANCEIRO */}
-        <div className="flex items-center gap-4 bg-zinc-950 p-3 rounded-xl border border-zinc-800 shrink-0">
-          <div className="flex items-center gap-2">
-            <Wallet size={16} className="text-emerald-400" />
-            <div>
-              <span className="text-[10px] text-zinc-500 block uppercase font-bold">Carteira</span>
-              <span className="text-xs font-mono font-bold text-white">R$ {Number(carteira).toLocaleString('pt-BR')}</span>
+        {dbState && (
+          <div className="flex items-center gap-4 bg-zinc-950 p-3 rounded-xl border border-zinc-800 shrink-0">
+            <div className="flex items-center gap-2">
+              <Wallet size={16} className="text-emerald-400" />
+              <div>
+                <span className="text-[10px] text-zinc-500 block uppercase font-bold">Carteira</span>
+                <span className="text-xs font-mono font-bold text-white">R$ {Number(carteira).toLocaleString('pt-BR')}</span>
+              </div>
+            </div>
+            <div className="w-px h-6 bg-zinc-800"></div>
+            <div className="flex items-center gap-2">
+              <Landmark size={16} className="text-blue-400" />
+              <div>
+                <span className="text-[10px] text-zinc-500 block uppercase font-bold">Banco</span>
+                <span className="text-xs font-mono font-bold text-white">R$ {Number(banco).toLocaleString('pt-BR')}</span>
+              </div>
             </div>
           </div>
-          <div className="w-px h-6 bg-zinc-800"></div>
-          <div className="flex items-center gap-2">
-            <Landmark size={16} className="text-blue-400" />
-            <div>
-              <span className="text-[10px] text-zinc-500 block uppercase font-bold">Banco</span>
-              <span className="text-xs font-mono font-bold text-white">R$ {Number(banco).toLocaleString('pt-BR')}</span>
-            </div>
-          </div>
-        </div>
+        )}
+
       </div>
 
       {/* PACOTES DE MOEDAS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           {
-            amount: '50.000',
-            bonus: '+ 5.000 Bônus',
+            amount: '25.000',
+            bonus: '+ 2.500 Bônus',
             price: 'R$ 5,00',
-            badge: 'Iniciante',
             color: 'border-zinc-800 hover:border-emerald-500/50'
           },
           {
-            amount: '150.000',
-            bonus: '+ 25.000 Bônus',
+            amount: '75.000',
+            bonus: '+ 10.000 Bônus',
             price: 'R$ 12,00',
-            badge: 'Mais Popular',
             color: 'border-emerald-500/60 ring-2 ring-emerald-500/20'
           },
           {
-            amount: '500.000',
-            bonus: '+ 100.000 Bônus',
+            amount: '250.000',
+            bonus: '+ 50.000 Bônus',
             price: 'R$ 30,00',
-            badge: 'Melhor Custo-Benefício',
+            color: 'border-purple-500/60 ring-2 ring-purple-500/20'
+          },
+          {
+            amount: '250.000',
+            bonus: '+ 50.000 Bônus',
+            price: 'R$ 30,00',
+            color: 'border-purple-500/60 ring-2 ring-purple-500/20'
+          },
+          {
+            amount: '250.000',
+            bonus: '+ 50.000 Bônus',
+            price: 'R$ 30,00',
+            color: 'border-purple-500/60 ring-2 ring-purple-500/20'
+          },
+          {
+            amount: '250.000',
+            bonus: '+ 50.000 Bônus',
+            price: 'R$ 30,00',
             color: 'border-purple-500/60 ring-2 ring-purple-500/20'
           },
         ].map((pack) => (
@@ -74,11 +91,11 @@ export default function CoinShop({ dbState, user }: CoinShopProps) {
             key={pack.amount}
             className={`bg-zinc-900/40 border ${pack.color} transition p-6 rounded-2xl space-y-4 text-center flex flex-col justify-between relative overflow-hidden`}
           >
-            {pack.badge && (
+            {/* {pack.badge && (
               <span className="absolute top-3 right-3 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
                 {pack.badge}
               </span>
-            )}
+            )} */}
 
             <div className="space-y-2 pt-2">
               <Coins className="text-emerald-400 mx-auto" size={42} />

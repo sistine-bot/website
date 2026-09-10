@@ -20,6 +20,7 @@ src/config.js
 
 # Firebase & Database credentials
 databases.json
+!example.databases.json
 mockdb.json
 *firebase-adminsdk*.json
 serviceAccountKey*.json
@@ -270,18 +271,3 @@ node_modules
 psd
 thumb
 sketch
-
-### Web ###
-*.asp
-*.cer
-*.csr
-*.css
-*.htm
-*.html
-*.js
-*.jsp
-*.php
-*.rss
-*.wasm
-*.wat
-*.xhtml

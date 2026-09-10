@@ -59,51 +59,39 @@ export default function VipShop({ dbState, user }: VipShopProps) {
       </div>
 
       {/* CARDS DOS PLANOS VIP */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[
           {
             level: 2,
-            title: 'VIP Ouro',
+            title: 'Premium+',
             price: 'R$ 29,90',
             color: 'border-yellow-500/50 hover:border-yellow-400',
             bg: 'bg-yellow-500/10',
             badge: '🥇',
             highlight: 'Mais Completo',
             perks: [
-              'Badge Exclusiva VIP Ouro no /perfil',
+              'Badge Exclusiva no /perfil',
               'Multiplicador 3x em todas as moedas',
+              'Cargo exclusivo no servidor do suporte',
+              'Sem taxa em apostas',
+              'Enviar seu próprio wallpaper exclusivo',
               'Acesso a todos os Wallpapers Premium',
-              'Cooldown reduzido nos comandos de economia',
-              'Cargo exclusivo no servidor do suporte'
             ]
           },
           {
             level: 1,
-            title: 'VIP Prata',
+            title: 'Premium',
             price: 'R$ 19,90',
             color: 'border-zinc-400/50 hover:border-zinc-300',
             bg: 'bg-zinc-400/10',
             badge: '🥈',
             highlight: 'Recomendado',
             perks: [
-              'Badge Exclusiva VIP Prata no /perfil',
+              'Badge Exclusiva no /perfil',
               'Multiplicador 2x em moedas diárias',
-              'Acesso a Wallpapers Selecionados',
-              'Prioridade em sorteios e eventos'
-            ]
-          },
-          {
-            level: 0,
-            title: 'VIP Bronze',
-            price: 'R$ 9,90',
-            color: 'border-amber-700/50 hover:border-amber-600',
-            bg: 'bg-amber-700/10',
-            badge: '🥉',
-            highlight: 'Econômico',
-            perks: [
-              'Badge de Apoiador no /perfil',
-              'Multiplicador 1.5x em moedas',
-              'Acesso ao chat VIP no Discord'
+              'Cargo exclusivo no servidor do suporte',
+              'Taxa reduzida em apostas',
+              'Enviar seu próprio wallpaper exclusivo'
             ]
           },
         ].map((vip) => {

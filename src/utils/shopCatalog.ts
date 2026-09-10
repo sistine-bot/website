@@ -13,7 +13,7 @@ export interface WallpaperItem {
   id: string;
   name: string;
   description: string;
-  category: 'Espaço' | 'Anime' | 'Cyberpunk' | 'Minimalista' | 'Natureza' | 'VIP' | 'Custom' | string;
+  category: 'Espaço' | 'Anime' | 'Minimalista' | 'Natureza' | 'VIP' | 'Custom' | 'Jogos' | string;
   price: number;
   url: string;
   isDefault?: boolean;
