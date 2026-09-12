@@ -27,7 +27,7 @@ module.exports =  {
       }
         
       
-      const { munição, arma } = await getUserInventory(interaction.user)
+      let { munição, arma } = await getUserInventory(interaction.user)
       
       if (munição < 1) return interaction.error({ content: `Você não possui munições para cometer um crime` })
 

@@ -93,7 +93,12 @@ client.on('guildBanAdd', async (ban) => {
       await syncNativePunishment(ban.guild, ban.user, executor, 'Ban', finalReason);
     }
   } catch (e) {
-    console.error(e);
+    if (error.code === 50013) {
+      console.log(`[AVISO] Sem permissão de Auditoria no servidor: ${member.guild.name} (${member.guild.id})`);
+      return; // Interrompe a função silenciosamente
+    }
+    
+    console.error("Erro ao buscar logs de auditoria:", error);
   }
 });
 
@@ -129,7 +134,12 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
       }
     }
   } catch (e) {
-    console.error(e);
+    if (error.code === 50013) {
+      console.log(`[AVISO] Sem permissão de Auditoria no servidor: ${member.guild.name} (${member.guild.id})`);
+      return; // Interrompe a função silenciosamente
+    }
+    
+    console.error("Erro ao buscar logs de auditoria:", error);
   }
 });
 
@@ -138,7 +148,6 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 // =======================================================
 client.on('guildMemberRemove', async (member) => {
   try {
-    // Kicks são um pouco demorados no Discord, damos um pequeno atraso de 1 segundo para garantir que o log gerou
     setTimeout(async () => {
       const fetchedLogs = await member.guild.fetchAuditLogs({
         limit: 1,
@@ -162,6 +171,11 @@ client.on('guildMemberRemove', async (member) => {
       }
     }, 1000);
   } catch (e) {
-    console.error(e);
+    if (error.code === 50013) {
+      console.log(`[AVISO] Sem permissão de Auditoria no servidor: ${member.guild.name} (${member.guild.id})`);
+      return; // Interrompe a função silenciosamente
+    }
+    
+    console.error("Erro ao buscar logs de auditoria:", error);
   }
 });
