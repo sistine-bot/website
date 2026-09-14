@@ -25,6 +25,12 @@ module.exports = {
         CanaDeAçucar: 999,
         Cenoura: 999,
         Abóbora: 999,
+        semente_trigo: 999,
+        semente_milho: 999,
+        semente_feijao: 999,
+        semente_cana: 999,
+        semente_cenoura: 999,
+        semente_abobora: 999,
         Ovo: 999,
         Leite: 999,
         Bacon: 999,
@@ -43,6 +49,8 @@ module.exports = {
             armacaça: { item: 1, nome: "Arma de Caça", Xp: 100 },
             arma: { item: 4, nome: "Ak-47", Xp: 100 },
             vara: { item: 1, nome: itens.vara.nome, Xp: 100 },
+            enxada: { item: 1, nome: "Enxada", Xp: 100 },
+            regador: { item: 1, nome: "Regador", Xp: 100, agua: 100 },
         });
         
         const embed = new EmbedBuilder()

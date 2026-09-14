@@ -24,6 +24,14 @@ module.exports =  {
           "name": "🎣 Vara de pescar",
           "value": "vara"
         },
+        {
+          "name": "⛏️ Enxada",
+          "value": "enxada"
+        },
+        {
+          "name": "🚿 Regador",
+          "value": "regador"
+        },
       ]
     },
   ],
@@ -32,16 +40,16 @@ module.exports =  {
     
     try { 
 
-      const { infoVIP, tempo, data } = await CheckUserVip(interaction.user)
-      const VIP = (data !== null && tempo - (Date.now() - data) < 0 || infoVIP == false) ? false : true
+      const vipInfo = await CheckUserVip(interaction.user);
+      const VIP = vipInfo.isVip;
       
       return database.ref(`economia/${interaction.user.id}/nível/`).once('value').then(async function(snapshot) {
         let nível = (snapshot.val() && snapshot.val().nível);
         if (nível === undefined || nível === null) nível = 0;
         
-        if (!client.config.cargos.criador.includes(interaction.user.id) && !VIP && nível < 13) return interaction.error({ content: `Você precisa ser **nível 13** para recuperar a durabilidade de seus itens.` });
+        if (!client.config.cargos.criador.includes(interaction.user.id) && !VIP && nível < 13) return interaction.error({ content: `Você precisa ser **nível 13** para recuperar a durabilidade de seus itens (Assinantes VIP possuem acesso antecipado!).` });
         
-        const { armacaça, arma, vara } = await getUserInventory(interaction.user);
+        const { armacaça, arma, vara, enxada, regador } = await getUserInventory(interaction.user);
         const { carteira } = await require('../../utils/functions.js').getUserMoney(interaction.user);
         
         const item = interaction.options.getString('item');
@@ -54,6 +62,12 @@ module.exports =  {
         }
         if (item === 'vara' && (!vara || vara.item < 1)) {
           return interaction.error({ content: `Você não possui uma **Vara de Pescar** para consertar.` });
+        }
+        if (item === 'enxada' && (!enxada || enxada.item < 1)) {
+          return interaction.error({ content: `Você não possui uma **Enxada** para consertar.` });
+        }
+        if (item === 'regador' && (!regador || regador.item < 1)) {
+          return interaction.error({ content: `Você não possui um **Regador** para consertar.` });
         }
 
         if (item) {
@@ -88,9 +102,33 @@ module.exports =  {
               NomeItem = Array.isArray(vara.nome) ? vara.nome[0] : (vara.nome || 'Vara de Pescar');
               break;
             }
+
+            case 'enxada': {
+              XP = enxada.Xp || 0;
+              const missing = Math.max(0, 100 - XP);
+              valor = missing * 12;
+              NomeItem = Array.isArray(enxada.nome) ? enxada.nome[0] : (enxada.nome || 'Enxada');
+              break;
+            }
+
+            case 'regador': {
+              XP = regador.Xp || 0;
+              const missing = Math.max(0, 100 - XP);
+              valor = missing * 15;
+              NomeItem = Array.isArray(regador.nome) ? regador.nome[0] : (regador.nome || 'Regador');
+              break;
+            }
           }
           
           if (XP >= 100) return interaction.error({ content: `Sua **${NomeItem}** não precisa ser reparada, ela já está com **100%** de durabilidade.` });
+
+          const valorOriginal = valor;
+          let vipDiscountMsg = '';
+          if (vipInfo.isVip && vipInfo.repairDiscount > 0) {
+            valor = Math.round(valor * (1 - vipInfo.repairDiscount));
+            vipDiscountMsg = `\n> 👑 **Desconto ${vipInfo.levelName} (-${Math.round(vipInfo.repairDiscount * 100)}%):** De ~~${Format(valorOriginal)}~~ por **${Format(valor)}**`;
+          }
+
           if (carteira < valor) return interaction.error({ content: `Você não possui moedas suficientes na carteira. Custo do reparo: **${Format(valor)}**.` });
 
           const row = new ActionRowBuilder().addComponents(
@@ -98,9 +136,14 @@ module.exports =  {
             new ButtonBuilder().setCustomId("não").setStyle(ButtonStyle.Danger).setEmoji(emoji.negativo || '❌').setLabel('Cancelar').setDisabled(false),
           );
 
+          let descText = `🛠️ **|** ${interaction.user}, Você deseja reparar sua **${NomeItem}** (Durabilidade atual: **${XP}%**) por: **${Format(valor)}**?${vipDiscountMsg}`;
+          if (item === 'regador') {
+            descText += `\n\n> 💧 **Água:** ${regador.agua || 0}%\n> ⚠️ *Atenção: O reparo restaura apenas a durabilidade do regador. O nível de água não é consertado no reparar e deve ser abastecido na plantação.*`;
+          }
+
           const embed = new EmbedBuilder()
             .setColor(color.embed || "#00ff00")
-            .setDescription(`🛠️ **|** ${interaction.user}, Você deseja reparar sua **${NomeItem}** (Durabilidade atual: **${XP}%**) por: **${Format(valor)}**?`);
+            .setDescription(descText);
 
           const msg = await interaction.followUp({ content: `${interaction.user}`, embeds: [embed], components: [row] });
 

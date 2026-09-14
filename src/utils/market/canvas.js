@@ -65,6 +65,31 @@ async function fetchRemoteDataUri(url, timeoutMs = 3000) {
   if (remoteCache.has(url)) return remoteCache.get(url);
   if (inFlightRequests.has(url)) return inFlightRequests.get(url);
 
+  // Checa se é arquivo local
+  const baseDir = path.join(process.cwd(), 'src/utils/assets/inventory/itens');
+  const subdirs = ['armas', 'colheitas', 'consumiveis', 'ferramentas', 'sementes'];
+  const localCandidates = [
+    url,
+    path.join(__dirname, '../../assets/inventory/itens', url),
+    path.join(baseDir, url),
+    path.join(baseDir, path.basename(url)),
+    ...subdirs.map(d => path.join(baseDir, d, path.basename(url))),
+    ...subdirs.map(d => path.join(__dirname, '../../assets/inventory/itens', d, path.basename(url)))
+  ];
+  for (const candidate of localCandidates) {
+    try {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        const buf = fs.readFileSync(candidate);
+        let mime = 'image/png';
+        if (candidate.endsWith('.jpg') || candidate.endsWith('.jpeg')) mime = 'image/jpeg';
+        else if (candidate.endsWith('.webp')) mime = 'image/webp';
+        const dataUri = `data:${mime};base64,${buf.toString('base64')}`;
+        remoteCache.set(url, dataUri);
+        return dataUri;
+      }
+    } catch (e) {}
+  }
+
   const fetchTask = (async () => {
     try {
       const controller = new AbortController();

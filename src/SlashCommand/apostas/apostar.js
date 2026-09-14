@@ -102,8 +102,8 @@ module.exports =  {
 
       if (carteira < number) return interaction.error({ content: `Você não possui dinheiro suficiente para apostar com este usuário.` });
 
-      if (number < 500) return interaction.error({ content: `O valor mínimo para aposta é de **${Format(500)}**` });
-      if (number > 100000) return interaction.error({ content: `O valor máximo para aposta é de **${Format(100000)}**` });
+      if (number < 200) return interaction.error({ content: `O valor mínimo para aposta é de **${Format(200)}**` });
+      if (number > 20000) return interaction.error({ content: `O valor máximo para aposta é de **${Format(20000)}**` });
       
       // CARTEIRA USER
       const carteiraUser = await getUserMoney(user).then(money => money.carteira);
@@ -111,8 +111,6 @@ module.exports =  {
       if (number > carteiraUser) return interaction.error({ content: `${user} não possui dinheiro suficiente para apostar com você.` });
       
       const id = user.id;
-      
-      const imposto = Math.floor((number * 95) / 100);
       
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("um").setStyle(ButtonStyle.Secondary).setEmoji(emoji.positivo || '✅').setLabel("Aceitar").setDisabled(false),
@@ -126,8 +124,8 @@ module.exports =  {
       const dado = Math.floor(Math.random() * 6) + 1;
 
       let msg = await interaction.followUp({ content:
-`🎲 **|** **${interaction.user.username}** escolheu **${escolha}** e chamou: **${user.username}** que ficará com: **${escolhaUser}**, aposta valendo: **${Format(number)}** *(${Format(number - imposto)} de taxa)*
-> <@${id}> Confirme para a aposta começar.`, components: [row], fetchReply: true, ephemeral: false });
+`🎲 **|** **${interaction.user.username}** escolheu **${escolha}** e chamou: **${user.username}** que ficará com: **${escolhaUser}**, aposta valendo: **${Format(number)}** *(Pote total: ${Format(number * 2)})*
+> <@${id}> Confirme para a aposta começar. *(Taxa de duelo: 7.5% comuns / 3% VIP)*`, components: [row], fetchReply: true, ephemeral: false });
       
       const coletor = msg.createMessageComponentCollector({ filter: i => i.user.id === id, time: 60000 });
 
@@ -169,7 +167,11 @@ module.exports =  {
               const { infoVIP, tempo, data } = await CheckUserVip(ganhadorUser);
               const VIP = (data !== null && tempo - (Date.now() - data) < 0 || infoVIP === false) ? false : true;
               
-              const ganhoLiquido = VIP ? number : Math.floor(number * 0.95);
+              const poteTotal = number * 2;
+              const taxaPercentual = VIP ? 0.03 : 0.075;
+              const taxa = Math.floor(poteTotal * taxaPercentual);
+              const valorLiquido = poteTotal - taxa;
+              const ganhoLiquido = valorLiquido - number;
 
               await UpdateMoneyWallet(interaction, user, '-', number);
               await UpdateMoneyWallet(interaction, interaction.user, '-', number);
@@ -180,9 +182,9 @@ module.exports =  {
               await TransactionUpdate(interaction, `{emoji.saida} {mensagem.aposta.derrota} | ${number} | ${ganhadorUser.id}`, perdedorUser);
               await UpdateApostas(perdedorUser, '-', 0, number);
 
-              await UpdateMoneyWallet(interaction, ganhadorUser, '+', ganhoLiquido + number);
+              await UpdateMoneyWallet(interaction, ganhadorUser, '+', valorLiquido);
               return msg.reply({ 
-                content: `🎉 **|** O dado rolou e caiu: **${dado}** (${resultado})! <@${ganhador}> você ganhou a aposta e faturou **${Format(ganhoLiquido)}**! ${VIP ? `\n> 👑 Por <@${ganhador}> ser um usuário VIP, não teve taxa de imposto.` : `*(${Format(number - ganhoLiquido)} de taxa do governo)*`}` 
+                content: `🎉 **|** O dado rolou e caiu: **${dado}** (${resultado})! <@${ganhador}> você ganhou a aposta e faturou **${Format(ganhoLiquido)}** líquidos! \n> 🏛️ **Taxa de Imposto (${VIP ? '3.0% VIP' : '7.5% Padrão'}):** **${Format(taxa)}** foram recolhidos pelo governo.` 
               });
             }
 

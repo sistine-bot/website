@@ -553,11 +553,23 @@ async function startFullStackApp() {
         permissions: g.permissions
       }));
 
+      const isAnimated = userData.avatar && userData.avatar.startsWith('a_');
+      let calculatedAvatar = "https://cdn.discordapp.com/embed/avatars/0.png";
+      try {
+        const defaultIndex = (BigInt(userData.id) >> 22n) % 6n;
+        calculatedAvatar = `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`;
+      } catch (e) {}
+
+      const userAvatarUrl = userData.avatar 
+        ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.${isAnimated ? 'gif' : 'png'}?size=256` 
+        : calculatedAvatar;
+
       sessions[sessionId] = {
         userId: userData.id,
         username: userData.username,
         global_name: userData.global_name || userData.username,
-        avatar: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : "https://i.postimg.cc/9QYx00L8/avatar.png",
+        avatar: userAvatarUrl,
+        avatarHash: userData.avatar || null,
         flags: userData.flags,
         public_flags: userData.public_flags,
         guilds: filteredGuilds,
@@ -604,12 +616,18 @@ async function startFullStackApp() {
       return res.status(401).json({ authenticated: false });
     }
 
+    let userAvatar = session.avatar;
     let flagsArray = [];
     if (client && client.users) {
       try {
         const discordUser = await client.users.fetch(session.userId, { force: true }).catch(() => null);
-        if (discordUser && discordUser.flags) {
-          flagsArray = typeof discordUser.flags.toArray === 'function' ? discordUser.flags.toArray() : [];
+        if (discordUser) {
+          if (typeof discordUser.displayAvatarURL === 'function') {
+            userAvatar = discordUser.displayAvatarURL({ dynamic: true, size: 256 });
+          }
+          if (discordUser.flags) {
+            flagsArray = typeof discordUser.flags.toArray === 'function' ? discordUser.flags.toArray() : [];
+          }
         }
       } catch (e) {}
     }
@@ -627,7 +645,7 @@ async function startFullStackApp() {
         id: session.userId, 
         username: session.username, 
         global_name: session.global_name || session.username,
-        avatar: session.avatar,
+        avatar: userAvatar,
         flagsArray 
       },
       csrfToken: session.csrfToken
@@ -1673,9 +1691,20 @@ async function startFullStackApp() {
   });
 
   // Servir imagens locais dos assets diretamente para a dashboard e API
-  app.use('/src/utils/assets', express.static(path.join(__dirname, 'src/utils/assets')));
-  app.use('/src/assets', express.static(path.join(__dirname, 'src/utils/assets')));
-  app.use('/assets', express.static(path.join(__dirname, 'src/utils/assets')));
+  const serveStaticAssetBypass = (dirPath) => {
+    const staticMiddleware = express.static(dirPath);
+    return (req, res, next) => {
+      // Se for uma requisição de módulo do Vite (ex: ?import ou ?raw), deixa o Vite processar como JavaScript
+      if (req.query && (req.query.import !== undefined || req.query.raw !== undefined)) {
+        return next();
+      }
+      staticMiddleware(req, res, next);
+    };
+  };
+
+  app.use('/src/utils/assets', serveStaticAssetBypass(path.join(__dirname, 'src/utils/assets')));
+  app.use('/src/assets', serveStaticAssetBypass(path.join(__dirname, 'src/utils/assets')));
+  app.use('/assets', serveStaticAssetBypass(path.join(__dirname, 'src/utils/assets')));
 
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = require("vite");

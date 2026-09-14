@@ -16,14 +16,21 @@ interface HeaderProps {
 }
 
 export function Header({ onLogin, onNavigate, user }: HeaderProps) {
-  // Função auxiliar para montar a URL do avatar do Discord
   const getAvatarUrl = () => {
     if (!user) return '';
-    // Se não tiver avatar setado, pega o padrão do discord
-    if (!user.avatar) return `https://cdn.discordapp.com/embed/avatars/${parseInt(user.id) % 5}.png`;
-    
-    const isAnimated = user.avatar.startsWith('a_');
-    return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${isAnimated ? 'gif' : 'png'}`;
+    if (typeof user.avatar === 'string' && (user.avatar.startsWith('http://') || user.avatar.startsWith('https://'))) {
+      return user.avatar;
+    }
+    if (user.avatar && user.avatar !== 'null' && user.avatar !== 'undefined') {
+      const isAnimated = user.avatar.startsWith('a_');
+      return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${isAnimated ? 'gif' : 'png'}`;
+    }
+    try {
+      const defaultIndex = user.id ? Number((BigInt(user.id) >> 22n) % 6n) : 0;
+      return `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`;
+    } catch {
+      return 'https://cdn.discordapp.com/embed/avatars/0.png';
+    }
   };
 
   return (

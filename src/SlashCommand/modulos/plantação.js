@@ -1,379 +1,862 @@
-const { ApplicationCommandType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ApplicationCommandType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const ms = require('ms');
-const { getUserInventory, XpUpdate } = require('../../utils/functions.js');
+const parseMs = require('parse-ms');
+const { getUserInventory, XpUpdate, getUserMoney, UpdateMoneyWallet, TransactionUpdate, Format, CheckUserVip } = require('../../utils/functions.js');
+const itensAPI = require('../../utils/itens.json');
 
-module.exports =  {
-  "name": "plantação",
-  "description": `⌊⚙️ Módulos⌉ Cuide de sua plantação.`,
-  "type": ApplicationCommandType.ChatInput,
-  
+const PRECOS_LOTES = {
+  1: 0,
+  2: 5000,
+  3: 10000,
+  4: 20000,
+  5: 35000,
+  6: 50000
+};
+
+const CROP_CONFIG = {
+  3: {
+    id: 3,
+    name: 'Trigo',
+    displayName: 'Trigo',
+    seedKey: 'semente_trigo',
+    time: ms('2m'),
+    emoji: '🌾',
+    xp: 12,
+    needsWater: false,
+  },
+  4: {
+    id: 4,
+    name: 'Milho',
+    displayName: 'Milho',
+    seedKey: 'semente_milho',
+    time: ms('5m'),
+    emoji: '🌽',
+    xp: 18,
+    needsWater: true,
+    dryInterval: ms('2.5m'),
+  },
+  5: {
+    id: 5,
+    name: 'Feijão',
+    displayName: 'Feijão',
+    seedKey: 'semente_feijao',
+    time: ms('15m'),
+    emoji: '🫘',
+    xp: 25,
+    needsWater: true,
+    dryInterval: ms('7.5m'),
+  },
+  6: {
+    id: 6,
+    name: 'CanaDeAçucar',
+    displayName: 'Cana-de-açúcar',
+    seedKey: 'semente_cana',
+    time: ms('30m'),
+    emoji: '🎋',
+    xp: 35,
+    needsWater: true,
+    dryInterval: ms('15m'),
+  },
+  7: {
+    id: 7,
+    name: 'Cenoura',
+    displayName: 'Cenoura',
+    seedKey: 'semente_cenoura',
+    time: ms('45m'),
+    emoji: '🥕',
+    xp: 45,
+    needsWater: true,
+    dryInterval: ms('22.5m'),
+  },
+  8: {
+    id: 8,
+    name: 'Abóbora',
+    displayName: 'Abóbora',
+    seedKey: 'semente_abobora',
+    time: ms('90m'),
+    emoji: '🎃',
+    xp: 60,
+    needsWater: true,
+    dryInterval: ms('45m'),
+  }
+};
+
+module.exports = {
+  name: "plantação",
+  description: `⌊⚙️ Módulos⌉ Cuide de sua plantação, plante, regue e colha seus frutos.`,
+  type: ApplicationCommandType.ChatInput,
+
   run: async (client, interaction, args, color, database, emoji) => {
-    
     try {
-      
-      const msg = await interaction.followUp({ content: `<a:loading:929931026589954128> **|** Carregando plantação.` });
+      const msg = await interaction.followUp({ content: `<a:loading:929931026589954128> **|** Carregando plantação...` });
 
-      await edit(msg); // const msg = await interaction.followUp({ embeds: [embed], components: [row, row2] });
-      
-      const coletor = await msg.createMessageComponentCollector({ filter: x => x.user.id === interaction.user.id })
-      coletor.on('collect', async(int) => {
-        int.deferUpdate();
+      // Garante que o Lote 1 esteja desbloqueado por padrão
+      const snapInit = await database.ref(`economia/${interaction.user.id}/Plantação`).once('value');
+      const valInit = snapInit.val() || {};
+      if (valInit.lote1 === undefined || valInit.lote1 === 0) {
+        await database.ref(`economia/${interaction.user.id}/Plantação/lote1`).set(1);
+      }
 
-        const plantação = int.customId
-        if (plantação) {
-          const lote = await getPlantação(plantação.split('_')[1])
+      await renderPlantacao(msg);
 
-          if (lote.about == 'colher') {
-            return colher(plantação.split('_')[1])
+      let currentPlantingLote = null;
+
+      const coletor = msg.createMessageComponentCollector({
+        filter: (x) => {
+          if (x.user.id !== interaction.user.id) {
+            x.reply({ content: `❌ **|** Você não pode interagir com a plantação de outro usuário.`, ephemeral: true }).catch(() => {});
+            return false;
           }
-          if (lote.about == 'plantar') {
-            return plantar(plantação.split('_')[1])
-          }
-        }   
+          return true;
+        },
+        time: 180000
       });
 
-      async function edit(msg) {
+      coletor.on('collect', async (int) => {
         try {
+          await int.deferUpdate();
+        } catch (e) {}
 
-          const lote1 = await getPlantação(1);
-          const lote2 = await getPlantação(2);
-          const lote3 = await getPlantação(3);
-          const lote4 = await getPlantação(4);
-          const lote5 = await getPlantação(5);
-          const lote6 = await getPlantação(6);
-
-          const embed = new EmbedBuilder()
-          .setColor(color.embed)
-          .setTitle("Plantação")
-          .setDescription(`> Cuide de sua plantação, plante, colha e venda seus itens. 
-${lote1.lote ? `${lote1.status ? `${lote1.emote} | Lote 1 - **${lote1.plantado}** - ` + `${lote1.timer ? "Status: **Colher**" : `**<t:${~~((lote1.tempo)/1000)}:R>**`}` : `${lote1.emote} | Lote 1 - **Plantar**`}` : "<:cadeado:994616942306537482> | Lote 1 - Comprar"}
-${lote2.lote ? `${lote2.status ? `${lote2.emote} | Lote 2 - **${lote2.plantado}** - ` + `${lote2.timer ? "Status: **Colher**" : `**<t:${~~((lote2.tempo)/1000)}:R>**`}` : `${lote2.emote} | Lote 2 - **Plantar**`}` : "<:cadeado:994616942306537482> | Lote 2 - Comprar"}
-${lote3.lote ? `${lote3.status ? `${lote3.emote} | Lote 3 - **${lote3.plantado}** - ` + `${lote3.timer ? "Status: **Colher**" : `**<t:${~~((lote3.tempo)/1000)}:R>**`}` : `${lote3.emote} | Lote 3 - **Plantar**`}` : "<:cadeado:994616942306537482> | Lote 3 - Comprar"}
-${lote4.lote ? `${lote4.status ? `${lote4.emote} | Lote 4 - **${lote4.plantado}** - ` + `${lote4.timer ? "Status: **Colher**" : `**<t:${~~((lote4.tempo)/1000)}:R>**`}` : `${lote4.emote} | Lote 4 - **Plantar**`}` : "<:cadeado:994616942306537482> | Lote 4 - Comprar"}
-${lote5.lote ? `${lote5.status ? `${lote5.emote} | Lote 5 - **${lote5.plantado}** - ` + `${lote5.timer ? "Status: **Colher**" : `**<t:${~~((lote5.tempo)/1000)}:R>**`}` : `${lote5.emote} | Lote 5 - **Plantar**`}` : "<:cadeado:994616942306537482> | Lote 5 - Comprar"}
-${lote6.lote ? `${lote6.status ? `${lote6.emote} | Lote 6 - **${lote6.plantado}** - ` + `${lote6.timer ? "Status: **Colher**" : `**<t:${~~((lote6.tempo)/1000)}:R>**`}` : `${lote6.emote} | Lote 6 - **Plantar**`}` : "<:cadeado:994616942306537482> | Lote 6 - Comprar"}`)
-          .addFields(
-            {
-              value: `${lote1.emote}${lote1.emote}${lote1.emote}`,
-              name: "឵Lote 1",
-              inline: true
-            },
-            {
-              value: `${lote2.emote}${lote2.emote}${lote2.emote}`,
-              name: "឵Lote 2",
-              inline: true
-            },
-            {
-              value: `${lote3.emote}${lote3.emote}${lote3.emote}`,
-              name: "឵Lote 3",
-              inline: true
-            },
-            {
-              value: `${lote4.emote}${lote4.emote}${lote4.emote}`,
-              name: "឵Lote 4",
-              inline: true
-            },
-            {
-              value: `${lote5.emote}${lote5.emote}${lote5.emote}`,
-              name: "឵Lote 5",
-              inline: true
-            },
-            {
-              value: `${lote6.emote}${lote6.emote}${lote6.emote}`,
-              name: "឵Lote 6",
-              inline: true
-            },
-          );
-          
-          const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("Lote_1").setStyle(ButtonStyle.Secondary).setEmoji(lote1.emote).setDisabled(lote1.button),
-            new ButtonBuilder().setCustomId("Lote_2").setStyle(ButtonStyle.Secondary).setEmoji(lote2.emote).setDisabled(lote2.button),
-            new ButtonBuilder().setCustomId("Lote_3").setStyle(ButtonStyle.Secondary).setEmoji(lote3.emote).setDisabled(lote3.button),
-          )
-          const row2 = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("Lote_4").setStyle(ButtonStyle.Secondary).setEmoji(lote4.emote).setDisabled(lote4.button),
-            new ButtonBuilder().setCustomId("Lote_5").setStyle(ButtonStyle.Secondary).setEmoji(lote5.emote).setDisabled(lote5.button),
-            new ButtonBuilder().setCustomId("Lote_6").setStyle(ButtonStyle.Secondary).setEmoji(lote6.emote).setDisabled(lote6.button),
-          )
-
-          msg.edit({ content: `${interaction.user}`, embeds: [embed], components: [row, row2] })
-          
-        } catch (error) {
-          console.error("Erro ao obter dados da planta:", error);
-          // Tratar o erro de acordo com a necessidade do seu aplicativo
-          return null;
-        }
-
-        
-      }
-
-      async function getPlantação(lote) {
         try {
+          const action = int.customId;
 
-          return database.ref(`economia/${interaction.user.id}/Plantação`).once('value').then(async function(snapshot) {
-            let tempolote1 = (snapshot.val() && snapshot.val()['tempolote'+lote]);
-            if (tempolote1 === undefined || tempolote1 === null) tempolote1 = 0;
-            
-            let lote1 = (snapshot.val() && snapshot.val()['lote'+lote]);
-            if (lote1 === undefined || lote1 === null) lote1 = 0;
-            
-            let LOTEE1 = lote1;
-            let emotePlantação1 = '',
-                StatusButton1 = true;
-            
-            let LOTE1 = lote1;
-            if (LOTE1 < 3) LOTE1 = 0;
-            
-            let Tempo1 = 0;
-            let NomeItem1 = 'Nenhum nome definido',
-                EmojiItem1 = 'Nenhum emote';
-            
-            switch (lote1) {
-              case 3:
-                Tempo1 = ms('2m');
-                NomeItem1 = 'Trigo';
-                EmojiItem1 = emoji.trigo;
-                break;
-              case 4:
-                Tempo1 = ms('5m');
-                NomeItem1 = 'Milho';
-                EmojiItem1 = emoji.milho;
-                break;
-              case 5:
-                Tempo1 = ms('20m');
-                NomeItem1 = 'Feijão';
-                EmojiItem1 = emoji.feijão;
-                break;
-              case 6:
-                Tempo1 = ms('30m');
-                NomeItem1 = 'CanaDeAçucar';
-                EmojiItem1 = emoji.cana;
-                break;
-              case 7:
-                Tempo1 = ms('45m');
-                NomeItem1 = 'Cenoura';
-                EmojiItem1 = emoji.cenoura;
-                break;
-              case 8:
-                Tempo1 = ms('3h');
-                NomeItem1 = 'Abóbora';
-                EmojiItem1 = emoji.abobora;
-                break;
-              default:
-                break;
-            }
-
-            const time1 = require("parse-ms")(Date.now() - tempolote1);
-            const ttime1 = tempolote1 !== null && Tempo1 - (Date.now() - tempolote1) > 0;
-            let temp1 = require("parse-ms")(Tempo1 - (Date.now() - tempolote1));
-            
-            let a = time1.hours;
-            let aa = time1.seconds;
-            
-            if (aa > 1) lote1 = `${time1.hours}h ${time1.minutes}m ${time1.seconds}s`;
-            
-            const AAA = (ttime1 == true) ? 0 : 1;
-            
-            let StatusLote1 = ''
-            if (LOTEE1) {
-              
-              if (LOTE1) {
-                
-                if (AAA) {
-                  emotePlantação1 = emoji.foice, StatusLote1 = 'colher', StatusButton1 = false
-                } else {
-                  emotePlantação1 = emoji.relogio, StatusLote1 = 'relogio', StatusButton1 = true
-                }
-                
-              } else {
-                emotePlantação1 = emoji.plantar, StatusLote1 = 'plantar', StatusButton1 = false
-              }
-              
-            } else {
-              emotePlantação1 = emoji.cadeado, StatusLote1 = 'cadeado', StatusButton1 = true
-            }
-            
-            return { emote: emotePlantação1, plantado: NomeItem1, lote: LOTEE1, status: LOTE1, about: StatusLote1, timer: AAA, button: StatusButton1, tempo: tempolote1 + Tempo1 };
-
-          });
-        } catch (error) {
-          console.error("Erro ao obter dados da planta:", error);
-          // Tratar o erro de acordo com a necessidade do seu aplicativo
-          return null;
-        }
-      }
-
-      async function plantar(Estufa) {
-        try {
-
-          const lote = await getPlantação(Estufa)
-
-          const {
-            Trigo, Milho, Feijão, Cenoura, Abóbora, CanaDeAçucar,
-          } = await getUserInventory(interaction.user)
-          
-          const embed = new EmbedBuilder()
-          .setColor(color.embed)
-          .setDescription(`
-**🌱 | Sementes**
-${emoji.trigo} **|** Trigo: **${Trigo}**
-${emoji.milho} **|** Milho: **${Milho}**
-${emoji.feijão} **|** Feijão: **${Feijão}**
-${emoji.cana} **|** Cana-de-açúcar **${CanaDeAçucar}**
-${emoji.cenoura} **|** Cenoura: **${Cenoura}**
-${emoji.abobora} **|** Abóbora: **${Abóbora}**
-
-> *Você pode adquirir sementes na loja, upando de nível ou se tornando VIP*`)
-
-          const Row1 = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("Trigo").setStyle(ButtonStyle.Secondary).setEmoji(emoji.trigo).setDisabled(Trigo ? false : true),
-            new ButtonBuilder().setCustomId("Milho").setStyle(ButtonStyle.Secondary).setEmoji(emoji.milho).setDisabled(Milho ? false : true),
-            new ButtonBuilder().setCustomId("Feijão").setStyle(ButtonStyle.Secondary).setEmoji(emoji.feijão).setDisabled(Feijão ? false : true),
-            new ButtonBuilder().setCustomId("CanaDeAçucar").setStyle(ButtonStyle.Secondary).setEmoji(emoji.cana).setDisabled(CanaDeAçucar ? false : true),
-            new ButtonBuilder().setCustomId("Cenoura").setStyle(ButtonStyle.Secondary).setEmoji(emoji.cenoura).setDisabled(Cenoura ? false : true),
-          ), Row2 = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("Abóbora").setStyle(ButtonStyle.Secondary).setEmoji(emoji.abobora).setDisabled(Abóbora ? false : true),
-          )
-
-          const msg2 = await interaction.followUp({ embeds: [embed], components: [Row1, Row2], fetchReply: true, ephemeral: true });
-
-          const coletor = await msg2.createMessageComponentCollector({ filter: x => x.user.id === interaction.user.id })
-
-          coletor.on('collect', async(int) => {
-            int.deferUpdate();
-
-            if (int.customId) {
-              coletor.stop();
-
-              const lote = await getPlantação(Estufa)
-              if (lote.lote > 1) return interaction.error({ content: `Você já possui algo plantado neste lote` })
-              
-              const Item = await getUserInventory(interaction.user)
-              if (Item[int.customId] < 1) interaction.error({ content: `Você não possui ${i3.customId}\'s o suficiente para plantar.` });
-
-              await database.ref(`economia/${interaction.user.id}/inventario/itens/Consumíveis`).update({
-                [int.customId]: Item[int.customId] - 1
-              });
-
-              let ItemID = 0;
-              switch (int.customId) {
-                case 'Trigo':
-                  ItemID = 3
-                  break;
-              
-                  case 'Milho':
-                    ItemID = 4
-                    break;
-
-                  case 'Feijão':
-                    ItemID = 5
-                    break;
-                      
-                  case 'CanaDeAçucar':
-                    ItemID = 6
-                    break;
-
-                  case 'Cenoura':
-                    ItemID = 7
-                    break;
-
-                  case 'Abóbora':
-                    ItemID = 8
-                    break;
-
-                default:
-                  ItemID = 0;
-                  break;
-              }
-              
-              await database.ref(`economia/${interaction.user.id}/Plantação`).update({ 
-                ['tempolote'+Estufa.toString()]: Date.now(),
-                ['lote'+Estufa.toString()]: ItemID
-              });
-
-              await edit(msg);
-              return interaction.followUp({ content: `${emoji.plantar} **|** Você plantou **1 Semente de: ${int.customId}** na sua plantação (lote: ${Estufa.toString()}).` })
-            }
-          })
-        } catch (error) {
-          console.error("Erro ao plantar uma semente:", error);
-          return null;
-        }
-      };
-
-      async function colher(Estufa) {
-        try {
-          const lote = await getPlantação(Estufa)
-
-          await database.ref(`economia/${interaction.user.id}/Plantação`).update({ 
-            ['tempolote'+Estufa.toString()]: 0,
-            ['lote'+Estufa.toString()]: 1
-          });
-
-          const Quantia = Math.floor(Math.random() * 4) + 2;
-          let ItemName = 'Item não encontrado';
-          let XpAmount = 0;
-          
-          switch (lote.status) {
-            case 3:
-              ItemName = 'Trigo';
-              XpAmount = 10;
-              break;
-          
-            case 4:
-              ItemName = 'Milho';
-              XpAmount = 12;
-              break;
-
-            case 5:
-              ItemName = 'Feijão';
-              XpAmount = 15;
-              break;
-                  
-            case 6:
-              ItemName = 'CanaDeAçucar';
-              XpAmount = 20;
-              break;
-
-            case 7:
-              ItemName = 'Cenoura';
-              XpAmount = 25;
-              break;
-
-            case 8:
-              ItemName = 'Abóbora';
-              XpAmount = 28;
-              break;
-
-            default:
-              break;
+          // 1. Voltar aos Terrenos
+          if (action === 'voltar_lotes') {
+            currentPlantingLote = null;
+            await renderPlantacao(msg);
+            return;
           }
-          
-          const Item = await getUserInventory(interaction.user);
-          const currentCount = Item[ItemName] || 0;
 
-          await database.ref(`economia/${interaction.user.id}/inventario/itens/Consumíveis`).update({
-            [ItemName]: currentCount + Quantia,
-          });
-          
-          await XpUpdate(interaction, interaction.user, XpAmount);
+          // 2. Expandir Terreno
+          if (action === 'expandir_terreno') {
+            await handleExpandirTerreno(int);
+            return;
+          }
 
-          await edit(msg);
-          
-          return interaction.followUp({ content: `${emoji.foice} **|** Você colheu sua plantação de: **${ItemName}** e recebeu **${Quantia}x** ${ItemName} e mais *${XpAmount} XP*.` });
-          
-        } catch (error) {
-          console.error("Erro ao plantar uma semente:", error);
-          // Tratar o erro de acordo com a necessidade do seu aplicativo
-          return null;
+          // 3. Encher Regador
+          if (action === 'encher_regador') {
+            await handleEncherRegador(int);
+            if (currentPlantingLote) {
+              await renderPlantingMenu(currentPlantingLote);
+            } else {
+              await renderPlantacao(msg);
+            }
+            return;
+          }
+
+          // 4. Atualizar
+          if (action === 'atualizar') {
+            currentPlantingLote = null;
+            await renderPlantacao(msg);
+            return;
+          }
+
+          // 5. Seleção de Semente via StringSelectMenu
+          if (int.isStringSelectMenu() && action.startsWith('select_plantar_')) {
+            const loteNum = parseInt(action.replace('select_plantar_', ''));
+            const cropId = parseInt(int.values[0]);
+            await handlePlant(loteNum, cropId, int);
+            return;
+          }
+
+          // 6. Seleção de Semente via Botão Direto
+          if (action.startsWith('plantar_')) {
+            const parts = action.split('_');
+            const loteNum = parseInt(parts[1]);
+            const cropId = parseInt(parts[2]);
+            await handlePlant(loteNum, cropId, int);
+            return;
+          }
+
+          // 7. Ações de Lote (Lote_1 até Lote_6)
+          if (action.startsWith('Lote_')) {
+            const loteNum = parseInt(action.split('_')[1]);
+            const plantData = await getPlantacaoData();
+            const loteInfo = evaluateLote(loteNum, plantData);
+
+            if (loteInfo.status === 'locked') {
+              return int.followUp({ content: `🔒 **|** Este lote está bloqueado. Use o botão **Expandir Terreno** abaixo para desbloqueá-lo!`, ephemeral: true });
+            }
+
+            if (loteInfo.status === 'empty') {
+              currentPlantingLote = loteNum;
+              await renderPlantingMenu(loteNum);
+              return;
+            }
+
+            if (loteInfo.status === 'thirsty') {
+              return handleWatering(loteNum, int);
+            }
+
+            if (loteInfo.status === 'ready' || loteInfo.status === 'rotten') {
+              return handleHarvest(loteNum, int);
+            }
+
+            if (loteInfo.status === 'growing') {
+              return int.followUp({ content: `⏳ **|** O Lote ${loteNum} ainda está crescendo! Tempo restante: **${loteInfo.tempoRestanteTxt}**.`, ephemeral: true });
+            }
+          }
+
+        } catch (err) {
+          console.error('[Plantação Action Error]:', err);
         }
-      }
-      
-    } catch (error) {
-      console.error(error)
-      return interaction.error({ content: `Ocorreu um erro inesperado na utilização deste comando.` });
-    }
+      });
 
-    
+      coletor.on('end', async () => {
+        try {
+          const disableRows = (await buildComponents()).map(row => {
+            const r = ActionRowBuilder.from(row);
+            r.components.forEach(c => c.setDisabled(true));
+            return r;
+          });
+          msg.edit({ components: disableRows }).catch(() => {});
+        } catch (e) {}
+      });
+
+      // ==========================================
+      // FUNÇÕES DE DADOS & AVALIAÇÃO
+      // ==========================================
+      async function getPlantacaoData() {
+        const snap = await database.ref(`economia/${interaction.user.id}/Plantação`).once('value');
+        return snap.val() || {};
+      }
+
+      function evaluateLote(loteNum, data) {
+        let val = data['lote' + loteNum];
+        if (loteNum === 1 && (val === undefined || val === 0)) val = 1;
+
+        if (!val || val === 0) {
+          return {
+            loteNum,
+            status: 'locked',
+            name: 'Bloqueado',
+            label: `Lote ${loteNum}`,
+            emoji: '🔒',
+            style: ButtonStyle.Secondary,
+            disabled: true,
+            preco: PRECOS_LOTES[loteNum],
+            desc: `🔒 **Lote ${loteNum}** - Bloqueado (${Format(PRECOS_LOTES[loteNum])})`
+          };
+        }
+
+        if (val === 1) {
+          return {
+            loteNum,
+            status: 'empty',
+            name: 'Vazio',
+            label: `Lote ${loteNum}`,
+            emoji: '🌱',
+            style: ButtonStyle.Secondary,
+            disabled: false,
+            desc: `🌱 **Lote ${loteNum}** - Solo Arado (Vazio) • Pronto para plantar`
+          };
+        }
+
+        const crop = CROP_CONFIG[val];
+        if (!crop) {
+          return {
+            loteNum,
+            status: 'empty',
+            name: 'Vazio',
+            label: `Lote ${loteNum}`,
+            emoji: '🌱',
+            style: ButtonStyle.Secondary,
+            disabled: false,
+            desc: `🌱 **Lote ${loteNum}** - Pronto para plantar`
+          };
+        }
+
+        const tempoPlantio = data['tempolote' + loteNum] || 0;
+        const tempoRegado = data['regadolote' + loteNum] || tempoPlantio;
+        const prontoEm = tempoPlantio + crop.time;
+        const now = Date.now();
+
+        // 1. Checagem de Planta Pronta / Apodrecimento
+        if (now >= prontoEm) {
+          const tempoPronta = now - prontoEm;
+          let qualidade = 'bom';
+          let qualLabel = '✨ Bom';
+          let qualEmoji = '✨';
+
+          // Janelas de qualidade
+          if (tempoPronta <= Math.max(crop.time * 1.2, ms('6m'))) {
+            qualidade = 'excelente';
+            qualLabel = '⭐ Excelente';
+            qualEmoji = '⭐';
+          } else if (tempoPronta <= Math.max(crop.time * 3.5, ms('20m'))) {
+            qualidade = 'bom';
+            qualLabel = '✨ Bom';
+            qualEmoji = '✨';
+          } else if (tempoPronta <= Math.max(crop.time * 6.0, ms('45m'))) {
+            qualidade = 'ruim';
+            qualLabel = '📉 Ruim';
+            qualEmoji = '📉';
+          } else {
+            qualidade = 'podre';
+            qualLabel = '🥀 Apodrecida';
+            qualEmoji = '🥀';
+          }
+
+          if (qualidade === 'podre') {
+            return {
+              loteNum,
+              status: 'rotten',
+              crop,
+              qualidade,
+              label: `Lote ${loteNum} (Limpar)`,
+              emoji: '🥀',
+              style: ButtonStyle.Danger,
+              disabled: false,
+              desc: `🥀 **Lote ${loteNum}** - **${crop.displayName}** • **Apodreceu!** (Tempo esgotado)`
+            };
+          }
+
+          return {
+            loteNum,
+            status: 'ready',
+            crop,
+            qualidade,
+            label: `Lote ${loteNum} (Colher)`,
+            emoji: '🌾',
+            style: ButtonStyle.Success,
+            disabled: false,
+            desc: `🌾 **Lote ${loteNum}** - **${crop.displayName}** • **Pronto para Colher!** (${qualLabel})`
+          };
+        }
+
+        // 2. Checagem de Necessidade de Água durante crescimento
+        if (crop.needsWater && (now - tempoRegado > crop.dryInterval)) {
+          return {
+            loteNum,
+            status: 'thirsty',
+            crop,
+            label: `Lote ${loteNum} (Regar)`,
+            emoji: '💧',
+            style: ButtonStyle.Primary,
+            disabled: false,
+            desc: `⚠️ **Lote ${loteNum}** - **${crop.displayName}** • **Precisa de Água!** (Clique para regar)`
+          };
+        }
+
+        // 3. Planta Crescendo Normalmente
+        const tempoRestanteMs = Math.max(0, prontoEm - now);
+        const parsed = parseMs(tempoRestanteMs);
+        const tempoRestanteTxt = `${parsed.hours ? `${parsed.hours}h ` : ''}${parsed.minutes}m ${parsed.seconds}s`;
+
+        return {
+          loteNum,
+          status: 'growing',
+          crop,
+          tempoRestanteTxt,
+          label: `Lote ${loteNum}`,
+          emoji: '⏳',
+          style: ButtonStyle.Secondary,
+          disabled: false,
+          desc: `${crop.emoji} **Lote ${loteNum}** - **${crop.displayName}** • Crescendo (<t:${~~(prontoEm / 1000)}:R>) • 💧 Regado`
+        };
+      }
+
+      // ==========================================
+      // CONSTRUÇÃO DE EMBED & COMPONENTES
+      // ==========================================
+      async function buildComponents() {
+        const plantData = await getPlantacaoData();
+        const lotes = [1, 2, 3, 4, 5, 6].map(n => evaluateLote(n, plantData));
+
+        const row1 = new ActionRowBuilder();
+        lotes.slice(0, 3).forEach(l => {
+          row1.addComponents(
+            new ButtonBuilder()
+              .setCustomId(`Lote_${l.loteNum}`)
+              .setLabel(l.label)
+              .setEmoji(l.emoji)
+              .setStyle(l.style)
+          );
+        });
+
+        const row2 = new ActionRowBuilder();
+        lotes.slice(3, 6).forEach(l => {
+          row2.addComponents(
+            new ButtonBuilder()
+              .setCustomId(`Lote_${l.loteNum}`)
+              .setLabel(l.label)
+              .setEmoji(l.emoji)
+              .setStyle(l.style)
+          );
+        });
+
+        const row3 = new ActionRowBuilder();
+
+        // Checa próximo lote para expansão
+        const proximoLote = lotes.find(l => l.status === 'locked');
+        const { carteira } = await getUserMoney(interaction.user);
+
+        if (proximoLote) {
+          const preco = proximoLote.preco;
+          const temDinheiro = carteira >= preco;
+
+          row3.addComponents(
+            new ButtonBuilder()
+              .setCustomId("expandir_terreno")
+              .setLabel(`Expandir Terreno (${Format(preco)})`)
+              .setEmoji('🌱')
+              .setStyle(temDinheiro ? ButtonStyle.Success : ButtonStyle.Secondary)
+              .setDisabled(!temDinheiro)
+          );
+        } else {
+          row3.addComponents(
+            new ButtonBuilder()
+              .setCustomId("terreno_maximo")
+              .setLabel("Fazenda no Nível Máximo (6/6)")
+              .setEmoji('⭐')
+              .setStyle(ButtonStyle.Secondary)
+              .setDisabled(true)
+          );
+        }
+
+        row3.addComponents(
+          new ButtonBuilder()
+            .setCustomId("encher_regador")
+            .setLabel("Encher Regador")
+            .setEmoji('💧')
+            .setStyle(ButtonStyle.Primary),
+          new ButtonBuilder()
+            .setCustomId("atualizar")
+            .setEmoji('🔄')
+            .setStyle(ButtonStyle.Secondary)
+        );
+
+        return [row1, row2, row3];
+      }
+
+      async function renderPlantacao(targetMsg) {
+        const plantData = await getPlantacaoData();
+        const lotes = [1, 2, 3, 4, 5, 6].map(n => evaluateLote(n, plantData));
+        const inv = await getUserInventory(interaction.user);
+        const { carteira } = await getUserMoney(interaction.user);
+
+        // Status das Ferramentas
+        const hasEnxada = inv.enxada && (typeof inv.enxada === 'object' ? inv.enxada.item > 0 : inv.enxada > 0);
+        const enxadaXp = typeof inv.enxada === 'object' ? (inv.enxada.Xp ?? 100) : 100;
+        const enxadaTxt = hasEnxada
+          ? (enxadaXp > 0 ? `⛏️ Enxada: **${enxadaXp}%** durabilidade` : `⛏️ Enxada: ⚠️ **Quebrada (0%)**`)
+          : `⛏️ Enxada: ❌ **Não possui**`;
+
+        const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
+        const regadorXp = typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100;
+        const regadorAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
+        const regadorTxt = hasRegador
+          ? (regadorXp > 0 
+              ? `🚿 Regador: **${regadorXp}%** durabilidade • 💧 Água: **${regadorAgua}%**`
+              : `🚿 Regador: ⚠️ **Quebrado (0%)** • 💧 Água: **${regadorAgua}%**`)
+          : `🚿 Regador: ❌ **Não possui**`;
+
+        // Descrição dos Lotes
+        const lotesDesc = lotes.map(l => l.desc).join('\n');
+
+        const embed = new EmbedBuilder()
+          .setColor(color.embed || "#10b981")
+          .setAuthor({ name: `🌾 Plantação de ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL({ extension: 'png' }) })
+          .setDescription(`> Cuide de seus terrenos, mantenha suas ferramentas prontas e colha produtos de alta qualidade.\n\n**🛠️ Ferramentas & Equipamentos:**\n${enxadaTxt}\n${regadorTxt}\n💰 Carteira: **${Format(carteira)}**\n\n**🌱 Seus Terrenos:**\n${lotesDesc}`)
+          .setFooter({ text: `Clique nos botões abaixo para gerenciar seus lotes | Expansão fluida ativa` })
+          .setTimestamp();
+
+        const components = await buildComponents();
+        await targetMsg.edit({ content: `${interaction.user}`, embeds: [embed], components }).catch(() => {});
+      }
+
+      // ==========================================
+      // AÇÕES DO USUÁRIO
+      // ==========================================
+
+      // 1. EXPANDIR TERRENO DIRETO
+      // 1. EXPANDIR TERRENO DIRETO
+      async function handleExpandirTerreno(int) {
+        const plantData = await getPlantacaoData();
+        const lotes = [1, 2, 3, 4, 5, 6].map(n => evaluateLote(n, plantData));
+        const proximo = lotes.find(l => l.status === 'locked');
+
+        if (!proximo) {
+          return int.followUp({ content: `Você já expandiu todos os terrenos disponíveis!`, ephemeral: true });
+        }
+
+        const preco = proximo.preco;
+        const { carteira } = await getUserMoney(interaction.user);
+
+        if (carteira < preco) {
+          return int.followUp({ content: `❌ **|** Saldo insuficiente! Você precisa de **${Format(preco)}** na mão para expandir para o Lote ${proximo.loteNum}.`, ephemeral: true });
+        }
+
+        await UpdateMoneyWallet(interaction, interaction.user, '-', preco, `{emoji.saida} Expansão de Terreno Lote ${proximo.loteNum} | ${Format(preco)}`);
+        TransactionUpdate(interaction, `{emoji.saida} Compra de Lote ${proximo.loteNum} | ${Format(preco)}`, interaction.user);
+        
+        await database.ref(`economia/${interaction.user.id}/Plantação/lote${proximo.loteNum}`).set(1);
+
+        await renderPlantacao(msg);
+        const reply = await int.followUp({ content: `🎉 **|** Parabéns <@${interaction.user.id}>! Você expandiu seu terreno com sucesso e liberou o **Lote ${proximo.loteNum}**!` });
+        setTimeout(() => reply.delete().catch(() => {}), 10000);
+      }
+
+      // 2. ENCHER REGADOR
+      async function handleEncherRegador(int) {
+        const inv = await getUserInventory(interaction.user);
+        const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
+        if (!hasRegador) {
+          return int.followUp({ content: `❌ **|** Você não possui um **Regador**! Adquira um na loja (\`/loja itens\`).`, ephemeral: true });
+        }
+
+        const currentAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
+        if (currentAgua >= 100) {
+          return int.followUp({ content: `💧 **|** Seu regador já está completamente cheio (100% de água)!`, ephemeral: true });
+        }
+
+        await database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/regador`).update({
+          item: 1,
+          nome: 'Regador',
+          Xp: typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100,
+          agua: 100
+        });
+
+        const reply = await int.followUp({ content: `💧 **|** <@${interaction.user.id}>, você encheu o seu **Regador** com sucesso! (Nível de Água: **100%**).` });
+        setTimeout(() => reply.delete().catch(() => {}), 10000);
+      }
+
+      // 3. MENU DE PLANTIO FLUIDO NA MESMA MENSAGEM
+      async function renderPlantingMenu(loteNum) {
+        const inv = await getUserInventory(interaction.user);
+
+        const hasEnxada = inv.enxada && (typeof inv.enxada === 'object' ? inv.enxada.item > 0 : inv.enxada > 0);
+        const enxadaXp = typeof inv.enxada === 'object' ? (inv.enxada.Xp ?? 100) : 100;
+        const enxadaTxt = hasEnxada
+          ? (enxadaXp > 0 ? `⛏️ Enxada: **${enxadaXp}%** durabilidade` : `⛏️ Enxada: ⚠️ **Quebrada (0%)** • Repare em \`/recuperar item:enxada\``)
+          : `⛏️ Enxada: ❌ **Não possui** • Compre em \`/loja itens\``;
+
+        const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
+        const regadorXp = typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100;
+        const regadorAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
+        const regadorTxt = hasRegador
+          ? (regadorXp > 0
+              ? `🚿 Regador: **${regadorXp}%** durabilidade • 💧 Água: **${regadorAgua}%**`
+              : `🚿 Regador: ⚠️ **Quebrado (0%)** • 💧 Água: **${regadorAgua}%**`)
+          : `🚿 Regador: ❌ **Não possui** • Compre em \`/loja itens\``;
+
+        const availableSeeds = [
+          { cropId: 3, key: 'semente_trigo', name: 'Trigo', time: '2m', emoji: '🌾', xp: 12 },
+          { cropId: 4, key: 'semente_milho', name: 'Milho', time: '5m', emoji: '🌽', xp: 18 },
+          { cropId: 5, key: 'semente_feijao', name: 'Feijão', time: '15m', emoji: '🫘', xp: 25 },
+          { cropId: 6, key: 'semente_cana', name: 'Cana-de-açúcar', time: '30m', emoji: '🎋', xp: 35 },
+          { cropId: 7, key: 'semente_cenoura', name: 'Cenoura', time: '45m', emoji: '🥕', xp: 45 },
+          { cropId: 8, key: 'semente_abobora', name: 'Abóbora', time: '1h 30m', emoji: '🎃', xp: 60 },
+        ];
+
+        const totalSementes = availableSeeds.reduce((acc, s) => acc + (inv[s.key] || 0), 0);
+
+        const embed = new EmbedBuilder()
+          .setColor(color.embed || "#10b981")
+          .setAuthor({ name: `🌾 Plantação de ${interaction.user.username} • Semear Lote ${loteNum}`, iconURL: interaction.user.displayAvatarURL({ extension: 'png' }) })
+          .setTitle(`🌱 Selecione a Semente para o Lote ${loteNum}`)
+          .setDescription(
+            `> Escolha a cultura que deseja plantar neste lote.\n> O plantio consome **1 semente**, **3% da enxada**, **2% do regador** e **10% de água**.\n\n` +
+            `**🛠️ Status das Ferramentas:**\n` +
+            `${enxadaTxt}\n${regadorTxt}\n\n` +
+            `**🌾 Suas Sementes no Inventário:**\n` +
+            availableSeeds.map(s => {
+              const count = inv[s.key] || 0;
+              return `${s.emoji} **${s.name}**: **${count}** un. • Cresce em: **${s.time}** • XP: **+${s.xp}**`;
+            }).join('\n') +
+            (totalSementes === 0 ? `\n\n⚠️ *Você não possui nenhuma semente no momento! Compre sementes com \`/loja sementes\`.*` : '')
+          )
+          .setFooter({ text: `Selecione no menu suspenso ou clique nos botões rápidos abaixo` });
+
+        // Select Menu
+        const selectMenu = new StringSelectMenuBuilder()
+          .setCustomId(`select_plantar_${loteNum}`)
+          .setPlaceholder('🌱 Escolha a semente no menu suspenso...')
+          .addOptions(
+            availableSeeds.map(s => {
+              const count = inv[s.key] || 0;
+              return {
+                label: `${s.name} (${count} disponíveis)`,
+                description: `Tempo: ${s.time} | Recompensa: +${s.xp} XP${count <= 0 ? ' [SEM SEMENTES]' : ''}`,
+                value: `${s.cropId}`,
+                emoji: s.emoji
+              };
+            })
+          );
+        const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
+
+        // Botões rápidos 1 a 3
+        const rowBtn1 = new ActionRowBuilder();
+        availableSeeds.slice(0, 3).forEach(s => {
+          const count = inv[s.key] || 0;
+          rowBtn1.addComponents(
+            new ButtonBuilder()
+              .setCustomId(`plantar_${loteNum}_${s.cropId}`)
+              .setLabel(`${s.name} (${count})`)
+              .setEmoji(s.emoji)
+              .setStyle(ButtonStyle.Secondary)
+              .setDisabled(count <= 0)
+          );
+        });
+
+        // Botões rápidos 4 a 6
+        const rowBtn2 = new ActionRowBuilder();
+        availableSeeds.slice(3, 6).forEach(s => {
+          const count = inv[s.key] || 0;
+          rowBtn2.addComponents(
+            new ButtonBuilder()
+              .setCustomId(`plantar_${loteNum}_${s.cropId}`)
+              .setLabel(`${s.name} (${count})`)
+              .setEmoji(s.emoji)
+              .setStyle(ButtonStyle.Secondary)
+              .setDisabled(count <= 0)
+          );
+        });
+
+        // Botões de navegação e encher água
+        const rowControls = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId('voltar_lotes')
+            .setLabel('Voltar aos Terrenos')
+            .setEmoji('🔙')
+            .setStyle(ButtonStyle.Danger),
+          new ButtonBuilder()
+            .setCustomId('encher_regador')
+            .setLabel('Encher Regador')
+            .setEmoji('💧')
+            .setStyle(ButtonStyle.Primary)
+        );
+
+        await msg.edit({ content: `${interaction.user}`, embeds: [embed], components: [rowSelect, rowBtn1, rowBtn2, rowControls] }).catch(console.error);
+      }
+
+      // 4. PROCESSAR PLANTIO
+      async function handlePlant(loteNum, cropId, int) {
+        const crop = CROP_CONFIG[cropId];
+        if (!crop) return;
+
+        const inv = await getUserInventory(interaction.user);
+
+        // Validação de sementes
+        const seedCount = inv[crop.seedKey] || 0;
+        if (seedCount < 1) {
+          return int.followUp({ content: `❌ **|** Você não possui sementes de **${crop.displayName}** no seu inventário! Adquira na loja (\`/loja sementes\`).`, ephemeral: true });
+        }
+
+        // Validação da Enxada
+        const hasEnxada = inv.enxada && (typeof inv.enxada === 'object' ? inv.enxada.item > 0 : inv.enxada > 0);
+        if (!hasEnxada) {
+          return int.followUp({ content: `⛏️ **|** Você precisa de uma **Enxada** para arar e plantar neste terreno! Compre uma na loja (\`/loja itens\`).`, ephemeral: true });
+        }
+        const enxadaXp = typeof inv.enxada === 'object' ? (inv.enxada.Xp ?? 100) : 100;
+        if (enxadaXp <= 0) {
+          return int.followUp({ content: `⛏️ **|** Sua **Enxada** quebrou (0% de durabilidade)! Repare-a no comando \`/recuperar item:enxada\`.`, ephemeral: true });
+        }
+
+        // Validação do Regador
+        const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
+        if (!hasRegador) {
+          return int.followUp({ content: `🚿 **|** Você precisa de um **Regador** para hidratar o solo! Compre um na loja (\`/loja itens\`).`, ephemeral: true });
+        }
+        const regadorXp = typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100;
+        if (regadorXp <= 0) {
+          return int.followUp({ content: `🚿 **|** Seu **Regador** está quebrado (0% de durabilidade)! Repare-o no comando \`/recuperar item:regador\`.`, ephemeral: true });
+        }
+        const regadorAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
+        if (regadorAgua < 10) {
+          return int.followUp({ content: `💧 **|** Seu Regador está sem água suficiente! Clique em **💧 Encher Regador** antes de semear.`, ephemeral: true });
+        }
+
+        // Checa se já tem algo plantado
+        const plantData = await getPlantacaoData();
+        if (plantData['lote' + loteNum] > 1) {
+          return int.followUp({ content: `⚠️ **|** O Lote ${loteNum} já possui uma cultura plantada!`, ephemeral: true });
+        }
+
+        // Novos valores de desgaste e água
+        const newEnxadaXp = Math.max(0, enxadaXp - 3);
+        const newRegadorXp = Math.max(0, regadorXp - 2);
+        const newRegadorAgua = Math.max(0, regadorAgua - 10);
+
+        // Atualiza consumíveis
+        await database.ref(`economia/${interaction.user.id}/inventario/itens/Consumíveis`).update({
+          [crop.seedKey]: seedCount - 1
+        });
+
+        // Atualiza ferramentas
+        await database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/enxada`).update({
+          item: 1,
+          nome: 'Enxada',
+          Xp: newEnxadaXp
+        });
+        await database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/regador`).update({
+          item: 1,
+          nome: 'Regador',
+          Xp: newRegadorXp,
+          agua: newRegadorAgua
+        });
+
+        // Atualiza Lote na Plantação
+        await database.ref(`economia/${interaction.user.id}/Plantação`).update({
+          ['lote' + loteNum]: cropId,
+          ['tempolote' + loteNum]: Date.now(),
+          ['regadolote' + loteNum]: Date.now()
+        });
+
+        currentPlantingLote = null;
+        await renderPlantacao(msg);
+
+        let warnText = '';
+        if (newEnxadaXp <= 0) warnText += `\n⚠️ *Atenção: Sua Enxada quebrou! Conserte-a em /recuperar.*`;
+        if (newRegadorXp <= 0) warnText += `\n⚠️ *Atenção: Seu Regador quebrou! Conserte-o em /recuperar.*`;
+        if (newRegadorAgua < 10) warnText += `\n💧 *Aviso: Seu Regador ficou sem água! Encha-o na plantação.*`;
+
+        const reply = await int.followUp({
+          content: `🌱 **|** <@${interaction.user.id}>, você plantou **1 Semente de ${crop.displayName}** no **Lote ${loteNum}**! (💧 Água restante: **${newRegadorAgua}%**)${warnText}`
+        });
+        setTimeout(() => reply.delete().catch(() => {}), 12000);
+      }
+
+      // 5. PROCESSAR REGA (QUANDO COM SEDE)
+      async function handleWatering(loteNum, int) {
+        const inv = await getUserInventory(interaction.user);
+        const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
+
+        if (!hasRegador) {
+          return int.followUp({ content: `Você precisa de um Regador para regar suas plantas! Compre na loja (\`/loja itens\`).`, ephemeral: true });
+        }
+        const regadorXp = typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100;
+        if (regadorXp <= 0) {
+          return int.followUp({ content: `Seu Regador está quebrado! Repare-o em \`/recuperar item:regador\`.`, ephemeral: true });
+        }
+        const regadorAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
+        if (regadorAgua < 10) {
+          return int.followUp({ content: `💧 Seu Regador está sem água suficiente! Clique em **💧 Encher Regador** na plantação.`, ephemeral: true });
+        }
+
+        const plantData = await getPlantacaoData();
+        const cropId = plantData['lote' + loteNum];
+        const crop = CROP_CONFIG[cropId];
+
+        const newRegadorXp = Math.max(0, regadorXp - 2);
+        const newRegadorAgua = Math.max(0, regadorAgua - 10);
+
+        await database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/regador`).update({
+          item: 1,
+          nome: 'Regador',
+          Xp: newRegadorXp,
+          agua: newRegadorAgua
+        });
+
+        await database.ref(`economia/${interaction.user.id}/Plantação`).update({
+          ['regadolote' + loteNum]: Date.now()
+        });
+
+        await renderPlantacao(msg);
+
+        const reply = await int.followUp({
+          content: `💧 **|** <@${interaction.user.id}>, você regou seu **${crop ? crop.displayName : 'plantio'}** no **Lote ${loteNum}**! A planta continua crescendo forte e saudável. (💧 Água restante: **${newRegadorAgua}%**)`
+        });
+        setTimeout(() => reply.delete().catch(() => {}), 10000);
+      }
+
+      // 6. PROCESSAR COLHEITA & APODRECIMENTO
+      async function handleHarvest(loteNum, int) {
+        const plantData = await getPlantacaoData();
+        const loteInfo = evaluateLote(loteNum, plantData);
+        const inv = await getUserInventory(interaction.user);
+
+        // Desgaste da Enxada para colher/limpar
+        const hasEnxada = inv.enxada && (typeof inv.enxada === 'object' ? inv.enxada.item > 0 : inv.enxada > 0);
+        if (hasEnxada) {
+          const enxadaXp = typeof inv.enxada === 'object' ? (inv.enxada.Xp ?? 100) : 100;
+          if (enxadaXp > 0) {
+            await database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/enxada`).update({
+              item: 1,
+              nome: 'Enxada',
+              Xp: Math.max(0, enxadaXp - 2)
+            });
+          }
+        }
+
+        // Reseta o lote para arado (1)
+        await database.ref(`economia/${interaction.user.id}/Plantação`).update({
+          ['lote' + loteNum]: 1,
+          ['tempolote' + loteNum]: 0,
+          ['regadolote' + loteNum]: 0
+        });
+
+        // Caso tenha apodrecido
+        if (loteInfo.status === 'rotten') {
+          const currentPodre = inv.planta_podre || 0;
+          await database.ref(`economia/${interaction.user.id}/inventario/itens/Consumíveis`).update({
+            planta_podre: currentPodre + 1
+          });
+          await XpUpdate(interaction, interaction.user, 3);
+
+          await renderPlantacao(msg);
+          const reply = await int.followUp({
+            content: `🥀 **|** <@${interaction.user.id}>, a sua plantação de **${loteInfo.crop.displayName}** passou muito tempo na terra e **apodreceu**! Você limpou o terreno e obteve **1x Planta Podre** (*+3 XP*).`
+          });
+          setTimeout(() => reply.delete().catch(() => {}), 15000);
+          return;
+        }
+
+        // Colheita com Qualidades (Excelente, Bom, Ruim)
+        const crop = loteInfo.crop;
+        const qualidade = loteInfo.qualidade;
+
+        let quantia = 2;
+        let xpGained = crop.xp;
+        let qualTexto = '';
+
+        if (qualidade === 'excelente') {
+          quantia = Math.floor(Math.random() * 4) + 3; // 3 a 6
+          xpGained = Math.round(crop.xp * 1.5);
+          qualTexto = `⭐ **EXCELENTE**! (+50% valor e XP)`;
+        } else if (qualidade === 'bom') {
+          quantia = Math.floor(Math.random() * 3) + 2; // 2 a 4
+          xpGained = crop.xp;
+          qualTexto = `✨ **Boa**`;
+        } else {
+          quantia = Math.floor(Math.random() * 2) + 1; // 1 a 2
+          xpGained = Math.max(5, Math.round(crop.xp * 0.5));
+          qualTexto = `📉 **Ruim** (Demorou a ser colhida)`;
+        }
+
+        // Bônus VIP de Colheita
+        const vipInfo = await CheckUserVip(interaction.user);
+        let vipBonusTxt = '';
+        if (vipInfo.isVip) {
+          const bonusItems = vipInfo.level >= 2 ? 2 : 1;
+          quantia += bonusItems;
+          xpGained = Math.round(xpGained * (vipInfo.level >= 2 ? 1.5 : 1.25));
+          vipBonusTxt = `\n> ${vipInfo.emojiVip} **Bônus ${vipInfo.levelName}:** +${bonusItems}x ${crop.displayName} bônus!`;
+        }
+
+        // Chaves de armazenamento
+        const qualKey = `${crop.name}_${qualidade}`;
+        const currentQualCount = inv[qualKey] || 0;
+        const currentBaseCount = inv[crop.name] || 0;
+
+        await database.ref(`economia/${interaction.user.id}/inventario/itens/Consumíveis`).update({
+          [qualKey]: currentQualCount + quantia,
+          [crop.name]: currentBaseCount + quantia
+        });
+
+        await XpUpdate(interaction, interaction.user, xpGained);
+
+        await renderPlantacao(msg);
+
+        const reply = await int.followUp({
+          content: `${crop.emoji} **|** <@${interaction.user.id}>, você colheu o **Lote ${loteNum}**!\n> Qualidade: ${qualTexto}\n> Recebido: **${quantia}x ${crop.displayName}** e *${xpGained} XP*!${vipBonusTxt}`
+        });
+        setTimeout(() => reply.delete().catch(() => {}), 15000);
+      }
+
+    } catch (error) {
+      console.error('[Plantação Error]:', error);
+      return interaction.followUp({ content: `Ocorreu um erro inesperado na utilização do comando de plantação.` });
+    }
   }
-}
+};

@@ -10,6 +10,7 @@ let previousRandomActivity = '';
 
 client.on('clientReady', async () => {
   iniciarRotinaDeLimpeza();
+  iniciarImpostoCasamento();
   await updateStatus();
 
   // Define o intervalo para atualizar o status a cada 1 minuto (60000ms)
@@ -107,6 +108,77 @@ function iniciarRotinaDeLimpeza() {
 
         } catch (error) {
             console.error("[DB CLEANUP] Erro durante a limpeza:", error);
+        }
+    });
+}
+
+function iniciarImpostoCasamento() {
+    // "0 0 * * 0" significa: Rodar todos os domingos à meia-noite (00:00)
+    cron.schedule('0 0 * * 0', async () => {
+        console.log("[IMPOSTO CASAMENTO] Iniciando cobrança do imposto matrimonial semanal...");
+        try {
+            const snapshot = await database.ref('economia').once('value');
+            const economiaData = snapshot.val();
+            if (!economiaData) return;
+
+            let totalCobrados = 0;
+            let totalArrecadado = 0;
+
+            for (const [userId, uData] of Object.entries(economiaData)) {
+                if (!uData || !uData.Casamento || !uData.Casamento.casado) continue;
+
+                // Verificação de VIP
+                const vipData = uData.vip || {};
+                const vipLevel = Number(vipData.vip || 0);
+                const vipTempo = Number(vipData.tempo || 0);
+                const vipDataTime = Number(vipData.data || 0);
+                const isVipAtivo = (vipDataTime !== 0 && (vipTempo - (Date.now() - vipDataTime)) > 0);
+                const isCreator = client.config?.cargos?.criador?.includes(userId);
+
+                // VIP Gold/Diamante (Level >= 2) ou Criador = ISENTO (0 moedas)
+                if (isCreator || (isVipAtivo && vipLevel >= 2)) {
+                    continue;
+                }
+
+                // VIP Prata (Level 1) = 400 moedas; Usuário comum = 1.200 moedas
+                const imposto = (isVipAtivo && vipLevel === 1) ? 400 : 1200;
+
+                const carteira = Number(uData.saldo?.carteira || 0);
+                const banco = Number(uData.saldo?.banco || 0);
+
+                let debitadoBanco = 0;
+                let debitadoCarteira = 0;
+
+                if (banco >= imposto) {
+                    debitadoBanco = imposto;
+                } else {
+                    debitadoBanco = Math.max(0, banco);
+                    const restante = imposto - debitadoBanco;
+                    debitadoCarteira = Math.min(carteira, restante);
+                }
+
+                const totalDebitado = debitadoBanco + debitadoCarteira;
+                if (totalDebitado > 0) {
+                    const novoBanco = Math.max(0, banco - debitadoBanco);
+                    const novaCarteira = Math.max(0, carteira - debitadoCarteira);
+
+                    await database.ref(`economia/${userId}/saldo`).update({
+                        banco: novoBanco,
+                        carteira: novaCarteira
+                    });
+
+                    await database.ref(`economia/${userId}/Transações`).push(
+                        `<:saida:931723236650123284> Imposto Matrimonial Semanal (Cartório) | -${totalDebitado}`
+                    );
+
+                    totalCobrados++;
+                    totalArrecadado += totalDebitado;
+                }
+            }
+
+            console.log(`[IMPOSTO CASAMENTO] Cobrança concluída: ${totalCobrados} casados tributados. Total arrecadado: ${totalArrecadado} moedas.`);
+        } catch (error) {
+            console.error("[IMPOSTO CASAMENTO] Erro na rotina semanal:", error);
         }
     });
 }

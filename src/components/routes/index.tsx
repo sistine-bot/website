@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageShell } from "@/components/PageShell";
 import { Hero } from "@/components/Hero";
+import { RuralShowcase } from "@/components/RuralShowcase";
 import { Capabilities } from "@/components/Capabilities";
 import { CommandSearch } from "@/components/CommandSearch";
 import { SectionCards } from "@/components/SectionCards";
@@ -22,6 +23,7 @@ function HomePage() {
   return (
     <PageShell>
       <Hero />
+      <RuralShowcase />
       <Capabilities />
       <CommandSearch />
       <SectionCards />

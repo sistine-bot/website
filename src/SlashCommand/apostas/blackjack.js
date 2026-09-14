@@ -58,7 +58,16 @@ module.exports = {
   ],
 
   run: async (client, interaction, args, color, database, emoji) => {
-    try { 
+    try {
+      const { CheckUserCooldowns } = require('../../utils/functions.js');
+      const { status } = await CheckUserCooldowns(interaction.user, 30000, 'cassino');
+      if (status) {
+        return interaction.followUp({ 
+          content: `⏰ **|** Controle de banca! Aguarde **<t:${~~((status)/1000)}:R>** para iniciar outra partida de Blackjack.`,
+          ephemeral: true 
+        });
+      }
+
       const Quantidade = interaction.options.getString('quantidade');
       const number = NumberConvert(Quantidade);
 
@@ -66,8 +75,10 @@ module.exports = {
 
       if (isNaN(number)) return interaction.error({ content: `\`${Quantidade}\` Isto não me parece um número válido.` });
       if (carteira < number) return interaction.error({ content: `Você não possui dinheiro o suficiente para apostar.` });
-      if (number < 500) return interaction.error({ content: `O Valor mínimo para uma aposta é **R$ 500**` });
-      if (number > 50000) return interaction.error({ content: `O Valor máximo para uma aposta é **R$ 50,000**` });
+      if (number < 200) return interaction.error({ content: `O Valor mínimo para uma aposta é **R$ 200**` });
+      if (number > 10000) return interaction.error({ content: `O Valor máximo para uma aposta é **R$ 10.000**` });
+
+      await database.ref(`/economia/${interaction.user.id}/cooldowns`).update({ cassino: Date.now() });
 
       if (bjGames.has(interaction.user.id)) {
         return interaction.error({ content: `Você já está em um jogo! Termine o jogo atual antes de iniciar outro!` });

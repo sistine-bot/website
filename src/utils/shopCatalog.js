@@ -14,7 +14,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Sistine Fibel',
     description: 'A bruxa mais dedicada.',
     category: 'Anime',
-    price: 10000,
+    price: 20000,
     url: '/src/utils/assets/backgrounds/bg_sistine_01.png',
     isDefault: false,
     vipOnly: false
@@ -24,7 +24,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Sistine e Rumia',
     description: 'Sistine e sua irmã adotiva Rumia.',
     category: 'Anime',
-    price: 10000,
+    price: 20000,
     url: '/src/utils/assets/backgrounds/bg_sistine_02.png',
     isDefault: false,
     vipOnly: false
@@ -34,7 +34,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Amamori',
     description: 'Garota de costas apoiada em uma grade, olhando para o céu noturno.',
     category: 'Anime',
-    price: 10000,
+    price: 20000,
     url: '/src/utils/assets/backgrounds/bg_amamori.png',
     isDefault: false,
     vipOnly: false
@@ -44,7 +44,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Windows XP',
     description: 'Wallpaper clássico do windows XP.',
     category: 'Anime',
-    price: 10000,
+    price: 15000,
     url: '/src/utils/assets/backgrounds/bg_windowsxp.jpg',
     isDefault: false,
     vipOnly: false
@@ -76,7 +76,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Nebulosa Estelar',
     description: 'Poeira cósmica violeta e aglomerados de galáxias distantes.',
     category: 'Espaço',
-    price: 6000,
+    price: 7000,
     url: '/src/utils/assets/backgrounds/bg_space_nebula.jpg',
     isDefault: false,
     vipOnly: false
@@ -106,7 +106,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Retro Synthwave 80s',
     description: 'Grid retrô dos anos 80 com sol estilizado e horizonte cyberpunk.',
     category: 'Cyberpunk',
-    price: 6000,
+    price: 8000,
     url: '/src/utils/assets/backgrounds/bg_retro_synth.jpg',
     isDefault: false,
     vipOnly: false
@@ -116,7 +116,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Cerejeira Sakura ao Luar',
     description: 'Flores de cerejeira brilhando sob a luz prateada da lua cheia.',
     category: 'Anime',
-    price: 8000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_sakura_moon.jpg',
     isDefault: false,
     vipOnly: false
@@ -137,7 +137,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Chapéis de Palha andando',
     description: 'Piratas do Chapéu de Palha.',
     category: 'Anime',
-    price: 6000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_onepiece_1.png',
     isDefault: false,
     vipOnly: false
@@ -147,7 +147,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Thousand Sunny',
     description: 'Thousand Sunny e a tripulação.',
     category: 'Anime',
-    price: 6000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_onepiece_2.png',
     isDefault: false,
     vipOnly: false
@@ -157,7 +157,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Silhueta da tripulação',
     description: 'Silhueta piratas do dhapéu de palha.',
     category: 'Anime',
-    price: 6000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_onepiece_3.png',
     isDefault: false,
     vipOnly: false
@@ -167,7 +167,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Jolly Roger',
     description: 'Jolly Roger de cada tripulante.',
     category: 'Anime',
-    price: 6000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_onepiece_4.png',
     isDefault: false,
     vipOnly: false
@@ -177,7 +177,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Piratas do Chapéu de Palha',
     description: 'Piratas do Chapéu de Palha.',
     category: 'Anime',
-    price: 6000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_onepiece_5.png',
     isDefault: false,
     vipOnly: false
@@ -189,7 +189,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Casa automática',
     description: 'Casa clássica de em busca da casa automática.',
     category: 'Jogos',
-    price: 15000,
+    price: 50000,
     url: '/src/utils/assets/backgrounds/bg_minecraft_01_casaautomatica.jpg',
     isDefault: false,
     vipOnly: false
@@ -199,7 +199,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Clássico',
     description: 'Wallpaper clássico do minecraft.',
     category: 'Jogos',
-    price: 15000,
+    price: 45000,
     url: '/src/utils/assets/backgrounds/bg_minecraft__02_classico.png',
     isDefault: false,
     vipOnly: false
@@ -209,7 +209,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Shaders',
     description: 'Uma bela paiságem com shaders.',
     category: 'Jogos',
-    price: 10000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_minecraft_03_shaders.png',
     isDefault: false,
     vipOnly: false
@@ -219,7 +219,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Lhama na neve',
     description: 'Uma bela paiságem de uma lhama na neve.',
     category: 'Jogos',
-    price: 10000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_minecraft_04_lhama.png',
     isDefault: false,
     vipOnly: false
@@ -229,7 +229,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Lhama na neve',
     description: 'Uma bela paiságem de uma lhama na neve.',
     category: 'Jogos',
-    price: 10000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_minecraft_04_lhama.png',
     isDefault: false,
     vipOnly: false
@@ -239,7 +239,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Vila',
     description: 'Uma vista da vila.',
     category: 'Jogos',
-    price: 10000,
+    price: 18000,
     url: '/src/utils/assets/backgrounds/bg_minecraft_05_vila.png',
     isDefault: false,
     vipOnly: false
@@ -251,7 +251,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Seleção de mapas',
     description: 'Painel de seleção dos mapas clássicos do counter strike.',
     category: 'Jogos',
-    price: 10000,
+    price: 45000,
     url: '/src/utils/assets/backgrounds/bg_cs_01_maps.png',
     isDefault: false,
     vipOnly: false
@@ -261,7 +261,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'M4-A4 Howl',
     description: 'M4-A4 howl, a m4 mais cara.',
     category: 'Jogos',
-    price: 10000,
+    price: 100000,
     url: '/src/utils/assets/backgrounds/bg_cs_02_howl.jpg',
     isDefault: false,
     vipOnly: false
@@ -271,7 +271,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'AWP Dragon lore',
     description: 'A AWP mais cara de toda a história.',
     category: 'Jogos',
-    price: 10000,
+    price: 100000,
     url: '/src/utils/assets/backgrounds/bg_cs_03_dragonlore.png',
     isDefault: false,
     vipOnly: false
@@ -281,7 +281,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Counter Strike',
     description: 'Logo clássica do Counter Strike.',
     category: 'Jogos',
-    price: 10000,
+    price: 40000,
     url: '/src/utils/assets/backgrounds/bg_cs_04_logo.png',
     isDefault: false,
     vipOnly: false
@@ -293,7 +293,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Ursos sem curso',
     description: 'Os irmãos ursos da cartoon network.',
     category: 'Desenho',
-    price: 10000,
+    price: 16000,
     url: '/src/utils/assets/backgrounds/bg_cartoon_01_ursos.png',
     isDefault: false,
     vipOnly: false
@@ -303,7 +303,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Torre Jovens Titans',
     description: 'Torre classica dos jovens titãns em ação.',
     category: 'Desenho',
-    price: 10000,
+    price: 16000,
     url: '/src/utils/assets/backgrounds/bg_cartoon_02_ttg.png',
     isDefault: false,
     vipOnly: false
@@ -313,7 +313,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'incrivel Mundo de Gumball',
     description: 'Todos os personagens de um incrível mundo de gumball.',
     category: 'Desenho',
-    price: 10000,
+    price: 16000,
     url: '/src/utils/assets/backgrounds/bg_cartoon_03_worldgumball.png',
     isDefault: false,
     vipOnly: false
@@ -323,7 +323,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Casa do gumball',
     description: 'Casa clássica de um incrível mundo de gumball.',
     category: 'Desenho',
-    price: 10000,
+    price: 16000,
     url: '/src/utils/assets/backgrounds/bg_cartoon_04_gumball_house.png',
     isDefault: false,
     vipOnly: false
@@ -333,7 +333,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Casa do Finn e Jake',
     description: 'Casa clássica de hora de aventura.',
     category: 'Desenho',
-    price: 10000,
+    price: 16000,
     url: '/src/utils/assets/backgrounds/bg_cartoon_05_adventuretime_house.png',
     isDefault: false,
     vipOnly: false
@@ -343,7 +343,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Finn e Jake',
     description: 'Finn e Jake se aventurando.',
     category: 'Desenho',
-    price: 10000,
+    price: 16000,
     url: '/src/utils/assets/backgrounds/bg_cartoon_06_finnejake.png',
     isDefault: false,
     vipOnly: false
@@ -353,7 +353,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Mordecai e Rigby',
     description: 'Mordecai e Rigby se aventurando.',
     category: 'Desenho',
-    price: 10000,
+    price: 16000,
     url: '/src/utils/assets/backgrounds/bg_cartoon_07_regularshow.png',
     isDefault: false,
     vipOnly: false
@@ -365,7 +365,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Nintendo Portáteis',
     description: 'Portáteis da clássicos da nintendo.',
     category: 'Jogos',
-    price: 10000,
+    price: 20000,
     url: '/src/utils/assets/backgrounds/bg_nintendo_01_portatebles.png',
     isDefault: false,
     vipOnly: false
@@ -375,7 +375,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Nintendo Controles',
     description: 'Controles clássicos da nintendo.',
     category: 'Jogos',
-    price: 10000,
+    price: 20000,
     url: '/src/utils/assets/backgrounds/bg_nintendo_02_controllers.png',
     isDefault: false,
     vipOnly: false
@@ -385,7 +385,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Nintendinho',
     description: 'Clássico nintendinho com seus controles.',
     category: 'Jogos',
-    price: 10000,
+    price: 20000,
     url: '/src/utils/assets/backgrounds/bg_nintendo_03_NES.png',
     isDefault: false,
     vipOnly: false
@@ -395,7 +395,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Iniciais de Kanto',
     description: '03 Iniciais de kanto e suas evoluções.',
     category: 'Jogos',
-    price: 10000,
+    price: 20000,
     url: '/src/utils/assets/backgrounds/bg_nintendo_04_Kanto.png',
     isDefault: false,
     vipOnly: false
@@ -405,7 +405,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Super Mario',
     description: 'it\'s me, Mario.',
     category: 'Jogos',
-    price: 10000,
+    price: 20000,
     url: '/src/utils/assets/backgrounds/bg_nintendo_05_mario.png',
     isDefault: false,
     vipOnly: false
@@ -417,7 +417,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Playstation 25 years',
     description: '25 anos de playstation.',
     category: 'Jogos',
-    price: 10000,
+    price: 20000,
     url: '/src/utils/assets/backgrounds/bg_playstation.png',
     isDefault: false,
     vipOnly: false
@@ -429,7 +429,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Grand Theft Auto: San andreas',
     description: 'Logo do clássico GTA San andreas.',
     category: 'Jogos',
-    price: 10000,
+    price: 45000,
     url: '/src/utils/assets/backgrounds/bg_gta_sa_01.jpg',
     isDefault: false,
     vipOnly: false
@@ -439,7 +439,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'GTA Loading',
     description: 'Tela de carregamento do GTA San andreas.',
     category: 'Jogos',
-    price: 10000,
+    price: 45000,
     url: '/src/utils/assets/backgrounds/bg_gta_sa_02.png',
     isDefault: false,
     vipOnly: false
@@ -449,7 +449,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Vice City Logo',
     description: 'Logo do GTA Vice City.',
     category: 'Jogos',
-    price: 10000,
+    price: 45000,
     url: '/src/utils/assets/backgrounds/bg_gta_vc_01.png',
     isDefault: false,
     vipOnly: false
@@ -459,7 +459,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Vice City Orla',
     description: 'Orla de Vice City.',
     category: 'Jogos',
-    price: 10000,
+    price: 45000,
     url: '/src/utils/assets/backgrounds/bg_gta_vc_02.jpg',
     isDefault: false,
     vipOnly: false
@@ -469,7 +469,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Liberty City',
     description: 'Liberty City a noite.',
     category: 'Jogos',
-    price: 10000,
+    price: 45000,
     url: '/src/utils/assets/backgrounds/bg_gta4_01.jpg',
     isDefault: false,
     vipOnly: false
@@ -479,7 +479,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Sprunk',
     description: 'Refrigerante de GTA V.',
     category: 'Jogos',
-    price: 10000,
+    price: 50000,
     url: '/src/utils/assets/backgrounds/bg_gta5_01.png',
     isDefault: false,
     vipOnly: false
@@ -489,7 +489,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Drift',
     description: 'Dando drift em uma praia do GTA V.',
     category: 'Jogos',
-    price: 10000,
+    price: 50000,
     url: '/src/utils/assets/backgrounds/bg_gta5_02_drift.png',
     isDefault: false,
     vipOnly: false
@@ -499,7 +499,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Franklin Car',
     description: 'Carro clássico do franklin.',
     category: 'Jogos',
-    price: 10000,
+    price: 50000,
     url: '/src/utils/assets/backgrounds/bg_gta5_03_franklincar.png',
     isDefault: false,
     vipOnly: false
@@ -509,7 +509,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'Paraquedas',
     description: 'Saltando de paraquedas.',
     category: 'Jogos',
-    price: 10000,
+    price: 50000,
     url: '/src/utils/assets/backgrounds/bg_gta5_04_paraquedas.png',
     isDefault: false,
     vipOnly: false
@@ -519,7 +519,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'GTA V: Personagens',
     description: 'Personagens do GTA V.',
     category: 'Jogos',
-    price: 10000,
+    price: 50000,
     url: '/src/utils/assets/backgrounds/bg_gta5_05_personas.png',
     isDefault: false,
     vipOnly: false
@@ -529,7 +529,7 @@ export const BACKGROUNDS_CATALOG = [
     name: 'GTA 6',
     description: 'GTA 6 wallpaper',
     category: 'Jogos',
-    price: 10000,
+    price: 120000,
     url: '/src/utils/assets/backgrounds/bg_gta6_01.png',
     isDefault: false,
     vipOnly: false
@@ -610,7 +610,7 @@ export const LAYOUTS_CATALOG = [
     name: 'Clássico Roxo Imperial',
     description: 'Moldura clássica estilizada com tons vibrantes de ametista e violeta neon.',
     category: 'Clássico',
-    price: 2000,
+    price: 4000,
     themeColor: '#a855f7',
     themeMode: 'dark',
     textColor: '#ffffff',
@@ -626,7 +626,7 @@ export const LAYOUTS_CATALOG = [
     name: 'Clássico Branco Puro',
     description: 'Design limpo e moderno em tons brancos translúcidos de alto contraste.',
     category: 'Clássico',
-    price: 2500,
+    price: 5000,
     themeColor: '#f8fafc',
     themeMode: 'dark',
     textColor: '#000000',
@@ -642,7 +642,7 @@ export const LAYOUTS_CATALOG = [
     name: 'Clássico Dark Obsidian',
     description: 'Visual dark minimalista com bordas escuras sofisticadas.',
     category: 'Clássico',
-    price: 3000,
+    price: 6000,
     themeColor: '#18181b',
     themeMode: 'dark',
     textColor: '#ffffff',
@@ -658,7 +658,7 @@ export const LAYOUTS_CATALOG = [
     name: 'Clássico Rubro Carmesim',
     description: 'Tema ardente e imponente com destaques avermelhados de alto impacto.',
     category: 'Clássico',
-    price: 3500,
+    price: 7500,
     themeColor: '#ef4444',
     themeMode: 'dark',
     textColor: '#ffffff',
@@ -674,7 +674,7 @@ export const LAYOUTS_CATALOG = [
     name: 'Clássico Verde Esmeralda',
     description: 'Harmonia e elegância natural com detalhes esmeralda brilhantes.',
     category: 'Clássico',
-    price: 3500,
+    price: 7500,
     themeColor: '#10b981',
     themeMode: 'dark',
     textColor: '#ffffff',
@@ -690,7 +690,7 @@ export const LAYOUTS_CATALOG = [
     name: 'Clássico Âmbar Sunset',
     description: 'Calor e energia vibrante em tons dourados e alaranjados.',
     category: 'Clássico',
-    price: 3500,
+    price: 7500,
     themeColor: '#f97316',
     themeMode: 'dark',
     textColor: '#ffffff',
@@ -708,7 +708,7 @@ export const LAYOUTS_CATALOG = [
     name: 'Moderno Inferior Azul',
     description: 'Layout moderno com informações posicionadas na base, detalhes em azul e texto escuro.',
     category: 'Moderno',
-    price: 5000,
+    price: 18000,
     themeColor: '#0ea5e9',
     themeMode: 'light',
     textColor: '#000000',
@@ -724,7 +724,7 @@ export const LAYOUTS_CATALOG = [
     name: 'Clean inferior preto',
     description: 'Layout moderno com informações posicionadas na base, detalhes em preto e texto claro.',
     category: 'Moderno',
-    price: 5000,
+    price: 25000,
     themeColor: '#000000',
     themeMode: 'dark',
     textColor: '#ffffff',
@@ -732,6 +732,40 @@ export const LAYOUTS_CATALOG = [
     previewUrl: '/src/utils/assets/layouts/simple/preto.png',
     overlay: '/src/utils/assets/layouts/simple/preto.png',
     templateType: 'modern',
+    isDefault: false,
+    vipOnly: false
+  },
+
+  // Novos Layouts de Prestígio e Endgame
+  {
+    id: 'cyberpunk_neon',
+    name: 'Cyberpunk Holográfico',
+    description: 'Design futurista com circuitos luminescentes em neon ciano e magenta.',
+    category: 'Cyberpunk',
+    price: 50000,
+    themeColor: '#06b6d4',
+    themeMode: 'dark',
+    textColor: '#ffffff',
+    textShadow: '0 0 8px rgba(6,182,212,0.8)',
+    previewUrl: '/src/utils/assets/layouts/futurist/azul.png',
+    overlay: '/src/utils/assets/layouts/futurist/azul.png',
+    templateType: 'classic',
+    isDefault: false,
+    vipOnly: false
+  },
+  {
+    id: 'vip_gold_frame',
+    name: 'Imperial Gold Prestige',
+    description: 'Moldura nobre banhada a ouro para os magnatas da Sistine.',
+    category: 'VIP',
+    price: 75000,
+    themeColor: '#eab308',
+    themeMode: 'dark',
+    textColor: '#fef08a',
+    textShadow: '0 0 10px rgba(234,179,8,0.7)',
+    previewUrl: '/src/utils/assets/layouts/futurist/laranja.png',
+    overlay: '/src/utils/assets/layouts/futurist/laranja.png',
+    templateType: 'classic',
     isDefault: false,
     vipOnly: false
   }

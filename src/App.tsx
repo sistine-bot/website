@@ -26,6 +26,7 @@ import CoinShop from './components/UserDashboard/CoinShop';
 // Componentes da Landing Page / Rotas
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
+import { RuralShowcase } from './components/RuralShowcase';
 import { Capabilities } from './components/Capabilities';
 import { CommandSearch } from './components/CommandSearch';
 import { SectionCards } from './components/SectionCards';
@@ -335,7 +336,12 @@ export default function App() {
       case 'landing':
         return (
           <PublicLayout user={user} onLogin={handleEnterDashboardClick} onNavigate={(view) => setAppView(view as AppView)}>
-            <main><Hero onLogin={handleEnterDashboardClick} /> <Capabilities /> <CommandSearch commands={commands} /></main>
+            <main>
+              <Hero onLogin={handleEnterDashboardClick} />
+              <RuralShowcase botName={status.botName} botAvatar={status.botAvatar} />
+              <Capabilities />
+              <CommandSearch commands={commands} />
+            </main>
           </PublicLayout>
         );
       
@@ -404,7 +410,17 @@ export default function App() {
       case 'user_dashboard':
         return (
           <div className="flex h-screen w-full bg-zinc-950 text-white overflow-hidden">
-            <UserSidebar user={user} userDb={userDatabase} activeSection={userActiveSection} setActiveSection={(sec) => { setUserActiveSection(sec); if (sec !== 'servers') fetchUserDatabase(); }} onRefreshUserDb={fetchUserDatabase} isUserDbLoading={isUserDbLoading} onLogout={handleLogout} />
+            <UserSidebar 
+              user={user} 
+              userDb={userDatabase} 
+              activeSection={userActiveSection} 
+              setActiveSection={(sec) => { setUserActiveSection(sec); if (sec !== 'servers') fetchUserDatabase(); }} 
+              onRefreshUserDb={fetchUserDatabase} 
+              isUserDbLoading={isUserDbLoading} 
+              onLogout={handleLogout}
+              botAvatar={status.botAvatar}
+              botName={status.botName}
+            />
             <main className="flex-1 overflow-y-auto relative">
               <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f0f12_1px,transparent_1px),linear-gradient(to_bottom,#0f0f12_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 pointer-events-none"></div>
               <div className="relative z-10 w-full max-w-6xl mx-auto p-8 md:p-12">

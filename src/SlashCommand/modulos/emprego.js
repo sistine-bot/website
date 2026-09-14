@@ -2,14 +2,14 @@ const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, Acti
 const { Format, UpdateMoneyWallet, CheckUserCooldowns } = require('../../../src/utils/functions.js');
 
 const ValorEmpregos = {
-  taxista: 800,
-  caminhoneiro: 1200,
-  gari: 1800,
-  entregador: 2500,
-  frentista: 3500,
-  mecânico: 5000, 
-  medico: 7500,
-  policial: 10000,
+  taxista: { min: 150, max: 280, label: '150 - 280' },
+  caminhoneiro: { min: 250, max: 420, label: '250 - 420' },
+  gari: { min: 350, max: 550, label: '350 - 550' },
+  entregador: { min: 450, max: 700, label: '450 - 700' },
+  frentista: { min: 600, max: 900, label: '600 - 900' },
+  mecânico: { min: 750, max: 1150, label: '750 - 1.150' }, 
+  medico: { min: 950, max: 1450, label: '950 - 1.450' },
+  policial: { min: 1250, max: 1750, label: '1.250 - 1.750' },
 };
 
 const Tempo = 1800000; // 30m
@@ -18,15 +18,15 @@ const Work = new Set();
 // Função auxiliar para mapear dados do ID do emprego e evitar duplicações de código
 function obterDadosEmprego(id) {
   switch (id) {
-    case 1: return { nome: 'Taxista', salario: ValorEmpregos.taxista, nivel: 0, ilegal: true, emote: '🚕', chave: 'taxista' };
-    case 2: return { nome: 'Caminhoneiro', salario: ValorEmpregos.caminhoneiro, nivel: 5, ilegal: true, emote: '🚚', chave: 'caminhoneiro' };
-    case 3: return { nome: 'Gari', salario: ValorEmpregos.gari, nivel: 10, ilegal: true, emote: '🗑️', chave: 'gari' };
-    case 4: return { nome: 'Entregador', salario: ValorEmpregos.entregador, nivel: 15, ilegal: true, emote: '🛵', chave: 'entregador' };
-    case 5: return { nome: 'Frentista', salario: ValorEmpregos.frentista, nivel: 20, ilegal: false, emote: '⛽', chave: 'frentista' };
-    case 6: return { nome: 'Mecânico', salario: ValorEmpregos.mecânico, nivel: 25, ilegal: false, emote: '👨‍🔧', chave: 'mecânico' };
-    case 7: return { nome: 'Médico', salario: ValorEmpregos.medico, nivel: 30, ilegal: false, emote: '👨‍⚕️', chave: 'medico' };
-    case 8: return { nome: 'Policial', salario: ValorEmpregos.policial, nivel: 50, ilegal: false, emote: '👮', chave: 'policial' };
-    default: return { nome: 'Desempregado', salario: 0, nivel: 0, ilegal: true, emote: '🤷‍♂️', chave: 'nenhum' };
+    case 1: return { nome: 'Taxista', min: ValorEmpregos.taxista.min, max: ValorEmpregos.taxista.max, salario: ValorEmpregos.taxista.label, nivel: 0, ilegal: true, emote: '🚕', chave: 'taxista' };
+    case 2: return { nome: 'Caminhoneiro', min: ValorEmpregos.caminhoneiro.min, max: ValorEmpregos.caminhoneiro.max, salario: ValorEmpregos.caminhoneiro.label, nivel: 5, ilegal: true, emote: '🚚', chave: 'caminhoneiro' };
+    case 3: return { nome: 'Gari', min: ValorEmpregos.gari.min, max: ValorEmpregos.gari.max, salario: ValorEmpregos.gari.label, nivel: 10, ilegal: true, emote: '🗑️', chave: 'gari' };
+    case 4: return { nome: 'Entregador', min: ValorEmpregos.entregador.min, max: ValorEmpregos.entregador.max, salario: ValorEmpregos.entregador.label, nivel: 15, ilegal: true, emote: '🛵', chave: 'entregador' };
+    case 5: return { nome: 'Frentista', min: ValorEmpregos.frentista.min, max: ValorEmpregos.frentista.max, salario: ValorEmpregos.frentista.label, nivel: 20, ilegal: false, emote: '⛽', chave: 'frentista' };
+    case 6: return { nome: 'Mecânico', min: ValorEmpregos.mecânico.min, max: ValorEmpregos.mecânico.max, salario: ValorEmpregos.mecânico.label, nivel: 25, ilegal: false, emote: '👨‍🔧', chave: 'mecânico' };
+    case 7: return { nome: 'Médico', min: ValorEmpregos.medico.min, max: ValorEmpregos.medico.max, salario: ValorEmpregos.medico.label, nivel: 30, ilegal: false, emote: '👨‍⚕️', chave: 'medico' };
+    case 8: return { nome: 'Policial', min: ValorEmpregos.policial.min, max: ValorEmpregos.policial.max, salario: ValorEmpregos.policial.label, nivel: 50, ilegal: false, emote: '👮', chave: 'policial' };
+    default: return { nome: 'Desempregado', min: 0, max: 0, salario: '0', nivel: 0, ilegal: true, emote: '🤷‍♂️', chave: 'nenhum' };
   }
 }
 
@@ -111,7 +111,7 @@ module.exports = {
           const embed = new EmbedBuilder()
             .setAuthor({ name: `Selecione sua profissão`, iconURL: client.user.displayAvatarURL({ size: 256 }) })
             .setColor(color.embed || "#00ff00")
-            .setDescription(`**Atualmente você é nível: ${nível}**\n\n🚕 **| Taxista** ≈${ValorEmpregos.taxista} (Lvl: \`0+\`)\n🚚 **| Caminhoneiro** ≈${ValorEmpregos.caminhoneiro} (Lvl: \`5+\`)\n🗑️ **| Gari** ≈${ValorEmpregos.gari} (Lvl: \`10+\`)\n🛵 **| Entregador** ≈${ValorEmpregos.entregador} (Lvl: \`15+\`)\n⛽ **| Frentista** ≈${ValorEmpregos.frentista} (Lvl: \`20+\`)\n👨‍🔧 **| Mecânico** ≈${ValorEmpregos.mecânico} (Lvl: \`25+\` - 🚫 Ilegal)\n👨‍⚕️ **| Médico** ≈${ValorEmpregos.medico} (Lvl: \`30+\` - 🚫 Ilegal)\n👮 **| Policial** ≈${ValorEmpregos.policial} (Lvl: \`50+\` - 🚫 Ilegal)`)
+            .setDescription(`**Atualmente você é nível: ${nível}**\n\n🚕 **| Taxista** ≈${ValorEmpregos.taxista.label} (Lvl: \`0+\`)\n🚚 **| Caminhoneiro** ≈${ValorEmpregos.caminhoneiro.label} (Lvl: \`5+\`)\n🗑️ **| Gari** ≈${ValorEmpregos.gari.label} (Lvl: \`10+\`)\n🛵 **| Entregador** ≈${ValorEmpregos.entregador.label} (Lvl: \`15+\`)\n⛽ **| Frentista** ≈${ValorEmpregos.frentista.label} (Lvl: \`20+\`)\n👨‍🔧 **| Mecânico** ≈${ValorEmpregos.mecânico.label} (Lvl: \`25+\` - 🚫 Ilegal)\n👨‍⚕️ **| Médico** ≈${ValorEmpregos.medico.label} (Lvl: \`30+\` - 🚫 Ilegal)\n👮 **| Policial** ≈${ValorEmpregos.policial.label} (Lvl: \`50+\` - 🚫 Ilegal)`)
             .setTimestamp();
     
           const msgMenu = await interaction.followUp({ embeds: [embed], components: [row] });
@@ -197,7 +197,7 @@ module.exports = {
               coletorTrabalho.stop('concluido');
               Work.delete(interaction.user.id);
     
-              const ganhoSorteado = Math.floor(Math.random() * (dadosTrabalho.salario / 2)) + Math.floor(dadosTrabalho.salario / 2);
+              const ganhoSorteado = Math.floor(Math.random() * (dadosTrabalho.max - dadosTrabalho.min + 1)) + dadosTrabalho.min;
               
               const embedFinal = new EmbedBuilder() 
                 .setAuthor({ name: `Expediente Encerrado`, iconURL: client.user.displayAvatarURL({ size: 256 }) })

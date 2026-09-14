@@ -30,18 +30,19 @@ module.exports =  {
       if (infoVIP) {
         if (vip == 1) {
           VIPemoji = '<:vipGold:1061405487628812358>';
-          multiplier = 1.5;
+          multiplier = 1.3;
         } else if (vip == 2) {
           VIPemoji = '<:vipDiamante:1061405543299821698>';
-          multiplier = 2;
+          multiplier = 1.6;
         }
       }
       if (client.config?.cargos?.criador?.includes(interaction.user.id)) {
-        multiplier = 3;
+        multiplier = 2.0;
         VIPemoji = '<:ownerbadge:1235848955250872391>';
       }
       
-      const DailyMoney = Math.floor((Math.floor(Math.random() * 1500) + 1000) * multiplier);
+      const baseMoney = Math.floor(Math.random() * 401) + 800; // 800 a 1.200 moedas
+      const DailyMoney = Math.floor(baseMoney * multiplier);
       await database.ref(`/economia/${interaction.user.id}/cooldowns`).update({
         daily: Date.now()
       });

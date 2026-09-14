@@ -76,6 +76,15 @@ module.exports =  {
         })
       }
 
+      const { CheckUserCooldowns } = require('../../utils/functions.js');
+      const { status } = await CheckUserCooldowns(interaction.user, 20000, 'cassino');
+      if (status) {
+        return interaction.followUp({ 
+          content: `⏰ **|** Controle de banca! Aguarde **<t:${~~((status)/1000)}:R>** para apostar novamente no Jokenpô.`,
+          ephemeral: true 
+        });
+      }
+
       const { carteira } = await getUserMoney(interaction.user);
       
       const quantia = interaction.options.getString('quantidade');
@@ -86,9 +95,11 @@ module.exports =  {
       if (isNaN(number) || number <= 0) return interaction.error({ content: `\`${quantia}\` não me parece um número válido.` });
       if (carteira < number) return interaction.error({ content: `Você não possui dinheiro suficiente na carteira.` });
       
-      if (number < 50) return interaction.error({ content: `O valor mínimo para aposta é de **${Format(50)}**` });
-      if (number > 25000) return interaction.error({ content: `O valor máximo para aposta é de **${Format(25000)}**` });
+      if (number < 100) return interaction.error({ content: `O valor mínimo para aposta é de **${Format(100)}**` });
+      if (number > 5000) return interaction.error({ content: `O valor máximo para aposta é de **${Format(5000)}**` });
   
+      await database.ref(`/economia/${interaction.user.id}/cooldowns`).update({ cassino: Date.now() });
+
       const escolha = interaction.options.getString('escolha');
       
       const msg1 = `<@${interaction.user.id}> - <a:pedrapapeltesoura:931715964628779049>\n<@${client.user.id}> - <a:pedrapapeltesoura2:931715901466771540>`;
@@ -117,11 +128,13 @@ module.exports =  {
       let mensagemResultado = '';
       if (resultado === 'empate') {
         await UpdateMoneyWallet(interaction, interaction.user, '+', number);
-        mensagemResultado = `👔 **Empate!** Seu dinheiro (${Format(number)}) foi devolvido.`;
+        mensagemResultado = `👔 **Empate!** Seu dinheiro (${Format(number)}) foi devolvido integralmente.`;
       } else if (resultado === 'vitoria') {
-        await UpdateMoneyWallet(interaction, interaction.user, '+', number * 2, `{emoji.entrada} {mensagem.jokenpo.vitoria} | ${number}`);
-        await UpdateApostas(interaction.user, '+', number, 0);
-        mensagemResultado = `🎉 **<@${interaction.user.id}> ganhou ${Format(number)}!**`;
+        const ganhoLiquido = Math.floor(number * 0.90);
+        const totalDevolvido = number + ganhoLiquido; // Retorno de 1.90x
+        await UpdateMoneyWallet(interaction, interaction.user, '+', totalDevolvido, `{emoji.entrada} {mensagem.jokenpo.vitoria} | ${ganhoLiquido}`);
+        await UpdateApostas(interaction.user, '+', ganhoLiquido, 0);
+        mensagemResultado = `🎉 **<@${interaction.user.id}> ganhou ${Format(ganhoLiquido)} líquido!** *(Taxa de banca de 5%: ${Format(number - ganhoLiquido)})*`;
       } else {
         await database.ref(`economia/${interaction.user.id}/Transações/`).push(`{emoji.saida} {mensagem.jokenpo.derrota} | ${number}`);
         await UpdateApostas(interaction.user, '-', 0, number);

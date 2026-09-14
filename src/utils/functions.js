@@ -1,17 +1,25 @@
 const firebase = require("firebase");
-let database;
-try {
-  database = firebase.database();
-} catch (e) {
-  database = {
-    ref: () => ({
-      once: () => Promise.resolve({ val: () => null }),
-      push: () => Promise.resolve(),
-      set: () => Promise.resolve(),
-      update: () => Promise.resolve()
-    })
-  };
-}
+const fallbackDb = {
+  ref: () => ({
+    once: () => Promise.resolve({ val: () => null }),
+    push: () => Promise.resolve(),
+    set: () => Promise.resolve(),
+    update: () => Promise.resolve()
+  })
+};
+
+const database = new Proxy({}, {
+  get(target, prop) {
+    try {
+      const db = (global.database) || firebase.database();
+      const val = db[prop];
+      return typeof val === 'function' ? val.bind(db) : val;
+    } catch (e) {
+      const val = fallbackDb[prop];
+      return typeof val === 'function' ? val.bind(fallbackDb) : val;
+    }
+  }
+});
 const ms = require('ms');
 const emojiConfig = require("../../src/utils/emoji.js");
 
@@ -207,6 +215,8 @@ async function getUserInventory(user) {
     const eVal = EquipamentosSnap.val() || {}; 
 
     return {
+      ...cVal,
+      ...eVal,
       Trigo: cVal.Trigo || 0,
       Milho: cVal.Milho || 0,
       Feijão: cVal.Feijão || 0,
@@ -224,11 +234,20 @@ async function getUserInventory(user) {
       backgroundticket: cVal.backgroundticket || 0,
       baús: cVal.baús || 0,
       chave: cVal.chave || 0,
+      semente_trigo: cVal.semente_trigo || 0,
+      semente_milho: cVal.semente_milho || 0,
+      semente_feijao: cVal.semente_feijao || 0,
+      semente_cana: cVal.semente_cana || 0,
+      semente_cenoura: cVal.semente_cenoura || 0,
+      semente_abobora: cVal.semente_abobora || 0,
+      planta_podre: cVal.planta_podre || 0,
       armacaça: eVal.armacaça || 0,
       arma: eVal.arma || 0,
       porte: eVal.porte || 0,
       anelcasamento: eVal.anelcasamento || 0,
-      vara: eVal.vara || 0
+      vara: eVal.vara || 0,
+      enxada: eVal.enxada || 0,
+      regador: eVal.regador || 0
     };
   } catch (error) {
     console.error('Erro ao obter o inventário do usuário:', error.message);
@@ -356,12 +375,65 @@ async function CheckUserVip(user) {
   const snapshot = await database.ref(`/economia/${user.id}/vip/`).once('value');
   const dataVal = snapshot.val() || {};
 
-  const tempo = dataVal.tempo || 0;
-  const data = dataVal.data || 0;
-  const vip = dataVal.vip || 0;
+  const tempo = Number(dataVal.tempo || 0);
+  const data = Number(dataVal.data || 0);
+  let rawVip = dataVal.vip;
 
-  const VIP = (data !== null && tempo - (Date.now() - data) < 0) ? false : true;
-  return { infoVIP: VIP, vip, tempo, data };
+  let vipLevel = 0;
+  if (typeof rawVip === 'string') {
+    const low = rawVip.toLowerCase();
+    if (low === 'ouro' || low === 'diamante' || low === 'premium+') vipLevel = 2;
+    else if (low === 'prata' || low === 'premium') vipLevel = 1;
+    else vipLevel = parseInt(rawVip) || 0;
+  } else {
+    vipLevel = Number(rawVip || 0);
+  }
+
+  // Verifica se o tempo expirou
+  const isExpired = (data > 0 && tempo > 0 && (tempo - (Date.now() - data) <= 0));
+  const isVip = vipLevel > 0 && !isExpired;
+
+  let levelName = 'Nenhum';
+  let emojiVip = '';
+  let multiplier = 1;
+  let ruralBonus = 0;
+  let repairDiscount = 0;
+
+  if (isVip) {
+    if (vipLevel >= 2) {
+      levelName = 'VIP Ouro';
+      emojiVip = '<:vipDiamante:1061405543299821698>';
+      multiplier = 2.0;
+      ruralBonus = 0.40; // +40% na colheita e afeto
+      repairDiscount = 0.50; // 50% de desconto no /recuperar
+    } else {
+      levelName = 'VIP Prata';
+      emojiVip = '<:vipGold:1061405487628812358>';
+      multiplier = 1.5;
+      ruralBonus = 0.20; // +20% na colheita e afeto
+      repairDiscount = 0.25; // 25% de desconto no /recuperar
+    }
+  }
+
+  const remainingMs = isVip && data > 0 && tempo > 0 ? Math.max(0, tempo - (Date.now() - data)) : 0;
+  const remainingDays = remainingMs > 0 ? Math.ceil(remainingMs / (1000 * 60 * 60 * 24)) : 0;
+
+  return {
+    infoVIP: isVip,
+    isVip,
+    vip: isVip ? vipLevel : 0,
+    level: isVip ? vipLevel : 0,
+    levelName,
+    emojiVip,
+    multiplier,
+    ruralBonus,
+    repairDiscount,
+    tempo,
+    data,
+    remainingMs,
+    remainingDays,
+    isExpired
+  };
 }
 
 async function CheckUserCooldowns(user, Cooldowns, variável) {
@@ -582,14 +654,11 @@ async function XpUpdate(ctx, user, quantia = Math.floor(Math.random() * 10) + 25
       throw new Error(errorMessage);
     }
 
-    const snapshotVip = await database.ref(`/economia/${user.id}/vip/`).once('value');
-    let tempo = snapshotVip.val()?.tempo || 0;
-    let data = snapshotVip.val()?.data || 0;
-
-    let VIP = (data !== null && tempo - (Date.now() - data) >= 0);
-
+    const vipInfo = await CheckUserVip(user);
     let multiplier = 1;
-    if (VIP) multiplier = 2; // Simplificado baseado no seu switch original comentado
+    if (vipInfo.isVip) {
+      multiplier = vipInfo.level >= 2 ? 3 : 2;
+    }
 
     const snapshotNivel = await database.ref(`economia/${user.id}/nível/`).once('value');
     const nivelData = snapshotNivel.val() || {};

@@ -20,11 +20,12 @@ module.exports = {
 
   run: async (client, interaction, args, color, database, emoji) => {
     try {
-      const Farmer_Combo = 2500;
-      const Galinha_Combo = 1500;
-      const Porco_Combo = 1250;
-      const Vaca_Combo = 1000;
-      const Ovelha_Combo = 750;
+      const Farmer_Combo = 3000;
+      const Galinha_Combo = 1800;
+      const Porco_Combo = 1400;
+      const Vaca_Combo = 1100;
+      const Ovelha_Combo = 800;
+      const CUSTO_BILHETE = 600;
       
       const roll = [
         "👩‍🌾", 
@@ -39,13 +40,24 @@ module.exports = {
 
       switch (command) {
         case 'informações': {
-          return interaction.followUp({ content: `💸 **|** ${interaction.user}, Veja aqui as informações sobre as raspadinhas.\n👤 **|** Ao comprar uma raspadinha no valor de **${Format(500)}**, raspe clicando nos ||spoilers|| e veja os emojis que aparecem!\n🎫 **|** Você ganha caso forme uma combinação de 3 iguais: **horizontal (-)**, **vertical (|)** ou **diagonal (/)**.\n\n> **👩‍🌾 - Prêmio de:** ${Format(Farmer_Combo)}\n> **<:galinha:947544319261286432> - Prêmio de:** ${Format(Galinha_Combo)}\n> **<:porco:947544319034794026> - Prêmio de:** ${Format(Porco_Combo)}\n> **<:vaca:947544320637010010> - Prêmio de:** ${Format(Vaca_Combo)}\n> **<:ovelha:947544319106117673> - Prêmio de:** ${Format(Ovelha_Combo)}` });
+          return interaction.followUp({ content: `💸 **|** ${interaction.user}, Veja aqui as informações sobre as raspadinhas.\n👤 **|** Ao comprar uma raspadinha no valor de **${Format(CUSTO_BILHETE)}**, raspe clicando nos ||spoilers|| e veja os emojis que aparecem!\n🎫 **|** Você ganha caso forme uma combinação de 3 iguais: **horizontal (-)**, **vertical (|)** ou **diagonal (/)**.\n\n> **👩‍🌾 - Prêmio de:** ${Format(Farmer_Combo)}\n> **<:galinha:947544319261286432> - Prêmio de:** ${Format(Galinha_Combo)}\n> **<:porco:947544319034794026> - Prêmio de:** ${Format(Porco_Combo)}\n> **<:vaca:947544320637010010> - Prêmio de:** ${Format(Vaca_Combo)}\n> **<:ovelha:947544319106117673> - Prêmio de:** ${Format(Ovelha_Combo)}` });
         }
 
         case 'comprar': {
+          const { CheckUserCooldowns } = require('../../utils/functions.js');
+          const { status } = await CheckUserCooldowns(interaction.user, 20000, 'cassino');
+          if (status) {
+            return interaction.followUp({ 
+              content: `⏰ **|** Controle de banca! Aguarde **<t:${~~((status)/1000)}:R>** para comprar outra raspadinha.`,
+              ephemeral: true 
+            });
+          }
+
           const { carteira } = await getUserMoney(interaction.user);
-          if (carteira < 500) return interaction.error({ content: `Você precisa de no mínimo: **${Format(500)}** na carteira para comprar.` });
+          if (carteira < CUSTO_BILHETE) return interaction.error({ content: `Você precisa de no mínimo: **${Format(CUSTO_BILHETE)}** na carteira para comprar.` });
           
+          await database.ref(`/economia/${interaction.user.id}/cooldowns`).update({ cassino: Date.now() });
+
           function Random() {
             return roll[Math.floor(Math.random() * roll.length)];
           }
@@ -88,10 +100,10 @@ module.exports = {
           );
   
           // Remove o dinheiro do custo da raspadinha
-          await UpdateMoneyWallet(interaction, interaction.user, '-', 500);
+          await UpdateMoneyWallet(interaction, interaction.user, '-', CUSTO_BILHETE);
           
           const msg = await interaction.followUp({ 
-            content: `💸 **|** Você comprou uma raspadinha no valor de **${Format(500)}**.\n> Caso tenha formado 3 emojis iguais na horizontal, vertical ou diagonal, clique em **Coletar Prêmio**. Cuidado, pois tentar coletar uma raspadinha sem prêmio fará você perder **${Format(250)}** por tentar burlar o sistema!\n\n||${fruit1}|| ||${fruit2}|| ||${fruit3}||\n||${fruit4}|| ||${fruit5}|| ||${fruit6}||\n||${fruit7}|| ||${fruit8}|| ||${fruit9}||`, 
+            content: `💸 **|** Você comprou uma raspadinha no valor de **${Format(CUSTO_BILHETE)}**.\n> Caso tenha formado 3 emojis iguais na horizontal, vertical ou diagonal, clique em **Coletar Prêmio**. Cuidado, pois tentar coletar uma raspadinha sem prêmio fará você perder **${Format(300)}** por tentar burlar o sistema!\n\n||${fruit1}|| ||${fruit2}|| ||${fruit3}||\n||${fruit4}|| ||${fruit5}|| ||${fruit6}||\n||${fruit7}|| ||${fruit8}|| ||${fruit9}||`, 
             components: [rowAtiva] 
           });
             

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, Server, ChevronDown, Check, LogOut, MessageSquare, Shield, Key, Octagon, History, AlertCircle, Activity, Eye, Sparkles, Bell, Terminal, ShieldAlert } from 'lucide-react';
+import { Bot, Server, ChevronDown, Check, LogOut, MessageSquare, Shield, Key, Octagon, History, AlertCircle, Activity, Eye, Sparkles, Bell, Terminal, ShieldAlert, Wheat } from 'lucide-react';
 import type { DiscordServer } from '../../types';
 
 interface SidebarProps {
@@ -46,9 +46,6 @@ export default function Sidebar({
     // { id: 'settings', label: 'settings tab', icon: ShieldAlert, color: 'text-amber-400' },
   ];
 
-  // const economyItems = [
-  // ];
-
   const getInitials = (name: string) => {
     if (!name) return 'SV';
     const words = name.trim().split(/\s+/);
@@ -72,14 +69,21 @@ export default function Sidebar({
         <button
           key={item.id}
           onClick={() => onChangeSection(item.id)}
-          className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-xs font-medium transition cursor-pointer ${
+          className={`w-full flex items-center justify-between py-2.5 px-3 rounded-lg text-xs font-medium transition cursor-pointer ${
             isActive
               ? 'bg-purple-600/10 text-purple-400 border border-purple-500/10'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
           }`}
         >
-          <IconComponent size={16} className={`${isActive ? 'text-purple-400' : item.color}`} />
-          <span>{item.label}</span>
+          <div className="flex items-center gap-3">
+            <IconComponent size={16} className={`${isActive ? 'text-purple-400' : item.color}`} />
+            <span>{item.label}</span>
+          </div>
+          {item.badge && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold font-mono">
+              {item.badge}
+            </span>
+          )}
         </button>
       );
     });
@@ -187,14 +191,6 @@ export default function Sidebar({
           </span>
           {renderNavButtons(configItems)}
         </div>
-
-        {/* ECONOMIA SECTION */}
-        {/* <div className="space-y-1">
-          <span className="px-3 text-[9px] uppercase tracking-wider font-mono text-zinc-500 font-semibold block mb-2">
-            Economia & Diversão
-          </span>
-          {renderNavButtons(economyItems)}
-        </div> */}
 
         {/* MODERAÇÃO SECTION */}
         <div className="space-y-1">

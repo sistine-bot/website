@@ -21,26 +21,56 @@ module.exports =  {
         return interaction.followUp({ embeds: [Embed], fetchReply: true, ephemeral: false  });
       }
       
-      const { vip, tempo, data } = await CheckUserVip(interaction.user)
+      const vipInfo = await CheckUserVip(interaction.user);
+      const isCreator = client.config.cargos?.criador?.includes(interaction.user.id);
       
-      if (!client.config.cargos.criador.includes(interaction.user.id) && (data !== null && tempo - (Date.now() - data) < 0 || vip < 1)) {
-        return interaction.error({ content: `Você precisa ser um membro VIP para utilizar este comando.` });
+      if (!isCreator && !vipInfo.isVip) {
+        return interaction.error({ content: `Você precisa ser um membro VIP ativo para utilizar este comando. Use \`/vip\` para conferir as vantagens ou adquira no dashboard!` });
       }
-      
-      const WeeklyMoney = (Math.floor(Math.random() * 10000) + 10000);
+
+      const isTier2 = vipInfo.level >= 2 || (isCreator && vipInfo.level !== 1);
+      const weeklyMoney = isTier2 
+        ? Math.floor(Math.random() * 4001) + 10000 
+        : Math.floor(Math.random() * 2001) + 6000;
+
+      const racaoBonus = isTier2 ? 12 : 6;
+      const iscaBonus = isTier2 ? 12 : 6;
+      const sementeBonus = isTier2 ? 10 : 5;
+      const municaoBonus = isTier2 ? 5 : 2;
+
       await database.ref(`/economia/${interaction.user.id}/cooldowns`).update({
         weekly: Date.now()
       });
 
-      await UpdateMoneyWallet(interaction, interaction.user, '+', WeeklyMoney, `{emoji.entrada} {mensagem.weekly} | ${WeeklyMoney}`);
+      // Credit supplies into Consumíveis
+      const consumiveisRef = database.ref(`/economia/${interaction.user.id}/inventario/itens/Consumíveis`);
+      const snap = await consumiveisRef.once('value');
+      const cur = snap.val() || {};
+      await consumiveisRef.update({
+        ração_animal: (cur.ração_animal || 0) + racaoBonus,
+        isca: (cur.isca || 0) + iscaBonus,
+        semente_trigo: (cur.semente_trigo || 0) + sementeBonus,
+        munição: (cur.munição || 0) + municaoBonus
+      });
+
+      await UpdateMoneyWallet(interaction, interaction.user, '+', weeklyMoney, `{emoji.entrada} {mensagem.weekly} | ${weeklyMoney}`);
+
+      const tierBadge = isTier2 ? '🌟 **VIP Ouro**' : '⭐ **VIP Prata**';
 
       const EMBED = new EmbedBuilder()
       .setColor(color.embed)
       .setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL({ dynamic: true }) })
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true}) })
-      .setDescription(`💵 **|** Você recolheu sua recompensa semanal e recebeu: **${Format(WeeklyMoney)}** em sua carteira`)
+      .setTitle(`👑 Recompensa Semanal VIP`)
+      .setDescription(`Parabéns por ser um assinante ${tierBadge}! Você recolheu seu pacote semanal com benefícios exclusivos:
 
-      await XpUpdate(interaction, interaction.user, (Math.floor(Math.random() * 10) + 40) * 7);
+💰 **Bolsa Monetária:** **${Format(weeklyMoney)}** adicionados à sua carteira.
+🌾 **Pacote Rural:** +${sementeBonus}x Sementes de Trigo & +${racaoBonus}x Rações de Animais
+🎯 **Suprimentos:** +${iscaBonus}x Iscas de Pesca & +${municaoBonus}x Munições de Caça
+
+${vipInfo.remainingDays > 0 ? `⏳ *Seu VIP tem ainda **${vipInfo.remainingDays} dias** restantes.*` : ''}`)
+
+      await XpUpdate(interaction, interaction.user, isTier2 ? 500 : 300);
 
       return interaction.followUp({ embeds: [EMBED], fetchReply: true, ephemeral: false  })
       

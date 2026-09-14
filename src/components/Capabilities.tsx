@@ -1,36 +1,40 @@
+import React from 'react';
+
 const capabilities = [
   {
-    icon: "D",
-    title: "Diversão",
-    description: "Comandos hilários e minijogos para animar o chat e garantir boas risadas na galera!",
+    icon: "🌾",
+    title: "Fazenda & Plantação",
+    description: "O maior diferencial do bot! Cultive 6 safras com rega dinâmica e adote filhotes no rancho com afeto e carinho.",
     span: "md:col-span-3",
-    iconBg: "bg-berry/10 text-berry",
+    iconBg: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+    badge: "Diferencial Exclusivo",
+    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
   },
   {
-    icon: "M",
-    title: "Moderação",
-    description: "Ferramentas práticas para manter a ordem e deixar seu servidor seguro sem dor de cabeça.",
+    icon: "🪙",
+    title: "Economia Integrada",
+    description: "Compre sementes e ração na loja, lucre vendendo safras de ouro e leite fresco, e dispute o topo do ranking!",
     span: "md:col-span-3",
-    iconBg: "bg-berry/10 text-berry",
+    iconBg: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
   },
   {
-    icon: "E",
-    title: "Economia",
-    description: "Trabalhe, acumule riqueza e suba no ranking para se tornar o verdadeiro magnata da comunidade!",
+    icon: "🎉",
+    title: "Diversão & Social",
+    description: "Comandos interativos, casamentos, empregos e minijogos para manter o chat do seu Discord sempre ativo e divertido.",
     span: "md:col-span-2",
-    iconBg: "bg-berry/10 text-berry",
+    iconBg: "bg-purple-500/10 text-purple-400 border border-purple-500/20",
   },
   {
-    icon: "A",
-    title: "Apostas",
-    description: "Sinta toda a adrenalina do cassino e dobre sua banca sem gastar um tostão real.",
+    icon: "🛡️",
+    title: "Moderação & Segurança",
+    description: "Bloqueador de convites, registro de punições e filtros automatizados para proteger sua comunidade 24 horas por dia.",
     span: "md:col-span-2",
-    iconBg: "bg-berry/10 text-berry",
+    iconBg: "bg-rose-500/10 text-rose-400 border border-rose-500/20",
   },
   {
     icon: null,
-    title: "Dashboard configurável",
-    description: "Painel intuitivo para você personalizar cada detalhe do bot em poucos cliques.",
+    title: "Dashboard Central",
+    description: "Painel web completo para gerenciar o prefixo, cor de embeds e acompanhar os diferenciais rurais em tempo real.",
     span: "md:col-span-2",
     featured: true,
   },
@@ -41,10 +45,12 @@ export function Capabilities() {
     <section className="mx-auto max-w-6xl px-6 pb-20">
       <div className="flex items-end justify-between mb-8">
         <div>
-          {/* <p className="font-mono text-xs text-berry">01 — Capabilities</p> */}
           <h2 className="mt-2 font-display font-bold text-3xl tracking-tight text-ink">
-            Construído com amor
+            Recursos e Diferenciais Únicos
           </h2>
+          <p className="text-sm text-ink-soft mt-1">
+            Conheça os módulos que fazem a Sistine ser o bot favorito das comunidades.
+          </p>
         </div>
         <p className="hidden sm:block text-sm text-ink-soft max-w-[30ch]">
           Entregue a melhor experiência para seus membros em cada detalhe.
@@ -54,28 +60,36 @@ export function Capabilities() {
         {capabilities.map((cap, index) => (
           <div
             key={index}
-            className={`rounded-3xl p-7 transition-all duration-300 hover:-translate-y-1 ${
+            className={`rounded-3xl p-7 transition-all duration-300 hover:-translate-y-1 relative ${
               cap.featured
                 ? "md:col-span-2 bg-gradient-to-br from-berry to-tint text-white hover:shadow-xl hover:shadow-berry/25"
                 : `${cap.span} paper-card hover:shadow-xl hover:shadow-berry/10`
             }`}
           >
-            {cap.icon && (
-              <div
-                className={`size-11 rounded-2xl grid place-items-center font-display font-bold ${
-                  cap.featured ? "bg-white/20 text-white" : cap.iconBg
-                }`}
-              >
-                {cap.icon}
-              </div>
-            )}
+            <div className="flex items-center justify-between">
+              {cap.icon && (
+                <div
+                  className={`size-11 rounded-2xl grid place-items-center text-xl font-display font-bold shadow-inner ${
+                    cap.featured ? "bg-white/20 text-white" : cap.iconBg
+                  }`}
+                >
+                  {cap.icon}
+                </div>
+              )}
+              {cap.badge && (
+                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${cap.badgeColor}`}>
+                  {cap.badge}
+                </span>
+              )}
+            </div>
+
             <h3 className="mt-5 font-display font-bold text-xl">{cap.title}</h3>
-            <p className={`mt-2 text-sm ${cap.featured ? "text-white/80" : "text-ink-soft"} max-w-[38ch]`}>
+            <p className={`mt-2 text-sm ${cap.featured ? "text-white/80" : "text-ink-soft"} max-w-[38ch] leading-relaxed`}>
               {cap.description}
             </p>
             {cap.featured && (
               <a href="#" className="mt-4 inline-block text-sm font-semibold underline underline-offset-4">
-                Abrir →
+                Acessar Painel →
               </a>
             )}
           </div>

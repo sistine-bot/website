@@ -72,10 +72,15 @@ module.exports =  {
             
             if (carteira < number) return interaction.error({ content: `Você não possui dinheiro o suficiente na carteira para poder transferir.` })
             
-            await UpdateMoneyWallet(interaction, interaction.user, '-', number, `{emoji.saida} {mensagem.transferencia.enviou} | ${number} | ${user.id}`);
-            await UpdateMoneyWallet(interaction, user, '+', number, `{emoji.entrada} {mensagem.transferencia.recebeu} | ${number} | ${interaction.user.id}`);
+            const taxa = Math.floor(number * 0.05);
+            const valorLiquido = number - taxa;
 
-            return msg.reply({ content: `💵 **|** <@${interaction.user.id}> transferiu ${Format(number)} para: <@${user.id}>` })
+            await UpdateMoneyWallet(interaction, interaction.user, '-', number, `{emoji.saida} {mensagem.transferencia.enviou} | ${number} | ${user.id}`);
+            await UpdateMoneyWallet(interaction, user, '+', valorLiquido, `{emoji.entrada} {mensagem.transferencia.recebeu} | ${valorLiquido} | ${interaction.user.id}`);
+
+            return msg.reply({ 
+              content: `💵 **|** <@${interaction.user.id}> transferiu **${Format(number)}** para <@${user.id}>!\n> 🏛️ **Taxa Bancária (5%):** **${Format(taxa)}** foram retidos pelos cofres públicos. Destinatário recebeu **${Format(valorLiquido)}**.` 
+            });
             
           }
             break;

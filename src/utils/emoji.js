@@ -50,4 +50,10 @@ module.exports = {
   "galinha": "<:galinha:947544319261286432>",
   "vaca": "<:vaca:947544320637010010>",
   "porco": "<:porco:947544319034794026>",
+  "enxada": "⛏️",
+  "regador": "🚿",
+  "semente": "🌱",
+  "podre": "🥀",
+  "gota": "💧",
+  "estrela": "⭐",
 };

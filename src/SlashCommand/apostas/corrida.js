@@ -32,8 +32,8 @@ module.exports =  {
 
       if (isNaN(number) || number <= 0) return interaction.error({ content: `\`${quantia}\` não me parece um número válido.` });
       if (carteira < number) return interaction.error({ content: `Você não possui o valor suficiente na carteira.` });
-      if (number < 500) return interaction.error({ content: `O valor mínimo para aposta é de **${Format(500)}**` });
-      if (number > 50000) return interaction.error({ content: `O valor máximo para aposta é de **${Format(50000)}**` });
+      if (number < 200) return interaction.error({ content: `O valor mínimo para aposta é de **${Format(200)}**` });
+      if (number > 20000) return interaction.error({ content: `O valor máximo para aposta é de **${Format(20000)}**` });
 
       if (rifa.has(interaction.user.id)) {
         return interaction.error({ content: `Você já possui uma corrida em andamento!` });
@@ -99,15 +99,15 @@ Clique em: \`🎟️\` para participar.
         try {
           const ganhadorUser = client.users.cache.get(ganhador) || { id: ganhador };
           const { infoVIP, tempo, data } = await CheckUserVip(ganhadorUser);
-          const VIP = (data !== null && tempo - (Date.now() - data) < 0 || infoVIP === false) ? false : true;
-          
-          const valorLiquido = VIP ? totalAcumulado : Math.floor(totalAcumulado * 0.95);
+          const taxaPercentual = VIP ? 0.03 : 0.075;
+          const taxa = Math.floor(totalAcumulado * taxaPercentual);
+          const valorLiquido = totalAcumulado - taxa;
           
           await UpdateMoneyWallet(interaction, ganhadorUser, '+', valorLiquido, `{emoji.entrada} {mensagem.corrida.vitoria} | ${valorLiquido}`);
 
           const winMSG = (ganhador !== interaction.user.id) ? ` *(corrida iniciada por: **${interaction.user.username}**)*` : '';
           return interaction.channel.send({ 
-            content: `🎉 **|** O carro **${emote}** de <@${ganhador}> cruzou a linha de chegada em primeiro! Recebeu **${Format(valorLiquido)}** de prêmio! ${VIP ? '👑 *(Sem taxa de imposto por ser VIP)*' : `*(${Format(totalAcumulado - valorLiquido)} de taxa do governo)*`} ${winMSG}` 
+            content: `🎉 **|** O carro **${emote}** de <@${ganhador}> cruzou a linha de chegada em primeiro! Recebeu **${Format(valorLiquido)}** líquidos de prêmio!\n> 🏛️ **Taxa de Imposto (${VIP ? '3.0% VIP' : '7.5% Padrão'}):** **${Format(taxa)}** foram recolhidos pelo governo. ${winMSG}` 
           });
         } catch (error) {
           console.error('[CORRIDA ERROR]:', error);

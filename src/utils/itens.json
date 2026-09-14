@@ -1,178 +1,557 @@
 {
   "armacaça": {
     "db": "/Equipamentos/",
-    "nome": ["Arma de Caça", "Arma Caça"],
-    "imagem": "https://i.postimg.cc/BQDPwzxR/5-i-QSSSF5.png",
+    "nome": [
+      "Arma de Caça",
+      "Arma Caça"
+    ],
+    "imagem": "armas/arma_caca.png",
     "valor": 8000,
     "tipo": 1
   },
   "arma": {
+    "0": {
+      "nome": [
+        "Nenhuma arma"
+      ]
+    },
+    "1": {
+      "nome": [
+        "Glock"
+      ],
+      "imagem": "armas/glock.png",
+      "valor": 10000
+    },
+    "2": {
+      "nome": [
+        "MP5"
+      ],
+      "imagem": "armas/mp5.png",
+      "valor": 20000
+    },
+    "3": {
+      "nome": [
+        "M4-A1"
+      ],
+      "imagem": "armas/m4a1.png",
+      "valor": 35000
+    },
+    "4": {
+      "nome": [
+        "Ak-47"
+      ],
+      "imagem": "armas/ak47.png",
+      "valor": 60000
+    },
     "db": "/Equipamentos/",
-    "0": { "nome": ["Nenhuma arma"] },
-    "1": { "nome": ["Glock"], "imagem": "https://i.postimg.cc/DfRb6hbq/6-p-JHzj-G7.png", "valor": 10000 },
-    "2": { "nome": ["MP5"], "imagem": "https://i.postimg.cc/rsRMsvVT/7-w-CY4o-Gh.png", "valor": 20000 },
-    "3": { "nome": ["M4-A1"], "imagem": "https://i.postimg.cc/MGsnQJSf/3-8ef-NGd-U.png", "valor": 35000 },
-    "4": { "nome": ["Ak-47"], "imagem": "https://i.postimg.cc/MpSfkY5H/4-j-Xd51yt.png", "valor": 60000 },
     "tipo": 1
   },
-  
   "porte": {
     "db": "/Equipamentos/",
-    "nome": ["Porte de Armas", "Porte"],
+    "nome": [
+      "Porte de Armas",
+      "Porte"
+    ],
     "valor": 15000,
     "tipo": 1
   },
   "anelcasamento": {
     "db": "/Equipamentos/",
-    "nome": ["Anel de Casamento", "Anel"],
-    "imagem": "https://i.postimg.cc/J7skj0tr/8-Gp-Mfe7-F.png",
+    "nome": [
+      "Anel de Casamento",
+      "Anel"
+    ],
+    "imagem": "ferramentas/anel_casamento.png",
     "valor": 2500,
     "tipo": 1
   },
   "vara": {
-    "db": "/Equipamentos/", 
-    "nome": ["Vara de Pescar", "Vara"],
-    "imagem": "https://i.postimg.cc/8s8D6tc6/9-Rtm-NAp-F.png",
+    "db": "/Equipamentos/",
+    "nome": [
+      "Vara de Pescar",
+      "Vara"
+    ],
+    "imagem": "ferramentas/vara_pescar.png",
     "valor": 2000,
     "tipo": 1
   },
-  
+  "enxada": {
+    "db": "/Equipamentos/",
+    "nome": [
+      "Enxada",
+      "Enxadas"
+    ],
+    "imagem": "ferramentas/enxada.png",
+    "valor": 3000,
+    "tipo": 1
+  },
+  "regador": {
+    "db": "/Equipamentos/",
+    "nome": [
+      "Regador",
+      "Regadores"
+    ],
+    "imagem": "ferramentas/regador.png",
+    "valor": 3500,
+    "tipo": 1
+  },
   "baú": {
+    "1": {
+      "nome": [
+        "comum"
+      ],
+      "imagem": "consumiveis/bau_comum.png",
+      "valor": 10000
+    },
+    "2": {
+      "nome": [
+        "raro"
+      ],
+      "imagem": "consumiveis/bau_raro.png",
+      "valor": 20000
+    },
+    "3": {
+      "nome": [
+        "epico"
+      ],
+      "imagem": "consumiveis/bau_epico.png",
+      "valor": 40000
+    },
     "db": "/Consumíveis/",
-    "3": { "nome": ["epico"], "imagem": "https://i.postimg.cc/Pqh1cdvs/Frame-5-1.png", "valor": 40000 },
-    "2": { "nome": ["raro"], "imagem": "https://i.postimg.cc/yd8c1nTL/Frame-5.png", "valor": 20000 },
-    "1": { "nome": ["comum"], "imagem": "https://i.postimg.cc/HL2b1FbJ/Frame-5-2.png", "valor": 10000 },
     "tipo": 2
   },
   "chave": {
     "db": "/Consumíveis/",
-    "imagem": "https://i.postimg.cc/zBnFk9FS/image.png",
+    "imagem": "consumiveis/chave.png",
     "valor": 3000,
     "tipo": 2
   },
   "munição": {
     "db": "/Consumíveis/",
-    "nome": ["Munição", "Munições"],
-    "imagem": "https://i.postimg.cc/RZL6vnpR/1-Cn-V6ukr.png",
+    "nome": [
+      "Munição",
+      "Munições"
+    ],
+    "imagem": "armas/municao.png",
     "valor": 30,
     "tipo": 2
   },
   "backgroundticket": {
-    "db": "/Consumíveis/", 
-    "nome": ["Background Ticket", "Bg Ticket"],
-    "imagem": "https://i.postimg.cc/bJBqzzjL/12-LSmo502.png",
+    "db": "/Consumíveis/",
+    "nome": [
+      "Background Ticket",
+      "Bg Ticket"
+    ],
+    "imagem": "consumiveis/ticket_fundo.png",
     "valor": 100000,
     "tipo": 2
   },
   "carne": {
     "db": "/Consumíveis/",
-    "nome": ["Carne", "Carnes"],
-    "imagem": "https://i.postimg.cc/nLnF2RkK/14-f69r-FRA.png",
-    "valor": 100,
+    "nome": [
+      "Carne",
+      "Carnes"
+    ],
+    "imagem": "consumiveis/carne.png",
+    "valor": 80,
     "tipo": 2
   },
   "Trigo": {
     "db": "/Consumíveis/",
-    "nome": ["Trigo", "Trigos"],
-    "imagem": "https://i.postimg.cc/2SR8b8LK/15-h3-Nc-Zl6.png",
+    "nome": [
+      "Trigo",
+      "Trigos"
+    ],
+    "imagem": "colheitas/trigo.png",
     "valor": 120,
     "tipo": 2
   },
   "Milho": {
     "db": "/Consumíveis/",
-    "nome": ["Milho", "Milhos"],
-    "imagem": "https://i.postimg.cc/L6Z88Z5P/16-45-Js-Got.png",
+    "nome": [
+      "Milho",
+      "Milhos"
+    ],
+    "imagem": "colheitas/milho.png",
     "valor": 300,
     "tipo": 2
   },
   "Feijão": {
     "db": "/Consumíveis/",
-    "nome": ["Feijão", "Feijões"],
-    "imagem": "https://i.postimg.cc/FF6Kvxrm/17-Qb-C9-L1r.png",
+    "nome": [
+      "Feijão",
+      "Feijões"
+    ],
+    "imagem": "colheitas/feijao.png",
     "valor": 700,
     "tipo": 2
   },
   "CanaDeAçucar": {
     "db": "/Consumíveis/",
-    "nome": ["Cana-de-açúcar", "Canas-de-açúcar"],
-    "imagem": "https://i.postimg.cc/FzwFxhW1/18-u-YIS78k.png",
+    "nome": [
+      "Cana-de-açúcar",
+      "Canas-de-açúcar"
+    ],
+    "imagem": "colheitas/cana_de_acucar.png",
     "valor": 1200,
     "tipo": 2
   },
   "Cenoura": {
     "db": "/Consumíveis/",
-    "nome": ["Cenoura", "Cenouras"],
-    "imagem": "https://i.postimg.cc/qqNMnNG9/19-p-Yv-Cc-HZ.png",
+    "nome": [
+      "Cenoura",
+      "Cenouras"
+    ],
+    "imagem": "colheitas/cenoura.png",
     "valor": 1800,
     "tipo": 2
   },
   "Abóbora": {
     "db": "/Consumíveis/",
-    "nome": ["Abóbora", "Abóboras"],
-    "imagem": "https://i.postimg.cc/tTS4Y3F3/20-s7xhl-LI.png",
+    "nome": [
+      "Abóbora",
+      "Abóboras"
+    ],
+    "imagem": "colheitas/abobora.png",
     "valor": 4000,
+    "tipo": 2
+  },
+  "semente_trigo": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Semente de Trigo",
+      "Sementes de Trigo"
+    ],
+    "imagem": "sementes/semente_trigo.png",
+    "valor": 60,
+    "tipo": 2
+  },
+  "semente_milho": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Semente de Milho",
+      "Sementes de Milho"
+    ],
+    "imagem": "sementes/semente_milho.png",
+    "valor": 150,
+    "tipo": 2
+  },
+  "semente_feijao": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Semente de Feijão",
+      "Sementes de Feijão"
+    ],
+    "imagem": "sementes/semente_feijao.png",
+    "valor": 350,
+    "tipo": 2
+  },
+  "semente_cana": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Semente de Cana",
+      "Sementes de Cana"
+    ],
+    "imagem": "sementes/semente_cana.png",
+    "valor": 600,
+    "tipo": 2
+  },
+  "semente_cenoura": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Semente de Cenoura",
+      "Sementes de Cenoura"
+    ],
+    "imagem": "sementes/semente_cenoura.png",
+    "valor": 900,
+    "tipo": 2
+  },
+  "semente_abobora": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Semente de Abóbora",
+      "Sementes de Abóbora"
+    ],
+    "imagem": "sementes/semente_abobora.png",
+    "valor": 2000,
+    "tipo": 2
+  },
+  "planta_podre": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Planta Podre",
+      "Plantas Podres"
+    ],
+    "imagem": "colheitas/planta_podre.png",
+    "valor": 15,
+    "tipo": 2
+  },
+  "Trigo_excelente": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Trigo (Excelente)",
+      "Trigos (Excelente)"
+    ],
+    "imagem": "colheitas/trigo.png",
+    "valor": 180,
+    "tipo": 2
+  },
+  "Trigo_bom": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Trigo (Bom)",
+      "Trigos (Bom)"
+    ],
+    "imagem": "colheitas/trigo.png",
+    "valor": 120,
+    "tipo": 2
+  },
+  "Trigo_ruim": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Trigo (Ruim)",
+      "Trigos (Ruim)"
+    ],
+    "imagem": "colheitas/trigo.png",
+    "valor": 60,
+    "tipo": 2
+  },
+  "Milho_excelente": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Milho (Excelente)",
+      "Milhos (Excelente)"
+    ],
+    "imagem": "colheitas/milho.png",
+    "valor": 450,
+    "tipo": 2
+  },
+  "Milho_bom": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Milho (Bom)",
+      "Milhos (Bom)"
+    ],
+    "imagem": "colheitas/milho.png",
+    "valor": 300,
+    "tipo": 2
+  },
+  "Milho_ruim": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Milho (Ruim)",
+      "Milhos (Ruim)"
+    ],
+    "imagem": "colheitas/milho.png",
+    "valor": 150,
+    "tipo": 2
+  },
+  "Feijão_excelente": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Feijão (Excelente)",
+      "Feijões (Excelente)"
+    ],
+    "imagem": "colheitas/feijao.png",
+    "valor": 1050,
+    "tipo": 2
+  },
+  "Feijão_bom": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Feijão (Bom)",
+      "Feijões (Bom)"
+    ],
+    "imagem": "colheitas/feijao.png",
+    "valor": 700,
+    "tipo": 2
+  },
+  "Feijão_ruim": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Feijão (Ruim)",
+      "Feijões (Ruim)"
+    ],
+    "imagem": "colheitas/feijao.png",
+    "valor": 350,
+    "tipo": 2
+  },
+  "CanaDeAçucar_excelente": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Cana-de-açúcar (Excelente)",
+      "Canas-de-açúcar (Excelente)"
+    ],
+    "imagem": "colheitas/cana_de_acucar.png",
+    "valor": 1800,
+    "tipo": 2
+  },
+  "CanaDeAçucar_bom": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Cana-de-açúcar (Bom)",
+      "Canas-de-açúcar (Bom)"
+    ],
+    "imagem": "colheitas/cana_de_acucar.png",
+    "valor": 1200,
+    "tipo": 2
+  },
+  "CanaDeAçucar_ruim": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Cana-de-açúcar (Ruim)",
+      "Canas-de-açúcar (Ruim)"
+    ],
+    "imagem": "colheitas/cana_de_acucar.png",
+    "valor": 600,
+    "tipo": 2
+  },
+  "Cenoura_excelente": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Cenoura (Excelente)",
+      "Cenouras (Excelente)"
+    ],
+    "imagem": "colheitas/cenoura.png",
+    "valor": 2700,
+    "tipo": 2
+  },
+  "Cenoura_bom": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Cenoura (Bom)",
+      "Cenouras (Bom)"
+    ],
+    "imagem": "colheitas/cenoura.png",
+    "valor": 1800,
+    "tipo": 2
+  },
+  "Cenoura_ruim": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Cenoura (Ruim)",
+      "Cenouras (Ruim)"
+    ],
+    "imagem": "colheitas/cenoura.png",
+    "valor": 900,
+    "tipo": 2
+  },
+  "Abóbora_excelente": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Abóbora (Excelente)",
+      "Abóboras (Excelente)"
+    ],
+    "imagem": "colheitas/abobora.png",
+    "valor": 6000,
+    "tipo": 2
+  },
+  "Abóbora_bom": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Abóbora (Bom)",
+      "Abóboras (Bom)"
+    ],
+    "imagem": "colheitas/abobora.png",
+    "valor": 4000,
+    "tipo": 2
+  },
+  "Abóbora_ruim": {
+    "db": "/Consumíveis/",
+    "nome": [
+      "Abóbora (Ruim)",
+      "Abóboras (Ruim)"
+    ],
+    "imagem": "colheitas/abobora.png",
+    "valor": 2000,
     "tipo": 2
   },
   "Ovo": {
     "db": "/Consumíveis/",
-    "nome": ["Ovo", "Ovos"],
-    "imagem": "https://i.postimg.cc/635QWj46/21-TTNm-Zx-A.png",
+    "nome": [
+      "Ovo",
+      "Ovos"
+    ],
+    "imagem": "consumiveis/ovo.png",
     "valor": 200,
     "tipo": 2
   },
   "Leite": {
     "db": "/Consumíveis/",
-    "nome": ["Leite", "Leites"],
-    "imagem": "https://i.postimg.cc/bvPJMNzt/22-x-Wk-MVYG.png",
+    "nome": [
+      "Leite",
+      "Leites"
+    ],
+    "imagem": "consumiveis/leite.png",
     "valor": 300,
     "tipo": 2
   },
   "Bacon": {
     "db": "/Consumíveis/",
-    "nome": ["Bacon", "Bacons"],
-    "imagem": "https://i.postimg.cc/vm81THpd/2-h-Uwk-XZd.png",
+    "nome": [
+      "Bacon",
+      "Bacons"
+    ],
+    "imagem": "consumiveis/bacon.png",
     "valor": 500,
     "tipo": 2
   },
   "ração_animal": {
     "db": "/Consumíveis/",
-    "nome": ["Ração Animal", "Rações Animal"],
-    "imagem": "https://i.postimg.cc/g2VcvFvk/13-Tku-W2bb.png",
+    "nome": [
+      "Ração Animal",
+      "Rações Animal"
+    ],
+    "imagem": "consumiveis/racao_animal.png",
     "valor": 300,
     "tipo": 2
   },
   "isca": {
     "db": "/Consumíveis/",
-    "nome": ["Isca", "Iscas"],
-    "imagem": "https://i.postimg.cc/qRRkVNWz/10-Ie-Q0-ZFG.png",
+    "nome": [
+      "Isca",
+      "Iscas"
+    ],
+    "imagem": "consumiveis/isca.png",
     "valor": 50,
     "tipo": 2
   },
   "peixe": {
     "db": "/Consumíveis/",
-    "nome": ["Peixe", "Peixes"],
-    "imagem": "https://i.postimg.cc/vmXQNrqJ/11-Ci84ze-F.png",
-    "valor": 60,
+    "nome": [
+      "Peixe",
+      "Peixes"
+    ],
+    "imagem": "consumiveis/peixe.png",
+    "valor": 45,
     "tipo": 2
   },
-  
   "Galinha": {
     "db": "economia/Fazenda/${interaction.user.id}/Animal",
-    "nome": ["Galinha", "Galinhas"],
+    "nome": [
+      "Galinha",
+      "Galinhas"
+    ],
     "imagem": "",
     "valor": 5000,
     "tipo": 2
   },
   "Vaca": {
     "db": "economia/Fazenda/${interaction.user.id}/Animal",
-    "nome": ["Vaca", "Vacas"],
+    "nome": [
+      "Vaca",
+      "Vacas"
+    ],
     "imagem": "",
     "valor": 15000,
     "tipo": 2
   },
   "Porco": {
     "db": "economia/Fazenda/${interaction.user.id}/Animal",
-    "nome": ["Porco", "Porcos"],
+    "nome": [
+      "Porco",
+      "Porcos"
+    ],
     "imagem": "",
     "valor": 25000,
     "tipo": 2

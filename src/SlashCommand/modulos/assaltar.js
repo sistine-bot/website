@@ -78,35 +78,41 @@ module.exports =  {
         return interaction.followUp({ embeds: [Embed] });
       }
 
-      const newArmaXP = Math.max(0, arma.Xp - (Math.floor(Math.random() * 4) + 2));
+      const durabilityLoss = Math.floor(Math.random() * 3) + 2; // 2 a 4 pontos
+      const newArmaXP = Math.max(0, arma.Xp - durabilityLoss);
 
       await database.ref(`economia/${interaction.user.id}/cooldowns/`).update({
         crime: Date.now()
       });
 
-      // Chance de sucesso baseada na arma (60% a 75%)
+      // Chance de sucesso baseada na arma (55% a 70%)
       const roll = Math.random();
-      const successChance = 0.55 + (arma.item * 0.05); // Tier 1: 60%, Tier 2: 65%, Tier 3: 70%, Tier 4: 75%
+      const successChance = 0.50 + (arma.item * 0.05); // Tier 1: 55%, Tier 2: 60%, Tier 3: 65%, Tier 4: 70%
 
       if (roll > successChance) {
-        // Falha no assalto
-        database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/arma`).update({
-          Xp: newArmaXP
+        // Falha no assalto: Perde munição, desgasta arma e toma multa de fuga
+        const multaFuga = Math.floor(Math.random() * 301) + 200; // 200 a 500 moedas
+        
+        database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos`).update({
+          munição: Math.max(0, munição - 1),
+          arma: { item: arma.item, nome: arma.nome, Xp: newArmaXP }
         });
+
+        await UpdateMoneyWallet(interaction, interaction.user, '-', multaFuga, `{emoji.saida} Multa de fuga policial no assalto | ${multaFuga}`);
 
         const embed = new EmbedBuilder()
           .setColor(color.embed || "#ff0000")
-          .setDescription(`Você deu voz de assalto para <@${user.id}>, mas a vítima reagiu e você teve que fugir sem levar nada!`);
+          .setDescription(`🚨 **|** Você deu voz de assalto para <@${user.id}>, mas a vítima reagiu e você teve que fugir da polícia!\n> Você gastou **1 munição** e pagou uma multa de fuga de **${Format(multaFuga)}**.`);
 
         return interaction.followUp({ embeds: [embed] });
       } else {
-        // Sucesso no assalto com caps balanceados
+        // Sucesso no assalto com tetos travados por arma
         let percent = 0.10;
-        let maxCap = 2500;
-        if (arma.item === 1) { percent = 0.10; maxCap = 2500; }
-        else if (arma.item === 2) { percent = 0.18; maxCap = 5000; }
-        else if (arma.item === 3) { percent = 0.25; maxCap = 10000; }
-        else if (arma.item >= 4) { percent = 0.35; maxCap = 20000; }
+        let maxCap = 1500;
+        if (arma.item === 1) { percent = 0.10; maxCap = 1500; } // Glock: máx 1.500
+        else if (arma.item === 2) { percent = 0.15; maxCap = 3000; } // MP5: máx 3.000
+        else if (arma.item === 3) { percent = 0.20; maxCap = 5000; } // M4-A1: máx 5.000
+        else if (arma.item >= 4) { percent = 0.25; maxCap = 8000; } // AK-47: máx 8.000
 
         let stolen = Math.min(maxCap, Math.floor(victimWallet * percent));
         stolen = Math.max(50, stolen);

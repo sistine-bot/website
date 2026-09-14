@@ -1,8 +1,9 @@
 const { ButtonStyle, ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, AttachmentBuilder, ButtonBuilder, ActionRowBuilder } = require('discord.js');
-const { getUserInventory, Format, CheckUserVip, getUserMoney, getUserReps } = require('../../utils/functions.js');
+const { getUserInventory, Format } = require('../../utils/functions.js');
 const satori = require('satori').default || require('satori');
 const { Resvg } = require('@resvg/resvg-js');
-const parseMs = require('parse-ms');
+const path = require('path');
+const fs = require('fs');
 const itensAPI = require(`../../utils/itens.json`);
 
 // ==========================================
@@ -12,16 +13,43 @@ let loadedFonts = [];
 
 async function ensureFontsLoaded() {
   if (loadedFonts.length > 0) return;
+  const localRegPath = path.join(__dirname, '../../utils/assets/fonts/Roboto-Regular.woff');
+  const localBoldPath = path.join(__dirname, '../../utils/assets/fonts/Roboto-Bold.woff');
+  if (fs.existsSync(localRegPath) && fs.existsSync(localBoldPath)) {
+    loadedFonts.push({ name: 'Roboto', data: fs.readFileSync(localRegPath), weight: 400, style: 'normal' });
+    loadedFonts.push({ name: 'Roboto', data: fs.readFileSync(localBoldPath), weight: 700, style: 'normal' });
+    return;
+  }
   try {
     const regReq = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.19/files/noto-sans-latin-400-normal.woff');
     const boldReq = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.19/files/noto-sans-latin-700-normal.woff');
     
     if (regReq.ok && boldReq.ok) {
-        loadedFonts.push({ name: 'Noto Sans CJK JP', data: Buffer.from(await regReq.arrayBuffer()), weight: 400, style: 'normal' });
-        loadedFonts.push({ name: 'Noto Sans CJK JP', data: Buffer.from(await boldReq.arrayBuffer()), weight: 700, style: 'normal' });
+        loadedFonts.push({ name: 'Roboto', data: Buffer.from(await regReq.arrayBuffer()), weight: 400, style: 'normal' });
+        loadedFonts.push({ name: 'Roboto', data: Buffer.from(await boldReq.arrayBuffer()), weight: 700, style: 'normal' });
     }
   } catch(e) {
     console.error('[Inventário Satori] Erro ao carregar fontes:', e);
+  }
+}
+
+// ==========================================
+// EMOJIS TWEMOJI (SATORI)
+// ==========================================
+const emojiDir = path.join(__dirname, '../../utils/assets/emojis');
+const graphemeImages = {};
+const emojiMap = {
+  '⭐': '2b50.svg',
+  '📉': '1f4c9.svg',
+  '💧': '1f4a7.svg',
+  '🥀': '1f940.svg',
+  '✨': '2728.svg'
+};
+
+for (const [char, file] of Object.entries(emojiMap)) {
+  const p = path.join(emojiDir, file);
+  if (fs.existsSync(p)) {
+    graphemeImages[char] = `data:image/svg+xml;base64,${fs.readFileSync(p).toString('base64')}`;
   }
 }
 
@@ -51,6 +79,31 @@ async function fetchRemoteDataUri(url, timeoutMs = 3000) {
   if (url.startsWith('data:')) return url;
   if (remoteCache.has(url)) return remoteCache.get(url);
   if (inFlightRequests.has(url)) return inFlightRequests.get(url);
+
+  // Checa se é arquivo local
+  const baseDir = path.join(process.cwd(), 'src/utils/assets/inventory/itens');
+  const subdirs = ['armas', 'colheitas', 'consumiveis', 'ferramentas', 'sementes'];
+  const localCandidates = [
+    url,
+    path.join(__dirname, '../../utils/assets/inventory/itens', url),
+    path.join(baseDir, url),
+    path.join(baseDir, path.basename(url)),
+    ...subdirs.map(d => path.join(baseDir, d, path.basename(url))),
+    ...subdirs.map(d => path.join(__dirname, '../../utils/assets/inventory/itens', d, path.basename(url)))
+  ];
+  for (const candidate of localCandidates) {
+    try {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        const buf = fs.readFileSync(candidate);
+        let mime = 'image/png';
+        if (candidate.endsWith('.jpg') || candidate.endsWith('.jpeg')) mime = 'image/jpeg';
+        else if (candidate.endsWith('.webp')) mime = 'image/webp';
+        const dataUri = `data:${mime};base64,${buf.toString('base64')}`;
+        remoteCache.set(url, dataUri);
+        return dataUri;
+      }
+    } catch (e) {}
+  }
 
   const fetchTask = (async () => {
     try {
@@ -100,137 +153,221 @@ module.exports = {
       const user = interaction.options.getUser("usuário") || interaction.user;
       const msg = await interaction.followUp({ content: `<a:loading:929931026589954128> **|** Carregando inventário de **${user.username}**...` });
 
-      // 1. Coleta de Dados Assíncrona
-      let { vip, tempo, data } = await CheckUserVip(interaction, user);
-      if (data !== null && tempo - (Date.now() - data) < 0 || vip < 1) vip = 0;
-      
-      const time = parseMs(tempo - (Date.now() - data));
-      const DataVIP = `${time.days}d ${time.hours}h ${time.minutes}m`;
-      
-      const { carteira, banco } = await getUserMoney(user);
-      const { recebidas } = await getUserReps(user);
-      
+      // 1. Coleta de Dados do Inventário
       let inv = await getUserInventory(user);
-      
-      let vipStr = 'Não possui VIP';
-      if (vip === 1) vipStr = `Ouro (${DataVIP})`;
-      if (vip === 2) vipStr = `Diamante (${DataVIP})`;
 
-      // 2. Preparação do Layout (Textos do Perfil Lateral)
-      const profileTexts = [
-        { title: 'nome:', desc: user.username, c1: '#FFFFFF', c2: '#FFFFFF' },
-        { title: 'vip:', desc: vipStr, c1: '#FFFFFF', c2: '#FFFFFF' },
-        { title: 'banco:', desc: Format(banco), c1: '#FFFFFF', c2: '#FFFFFF' },
-        { title: 'carteira:', desc: Format(carteira), c1: '#FFFFFF', c2: '#FFFFFF' },
-        { title: 'reputações:', desc: Format(recebidas), c1: '#FFFFFF', c2: '#FFFFFF' },
-        { title: 'porte de armas:', desc: inv.porte?.item ? 'Sim' : 'Não', c1: '#FFFFFF', c2: inv.porte?.item ? '#04ff00' : '#ff0000' }
-      ];
+      // 3. Mapeamento de TODOS os Itens (Suporte a Múltiplas Páginas)
+      const allItems = [];
+      const pushItem = (img, txt) => {
+        if (img) allItems.push({ img, txt });
+      };
 
-      // 3. Mapeamento da Grade de Itens (Até 20 Slots)
-      const itemsToRender = [];
-      const pushItem = (img, txt) => { if (itemsToRender.length < 20) itemsToRender.push({ img, txt }); };
-
-      if (inv.arma?.item > 0) pushItem(itensAPI.arma[inv.arma.item].imagem, `(${Format(inv.arma.Xp, '')}%) 1x`);
-      if (inv.munição > 0) pushItem(itensAPI.munição.imagem, `${Format(inv.munição, '')}x`);
+      // Equipamentos e Ferramentas
+      if (inv.arma?.item > 0) pushItem(itensAPI.arma[inv.arma.item]?.imagem, `(${Format(inv.arma.Xp || 0, '')}%) 1x`);
+      if (inv.armacaça?.item > 0) pushItem(itensAPI.armacaça.imagem, `(${Format(inv.armacaça.Xp || 0, '')}%) 1x`);
+      if (inv.vara?.item > 0) pushItem(itensAPI.vara.imagem, `(${Format(inv.vara.Xp || 0, '')}%) 1x`);
+      if (inv.enxada?.item > 0) pushItem(itensAPI.enxada.imagem, `(${Format(inv.enxada.Xp || 0, '')}%) 1x`);
+      if (inv.regador?.item > 0) pushItem(itensAPI.regador.imagem, `💧${inv.regador.agua !== undefined ? inv.regador.agua : 100}%`);
       if (inv.anelcasamento?.item > 0) pushItem(itensAPI.anelcasamento.imagem, '1x');
-      if (inv.armacaça?.item > 0) pushItem(itensAPI.armacaça.imagem, `(${Format(inv.armacaça.Xp, '')}%) 1x`);
-      if (inv.vara?.item > 0) pushItem(itensAPI.vara.imagem, `(${Format(inv.vara.Xp, '')}%) 1x`);
+
+      // Consumíveis e Outros Itens
+      if (inv.munição > 0) pushItem(itensAPI.munição.imagem, `${Format(inv.munição, '')}x`);
       if (inv.isca > 0) pushItem(itensAPI.isca.imagem, `${Format(inv.isca, '')}x`);
       if (inv.peixe > 0) pushItem(itensAPI.peixe.imagem, `${Format(inv.peixe, '')}x`);
+      if (inv.carne > 0) pushItem(itensAPI.carne.imagem, `${inv.carne}x`);
       if (inv.backgroundticket > 0) pushItem(itensAPI.backgroundticket.imagem, `${Format(inv.backgroundticket, '')}x`);
       if (inv.ração_animal > 0) pushItem(itensAPI.ração_animal.imagem, `${Format(inv.ração_animal, '')}x`);
-      if (inv.carne > 0) pushItem(itensAPI.carne.imagem, `${inv.carne}x`);
       if (inv.baús?.epico > 0) pushItem(itensAPI.baú[3].imagem, `${inv.baús.epico}x`);
       if (inv.baús?.raro > 0) pushItem(itensAPI.baú[2].imagem, `${inv.baús.raro}x`);
       if (inv.baús?.comum > 0) pushItem(itensAPI.baú[1].imagem, `${inv.baús.comum}x`);
       if (inv.chave > 0) pushItem(itensAPI.chave.imagem, `${inv.chave}x`);
-      if (inv.Trigo > 0) pushItem(itensAPI.Trigo.imagem, `${inv.Trigo}x`);
-      if (inv.Milho > 0) pushItem(itensAPI.Milho.imagem, `${inv.Milho}x`);
-      if (inv.Feijão > 0) pushItem(itensAPI.Feijão.imagem, `${inv.Feijão}x`);
-      if (inv.CanaDeAçucar > 0) pushItem(itensAPI.CanaDeAçucar.imagem, `${inv.CanaDeAçucar}x`);
-      if (inv.Cenoura > 0) pushItem(itensAPI.Cenoura.imagem, `${inv.Cenoura}x`);
-      if (inv.Abóbora > 0) pushItem(itensAPI.Abóbora.imagem, `${inv.Abóbora}x`);
       if (inv.Ovo > 0) pushItem(itensAPI.Ovo.imagem, `${inv.Ovo}x`);
       if (inv.Leite > 0) pushItem(itensAPI.Leite.imagem, `${inv.Leite}x`);
       if (inv.Bacon > 0) pushItem(itensAPI.Bacon.imagem, `${inv.Bacon}x`);
 
-      // 4. Download Concorrente de TODAS as imagens
+      // Sementes no Inventário
+      if (inv.semente_trigo > 0) pushItem(itensAPI.semente_trigo.imagem, `${inv.semente_trigo}x`);
+      if (inv.semente_milho > 0) pushItem(itensAPI.semente_milho.imagem, `${inv.semente_milho}x`);
+      if (inv.semente_feijao > 0) pushItem(itensAPI.semente_feijao.imagem, `${inv.semente_feijao}x`);
+      if (inv.semente_cana > 0) pushItem(itensAPI.semente_cana.imagem, `${inv.semente_cana}x`);
+      if (inv.semente_cenoura > 0) pushItem(itensAPI.semente_cenoura.imagem, `${inv.semente_cenoura}x`);
+      if (inv.semente_abobora > 0) pushItem(itensAPI.semente_abobora.imagem, `${inv.semente_abobora}x`);
+
+      // Plantações Colhidas (Qualidades e Podres)
+      if (inv.planta_podre > 0) pushItem(itensAPI.planta_podre.imagem, `🥀${inv.planta_podre}x`);
+
+      const cropsBase = [
+        { name: 'Trigo', key: 'Trigo' },
+        { name: 'Milho', key: 'Milho' },
+        { name: 'Feijão', key: 'Feijão' },
+        { name: 'CanaDeAçucar', key: 'CanaDeAçucar' },
+        { name: 'Cenoura', key: 'Cenoura' },
+        { name: 'Abóbora', key: 'Abóbora' }
+      ];
+
+      cropsBase.forEach(c => {
+        const kExc = `${c.name}_excelente`;
+        if (inv[kExc] > 0) pushItem(itensAPI[c.key]?.imagem, `⭐${inv[kExc]}x`);
+
+        const kBom = `${c.name}_bom`;
+        const baseCount = (inv[kBom] || 0) + (inv[c.key] || 0);
+        if (baseCount > 0) pushItem(itensAPI[c.key]?.imagem, `${baseCount}x`);
+
+        const kRui = `${c.name}_ruim`;
+        if (inv[kRui] > 0) pushItem(itensAPI[c.key]?.imagem, `📉${inv[kRui]}x`);
+      });
+
+      // 4. Preparação de Fontes e Assets de Base
       await ensureFontsLoaded();
       
-      const avatarUrl = user.displayAvatarURL({ extension: 'png', size: 256, forceStatic: true });
-      const bgUrl = 'https://i.postimg.cc/PJbzDM0S/i-Pad-Pro-12-9-1-1.png';
+      const bgUrl = './src/utils/assets/inventory/new_inv.png';
 
-      const urlsToFetch = [bgUrl, avatarUrl, ...itemsToRender.map(i => i.img)];
-      const fetchedDataUris = await Promise.all(urlsToFetch.map(url => fetchRemoteDataUri(url)));
+      const PAGE_SIZE = 40;
+      const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
+      let currentPage = 0;
 
-      const bgDataUri = fetchedDataUris[0];
-      const avatarDataUri = fetchedDataUris[1] || 'https://cdn.discordapp.com/embed/avatars/0.png';
-      
-      // Injeta os dados URI retornados de volta aos itens
-      const itemDataUris = fetchedDataUris.slice(2);
-      itemsToRender.forEach((item, index) => { item.dataUri = itemDataUris[index]; });
+      // 5. Função de Renderização de Página (Grade 10x4)
+      async function renderPage(pageIndex) {
+        const pageItems = allItems.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
 
-      // 5. Motor de Renderização (Satori)
-      const elements = [];
+        const urlsToFetch = [bgUrl, ...pageItems.map(i => i.img)];
+        const fetchedDataUris = await Promise.all(urlsToFetch.map(url => fetchRemoteDataUri(url)));
 
-      // Fundo e Avatar
-      if (bgDataUri) elements.push(h('img', { src: bgDataUri, style: { position: 'absolute', top: 0, left: 0, width: '1200px', height: '670px' } }));
-      elements.push(h('img', { src: avatarDataUri, style: { position: 'absolute', top: 140, left: 655, width: '228px', height: '228px', borderRadius: '15px', objectFit: 'cover' } }));
-
-      // Textos da Coluna Direita (Matemática convertida de BaseLine para Top-Left)
-      profileTexts.forEach((t, i) => {
-        const titleTop = 147 + (i * 39) - 15 + 3;
-        const descTop = 168 + (i * 39) - 20 + 4;
+        const bgDataUri = fetchedDataUris[0];
+        const itemDataUris = fetchedDataUris.slice(1);
         
-        elements.push(h('div', { style: { position: 'absolute', top: titleTop, left: 895, color: t.c1, fontSize: '15px', fontWeight: 400, textTransform: 'uppercase' } }, t.title));
-        elements.push(h('div', { style: { position: 'absolute', top: descTop, left: 895, color: t.c2, fontSize: '20px', fontWeight: 700, textTransform: 'uppercase' } }, t.desc));
-      });
+        pageItems.forEach((item, idx) => { item.dataUri = itemDataUris[idx]; });
 
-      // Grade de Itens Esquerda
-      itemsToRender.forEach((slot, index) => {
-        if (!slot.dataUri) return;
-        
-        const linha = Math.floor(index / 5);
-        const coluna = index % 5;
-        const baseX = 50 + (coluna * 115);
-        const baseY = 155 + (linha * 115);
+        const elements = [];
 
-        // Ícone do Item
-        elements.push(h('img', { src: slot.dataUri, style: { position: 'absolute', top: baseY, left: baseX, width: '80px', height: '80px' } }));
+        // Imagem de Fundo (1200x670)
+        if (bgDataUri) {
+          elements.push(h('img', { src: bgDataUri, style: { position: 'absolute', top: 0, left: 0, width: '1200px', height: '670px' } }));
+        }
 
-        // Texto (Quantidades / XP)
-        const textTop = baseY + 83 - 16 + 2;
-        const textRight = 1200 - (baseX + 83); // Alinhamento matemático à direita
-        
-        elements.push(h('div', { 
+        // Título: INVENTÁRIO - nome (O texto INVENTÁRIO já está fixo na imagem base em x: 19 a 236, y: 21 a 50)
+        elements.push(h('div', {
+          style: {
+            position: 'absolute',
+            top: 21,
+            left: 250,
+            color: '#ac28ae',
+            fontSize: '26px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }
+        }, `- ${user.username}`));
+
+        // Rodapé: Paginação e Total de Itens abaixo do inventário (linha y=591)
+        const startItem = pageIndex * PAGE_SIZE + 1;
+        const endItem = Math.min((pageIndex + 1) * PAGE_SIZE, allItems.length);
+        elements.push(h('div', {
+          style: {
+            position: 'absolute',
+            top: 610,
+            left: 31,
+            width: 1134,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            color: '#94a3b8',
+            fontSize: '18px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }
+        }, [
+          h('div', {}, totalPages > 1
+            ? `PÁGINA ${pageIndex + 1} DE ${totalPages} • ITENS ${startItem}-${endItem}`
+            : `PÁGINA 1 DE 1 • ${allItems.length} ${allItems.length === 1 ? 'ITEM' : 'ITENS'}`
+          ),
+          h('div', {}, `TOTAL: ${allItems.length} ${allItems.length === 1 ? 'ITEM' : 'ITENS'}`)
+        ]));
+
+        // Grade de Itens (10 colunas x 4 linhas = 40 Slots)
+        // Subiu 37px (155 - 37 = 118) e andou pra esquerda 9px (50 - 9 = 41)
+        pageItems.forEach((slot, index) => {
+          if (!slot.dataUri) return;
+          
+          const linha = Math.floor(index / 10);
+          const coluna = index % 10;
+          const baseX = 41 + (coluna * 115);
+          const baseY = 118 + (linha * 114);
+
+          // Ícone do Item (80x80)
+          elements.push(h('img', {
+            src: slot.dataUri,
+            style: {
+              position: 'absolute',
+              top: baseY,
+              left: baseX,
+              width: '80px',
+              height: '80px',
+              objectFit: 'contain'
+            }
+          }));
+
+          // Texto de Quantidade / Durabilidade / Água
+          const textTop = baseY + 66;
+          const textRight = 1200 - (baseX + 83);
+          
+          elements.push(h('div', { 
             style: { 
-                position: 'absolute', top: textTop, right: textRight, 
-                color: '#ffffff', fontSize: '16px', fontWeight: 700, 
-                textShadow: '0px 2px 4px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,0.5)' // Sombra forte pra garantir leitura
+              display: 'flex',
+              alignItems: 'center',
+              position: 'absolute',
+              top: textTop,
+              right: textRight, 
+              color: '#ffffff',
+              fontSize: '15px',
+              fontWeight: 700, 
+              textShadow: '0px 2px 4px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,0.7)'
             } 
-        }, slot.txt));
-      });
+          }, slot.txt));
+        });
 
-      const vnode = h('div', {
-        style: { display: 'flex', position: 'relative', width: '1200px', height: '670px', fontFamily: 'Noto Sans CJK JP', overflow: 'hidden', backgroundColor: '#1e1e1e' }
-      }, ...elements);
+        const vnode = h('div', {
+          style: { display: 'flex', position: 'relative', width: '1200px', height: '670px', fontFamily: 'Roboto', overflow: 'hidden', backgroundColor: '#1e1e1e' }
+        }, ...elements);
 
-      const svg = await satori(vnode, { width: 1200, height: 670, fonts: loadedFonts });
-      const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
-      const finalBuffer = resvg.render().asPng();
-
-      // 6. Envio e Interações
-      const attachment = new AttachmentBuilder(finalBuffer, { name: `mochila-${user.username}.png` });
-      
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("infos").setStyle(ButtonStyle.Secondary).setEmoji('ℹ️'),
-      );
-      
-      await msg.edit({ content: `${user}`, files: [attachment] }).catch(() => {});
-      
-      if (user.id === interaction.user.id) {
-        await msg.edit({ components: [row] }).catch(() => {});
+        const svg = await satori(vnode, { width: 1200, height: 670, fonts: loadedFonts, graphemeImages });
+        const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
+        return resvg.render().asPng();
       }
+
+      function buildActionRow(pageIndex) {
+        const row = new ActionRowBuilder();
+        if (totalPages > 1) {
+          row.addComponents(
+            new ButtonBuilder()
+              .setCustomId("prev_page")
+              .setStyle(ButtonStyle.Secondary)
+              .setEmoji('⬅️')
+              .setDisabled(pageIndex === 0),
+            new ButtonBuilder()
+              .setCustomId("page_num")
+              .setStyle(ButtonStyle.Secondary)
+              .setLabel(`${pageIndex + 1}/${totalPages}`)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId("next_page")
+              .setStyle(ButtonStyle.Secondary)
+              .setEmoji('➡️')
+              .setDisabled(pageIndex >= totalPages - 1),
+          );
+        }
+        row.addComponents(
+          new ButtonBuilder().setCustomId("infos").setStyle(ButtonStyle.Secondary).setEmoji('ℹ️')
+        );
+        return row;
+      }
+
+      // 6. Renderiza a Primeira Página e Envia
+      const initialBuffer = await renderPage(0);
+      const attachment = new AttachmentBuilder(initialBuffer, { name: `mochila-${user.username}.png` });
+      
+      await msg.edit({ content: `${user}`, files: [attachment], components: [buildActionRow(0)] }).catch(() => {});
       
       const coletor = msg.createMessageComponentCollector({ 
         filter: x => x.user.id === interaction.user.id,
@@ -240,45 +377,81 @@ module.exports = {
       coletor.on('collect', async (i2) => {
         await i2.deferUpdate();
 
-        if (i2.customId === 'infos') {
+        if (i2.customId === 'prev_page' && currentPage > 0) {
+          currentPage--;
+          const buf = await renderPage(currentPage);
+          const attach = new AttachmentBuilder(buf, { name: `mochila-${user.username}.png` });
+          await msg.edit({ files: [attach], components: [buildActionRow(currentPage)] }).catch(() => {});
+        } else if (i2.customId === 'next_page' && currentPage < totalPages - 1) {
+          currentPage++;
+          const buf = await renderPage(currentPage);
+          const attach = new AttachmentBuilder(buf, { name: `mochila-${user.username}.png` });
+          await msg.edit({ files: [attach], components: [buildActionRow(currentPage)] }).catch(() => {});
+        } else if (i2.customId === 'infos') {
           const freshInv = await getUserInventory(user);
           
           const Embed = new EmbedBuilder()
             .setColor(color.embed || "#00ff00")
-            .setTitle("Seu Histórico de Itens")
+            .setTitle(`📦 Inventário Completo de ${user.username}`)
             .setTimestamp()
             .setFooter({ text: 'Detalhes do Inventário', iconURL: user.displayAvatarURL({ extension: 'png' }) });
 
-          let desc = "";
-          if (freshInv.armacaça?.item) desc += `<:armacaca:1002636342557155370> **|** ${itensAPI.armacaça.nome[0]}: ${freshInv.armacaça.Xp ? `✅ (${freshInv.armacaça.Xp}%)` : '❌'}\n`;
-          if (freshInv.arma?.item) desc += `🔫 **|** ${freshInv.arma.nome}: ${freshInv.arma.Xp ? `✅ (${freshInv.arma.Xp}%)` : '❌'}\n`;
-          if (freshInv.vara?.item) desc += `🎣 **|** ${freshInv.vara.nome[0]}: ${freshInv.vara.Xp ? `✅ (${freshInv.vara.Xp}%)` : '❌'}\n`;
-          if (freshInv.porte?.item) desc += `📜 **|** ${freshInv.porte.nome}: ✅\n`;
-          if (freshInv.anelcasamento?.item) desc += `💍 **|** ${freshInv.anelcasamento.nome}: ✅\n`;
-          if (freshInv.munição) desc += `<:bullet:1002628038778961981> **|** ${itensAPI.munição.nome[0]}: ${freshInv.munição}\n`;
-          if (freshInv.Trigo) desc += `<:trigo:994604784571125770> **|** ${itensAPI.Trigo.nome[0]}: ${freshInv.Trigo}\n`;
-          if (freshInv.Milho) desc += `<:milho:994602871511334912> **|** ${itensAPI.Milho.nome[0]}: ${freshInv.Milho}\n`;
-          if (freshInv.Feijão) desc += `<:feijo:994608694375497798> **|** ${itensAPI.Feijão.nome[0]}: ${freshInv.Feijão}\n`;
-          if (freshInv.CanaDeAçucar) desc += `<:canadeacucar:994610951884128347> **|** ${itensAPI.CanaDeAçucar.nome[0]}: ${freshInv.CanaDeAçucar}\n`;
-          if (freshInv.Cenoura) desc += `<:cenoura:948417146273275915> **|** ${itensAPI.Cenoura.nome[0]}: ${freshInv.Cenoura}\n`;
-          if (freshInv.Abóbora) desc += `<:abobora:994611617264308344> **|** ${itensAPI.Abóbora.nome[0]}: ${freshInv.Abóbora}\n`;
-          if (freshInv.Ovo) desc += `<:ovo:1002603609139187733> **|** ${itensAPI.Ovo.nome[0]}: ${freshInv.Ovo}\n`;
-          if (freshInv.Leite) desc += `<:leite:1002603490536853595> **|** ${itensAPI.Leite.nome[0]}: ${freshInv.Leite}\n`;
-          if (freshInv.Bacon) desc += `<:bacon:1002603721227767848> **|** ${itensAPI.Bacon.nome[0]}: ${freshInv.Bacon}\n`;
-          if (freshInv.ração_animal) desc += `<:comidaAnimal:1060974202980671508> **|** ${itensAPI.ração_animal.nome[0]}: ${freshInv.ração_animal}\n`;
-          if (freshInv.isca) desc += `🦐 **|** ${itensAPI.isca.nome[0]}: ${freshInv.isca}\n`;
-          if (freshInv.carne) desc += `🥩 **|** ${itensAPI.carne.nome[0]}: ${freshInv.carne}\n`;
-          if (freshInv.peixe) desc += `🐟 **|** ${itensAPI.peixe.nome[0]}: ${freshInv.peixe}\n`;
-          if (freshInv.adubo) desc += `💩 **|** ${itensAPI.adubo.nome[0]}: ${freshInv.adubo}\n`;
-          if (freshInv.backgroundticket) desc += `🎟️ **|** ${itensAPI.backgroundticket.nome[0]}: ${freshInv.backgroundticket}\n`;
+          let equipDesc = "";
+          if (freshInv.armacaça?.item) equipDesc += `<:armacaca:1002636342557155370> **|** ${itensAPI.armacaça.nome[0]}: ${freshInv.armacaça.Xp ? `✅ (${freshInv.armacaça.Xp}%)` : '❌'}\n`;
+          if (freshInv.arma?.item) equipDesc += `🔫 **|** ${freshInv.arma.nome}: ${freshInv.arma.Xp ? `✅ (${freshInv.arma.Xp}%)` : '❌'}\n`;
+          if (freshInv.vara?.item) equipDesc += `🎣 **|** ${freshInv.vara.nome[0]}: ${freshInv.vara.Xp ? `✅ (${freshInv.vara.Xp}%)` : '❌'}\n`;
+          if (freshInv.enxada?.item) equipDesc += `⛏️ **|** ${itensAPI.enxada.nome[0]}: ${freshInv.enxada.Xp ? `✅ (${freshInv.enxada.Xp}%)` : '❌'}\n`;
+          if (freshInv.regador?.item) equipDesc += `🚿 **|** ${itensAPI.regador.nome[0]}: ${freshInv.regador.Xp ? `✅ (${freshInv.regador.Xp}%)` : '❌'} | 💧 Água: **${freshInv.regador.agua !== undefined ? freshInv.regador.agua : 100}%**\n`;
+          if (freshInv.porte?.item) equipDesc += `📜 **|** ${freshInv.porte.nome}: ✅\n`;
+          if (freshInv.anelcasamento?.item) equipDesc += `💍 **|** ${freshInv.anelcasamento.nome}: ✅\n`;
 
-          Embed.setDescription(desc || "Nenhum item detalhado encontrado.");
+          let seedDesc = "";
+          if (freshInv.semente_trigo) seedDesc += `🌾 **|** ${itensAPI.semente_trigo.nome[0]}: **${freshInv.semente_trigo}**\n`;
+          if (freshInv.semente_milho) seedDesc += `🌽 **|** ${itensAPI.semente_milho.nome[0]}: **${freshInv.semente_milho}**\n`;
+          if (freshInv.semente_feijao) seedDesc += `🫘 **|** ${itensAPI.semente_feijao.nome[0]}: **${freshInv.semente_feijao}**\n`;
+          if (freshInv.semente_cana) seedDesc += `🎋 **|** ${itensAPI.semente_cana.nome[0]}: **${freshInv.semente_cana}**\n`;
+          if (freshInv.semente_cenoura) seedDesc += `🥕 **|** ${itensAPI.semente_cenoura.nome[0]}: **${freshInv.semente_cenoura}**\n`;
+          if (freshInv.semente_abobora) seedDesc += `🎃 **|** ${itensAPI.semente_abobora.nome[0]}: **${freshInv.semente_abobora}**\n`;
+
+          let harvestDesc = "";
+          cropsBase.forEach(c => {
+            const kExc = `${c.name}_excelente`;
+            const kBom = `${c.name}_bom`;
+            const kRui = `${c.name}_ruim`;
+            if (freshInv[kExc]) harvestDesc += `⭐ **|** ${itensAPI[c.key]?.nome[0]} (Excelente): **${freshInv[kExc]}**\n`;
+            const bCount = (freshInv[kBom] || 0) + (freshInv[c.key] || 0);
+            if (bCount > 0) harvestDesc += `✨ **|** ${itensAPI[c.key]?.nome[0]} (Bom): **${bCount}**\n`;
+            if (freshInv[kRui]) harvestDesc += `📉 **|** ${itensAPI[c.key]?.nome[0]} (Ruim): **${freshInv[kRui]}**\n`;
+          });
+          if (freshInv.planta_podre) harvestDesc += `🥀 **|** Planta Podre: **${freshInv.planta_podre}**\n`;
+
+          let otherDesc = "";
+          if (freshInv.munição) otherDesc += `<:bullet:1002628038778961981> **|** ${itensAPI.munição.nome[0]}: ${freshInv.munição}\n`;
+          if (freshInv.Ovo) otherDesc += `<:ovo:1002603609139187733> **|** ${itensAPI.Ovo.nome[0]}: ${freshInv.Ovo}\n`;
+          if (freshInv.Leite) otherDesc += `<:leite:1002603490536853595> **|** ${itensAPI.Leite.nome[0]}: ${freshInv.Leite}\n`;
+          if (freshInv.Bacon) otherDesc += `<:bacon:1002603721227767848> **|** ${itensAPI.Bacon.nome[0]}: ${freshInv.Bacon}\n`;
+          if (freshInv.ração_animal) otherDesc += `<:comidaAnimal:1060974202980671508> **|** ${itensAPI.ração_animal.nome[0]}: ${freshInv.ração_animal}\n`;
+          if (freshInv.isca) otherDesc += `🦐 **|** ${itensAPI.isca.nome[0]}: ${freshInv.isca}\n`;
+          if (freshInv.carne) otherDesc += `🥩 **|** ${itensAPI.carne.nome[0]}: ${freshInv.carne}\n`;
+          if (freshInv.peixe) otherDesc += `🐟 **|** ${itensAPI.peixe.nome[0]}: ${freshInv.peixe}\n`;
+          if (freshInv.adubo) otherDesc += `💩 **|** ${itensAPI.adubo?.nome ? itensAPI.adubo.nome[0] : 'Adubo'}: ${freshInv.adubo}\n`;
+          if (freshInv.backgroundticket) otherDesc += `🎟️ **|** ${itensAPI.backgroundticket.nome[0]}: ${freshInv.backgroundticket}\n`;
+
+          if (equipDesc) Embed.addFields({ name: "🛠️ Equipamentos & Ferramentas", value: equipDesc });
+          if (seedDesc) Embed.addFields({ name: "🌱 Sementes", value: seedDesc });
+          if (harvestDesc) Embed.addFields({ name: "🌾 Plantação & Colheitas", value: harvestDesc });
+          if (otherDesc) Embed.addFields({ name: "🎒 Outros Itens", value: otherDesc });
+
+          if (!equipDesc && !seedDesc && !harvestDesc && !otherDesc) {
+            Embed.setDescription("Nenhum item detalhado encontrado no inventário.");
+          }
+
           return interaction.followUp({ ephemeral: true, embeds: [Embed] });
         }
       });
 
       coletor.on('end', () => {
-        const rowDesativada = ActionRowBuilder.from(row);
+        const rowDesativada = buildActionRow(currentPage);
         rowDesativada.components.forEach(btn => btn.setDisabled(true));
         msg.edit({ components: [rowDesativada] }).catch(() => {});
       });

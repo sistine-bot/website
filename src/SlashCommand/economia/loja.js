@@ -80,7 +80,9 @@ module.exports = {
             if (!isBuying) {
               await database.ref(Diretório).update({ [Variável]: null });
             } else {
-              if (['arma', 'armacaça', 'vara'].includes(Variável.toLowerCase())) {
+              if (Variável.toLowerCase() === 'regador') {
+                await database.ref(Diretório).update({ [Variável]: { Xp: 100, item: Amount, nome: ItemName, agua: 100 } });
+              } else if (['arma', 'armacaça', 'vara', 'enxada'].includes(Variável.toLowerCase())) {
                 await database.ref(Diretório).update({ [Variável]: { Xp: 100, item: Amount, nome: ItemName } });
               } else {
                 await database.ref(Diretório).update({ [Variável]: Amount });
@@ -156,21 +158,49 @@ ${emoji[4]} **|** ${emoji.porco} - ${itensAPI.Porco.nome[0]} **|** ${Format(iten
               await Store(DB_CONSUM, 'ração_animal', 2, true, 3, NomeDoItem, Valor, 6, `{emoji.saida} {mensagem.loja.compra} | ${Valor} | 3 ${NomeDoItem}`);
             } else {
               const AnimalDB = await database.ref(`${DB_BASE}/Fazenda/Animal`).once('value');
-              const animal1 = AnimalDB.val()?.animal_1 || 0;
-              const animal2 = AnimalDB.val()?.animal_2 || 0;
-              const animal3 = AnimalDB.val()?.animal_3 || 0;
+              const dbData = AnimalDB.val() || {};
 
-              const row2 = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId("animal_1").setStyle(ButtonStyle.Secondary).setEmoji(emoji[1]).setDisabled(!!animal1),
-                new ButtonBuilder().setCustomId("animal_2").setStyle(ButtonStyle.Secondary).setEmoji(emoji[2]).setDisabled(!!animal2),
-                new ButtonBuilder().setCustomId("animal_3").setStyle(ButtonStyle.Secondary).setEmoji(emoji[3]).setDisabled(!!animal3),
-              );
+              const slots = [1, 2, 3, 4, 5, 6].map(num => {
+                const isUnlocked = num === 1 || !!dbData[`espaco_${num}_desbloqueado`] || !!dbData[`animal_${num}`];
+                const isOccupied = !!dbData[`animal_${num}`];
+                return { num, isUnlocked, isOccupied };
+              });
+
+              const rowSlots1 = new ActionRowBuilder();
+              slots.slice(0, 3).forEach(s => {
+                rowSlots1.addComponents(
+                  new ButtonBuilder()
+                    .setCustomId(`animal_${s.num}`)
+                    .setStyle(ButtonStyle.Secondary)
+                    .setLabel(`Espaço ${s.num}`)
+                    .setEmoji(emoji[s.num] || `${s.num}️⃣`)
+                    .setDisabled(!s.isUnlocked || s.isOccupied)
+                );
+              });
+
+              const rowSlots2 = new ActionRowBuilder();
+              slots.slice(3, 6).forEach(s => {
+                rowSlots2.addComponents(
+                  new ButtonBuilder()
+                    .setCustomId(`animal_${s.num}`)
+                    .setStyle(ButtonStyle.Secondary)
+                    .setLabel(`Espaço ${s.num}`)
+                    .setEmoji(emoji[s.num] || `${s.num}️⃣`)
+                    .setDisabled(!s.isUnlocked || s.isOccupied)
+                );
+              });
+
+              const descLines = slots.map(s => {
+                const em = emoji[s.num] || `${s.num}️⃣`;
+                const status = !s.isUnlocked ? '🔒 Bloqueado (Expanda em /fazenda)' : (s.isOccupied ? '❌ Ocupado' : '✅ Disponível');
+                return `${em} **|** Rancho ${s.num} - **${status}**`;
+              }).join('\n');
               
               const embed2 = new EmbedBuilder()
                 .setColor(color.embed)
-                .setDescription(`**Selecione o espaço de seu novo animal:**\n${emoji[1]} **|** Rancho 1 - **${animal1 ? 'Ocupado' : 'Selecionar'}**\n${emoji[2]} **|** Rancho 2 - **${animal2 ? 'Ocupado' : 'Selecionar'}**\n${emoji[3]} **|** Rancho 3 - **${animal3 ? 'Ocupado' : 'Selecionar'}**`);
+                .setDescription(`**Selecione o espaço para abrigar seu novo animal:**\n${descLines}`);
               
-              const msg2 = await interaction.followUp({ embeds: [embed2], components: [row2], ephemeral: true });
+              const msg2 = await interaction.followUp({ embeds: [embed2], components: [rowSlots1, rowSlots2], ephemeral: true });
               const coletor2 = msg2.createMessageComponentCollector({ filter: filtro, time: TimeToClose });
               
               coletor2.on('collect', async (X) => {
@@ -183,6 +213,12 @@ ${emoji[4]} **|** ${emoji.porco} - ${itensAPI.Porco.nome[0]} **|** ${Format(iten
                   const NomeDoItem = itensAPI[i.customId].nome[0];
 
                   await Store(`${DB_BASE}/Fazenda/Animal`, rancho, 2, true, Quantia, NomeDoItem, Valor, 2, `{emoji.saida} {mensagem.loja.compra} | ${Valor} | ${NomeDoItem}`);
+                  await database.ref(`${DB_BASE}/Fazenda/Animal`).update({
+                    [`${rancho}_fase`]: 'adulto',
+                    [`${rancho}_alimento`]: 0,
+                    [`${rancho}_tempo`]: Date.now(),
+                    [`${rancho}_amor`]: 70
+                  });
                 }
               });
             }
@@ -194,26 +230,26 @@ ${emoji[4]} **|** ${emoji.porco} - ${itensAPI.Porco.nome[0]} **|** ${Format(iten
 
         case 'sementes': {
           const row2 = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("Trigo").setStyle(ButtonStyle.Secondary).setEmoji(emoji[1]),
-            new ButtonBuilder().setCustomId("Milho").setStyle(ButtonStyle.Secondary).setEmoji(emoji[2]),
-            new ButtonBuilder().setCustomId("Feijão").setStyle(ButtonStyle.Secondary).setEmoji(emoji[3]),
+            new ButtonBuilder().setCustomId("semente_trigo").setStyle(ButtonStyle.Secondary).setEmoji(emoji[1]),
+            new ButtonBuilder().setCustomId("semente_milho").setStyle(ButtonStyle.Secondary).setEmoji(emoji[2]),
+            new ButtonBuilder().setCustomId("semente_feijao").setStyle(ButtonStyle.Secondary).setEmoji(emoji[3]),
           );
           const row3 = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("CanaDeAçucar").setStyle(ButtonStyle.Secondary).setEmoji(emoji[4]),
-            new ButtonBuilder().setCustomId("Cenoura").setStyle(ButtonStyle.Secondary).setEmoji(emoji[5]),
-            new ButtonBuilder().setCustomId("Abóbora").setStyle(ButtonStyle.Secondary).setEmoji(emoji[6]),
+            new ButtonBuilder().setCustomId("semente_cana").setStyle(ButtonStyle.Secondary).setEmoji(emoji[4]),
+            new ButtonBuilder().setCustomId("semente_cenoura").setStyle(ButtonStyle.Secondary).setEmoji(emoji[5]),
+            new ButtonBuilder().setCustomId("semente_abobora").setStyle(ButtonStyle.Secondary).setEmoji(emoji[6]),
           );
           
           const embed = new EmbedBuilder()
             .setColor(color.embed)
-            .setAuthor({ name: `${client.user.username} • Loja`, iconURL: client.user.displayAvatarURL({ size: 1024 }) })
+            .setAuthor({ name: `${client.user.username} • Loja de Sementes`, iconURL: client.user.displayAvatarURL({ size: 1024 }) })
             .setDescription(`
-${emoji[1]} **|** ${emoji.trigo} - ${itensAPI.Trigo.nome[0]} **|** ${Format(itensAPI.Trigo.valor)}
-${emoji[2]} **|** ${emoji.milho} - ${itensAPI.Milho.nome[0]} **|** ${Format(itensAPI.Milho.valor)}
-${emoji[3]} **|** ${emoji.feijão} - ${itensAPI.Feijão.nome[0]} **|** ${Format(itensAPI.Feijão.valor)}
-${emoji[4]} **|** ${emoji.canadeaçucar} - ${itensAPI.CanaDeAçucar.nome[0]} **|** ${Format(itensAPI.CanaDeAçucar.valor)}
-${emoji[5]} **|** ${emoji.cenoura} - ${itensAPI.Cenoura.nome[0]} **|** ${Format(itensAPI.Cenoura.valor)}
-${emoji[6]} **|** ${emoji.abóbora} - ${itensAPI.Abóbora.nome[0]} **|** ${Format(itensAPI.Abóbora.valor)}`)
+${emoji[1]} **|** ${emoji.trigo} - ${itensAPI.semente_trigo.nome[0]} **|** ${Format(itensAPI.semente_trigo.valor)}
+${emoji[2]} **|** ${emoji.milho} - ${itensAPI.semente_milho.nome[0]} **|** ${Format(itensAPI.semente_milho.valor)}
+${emoji[3]} **|** ${emoji.feijão} - ${itensAPI.semente_feijao.nome[0]} **|** ${Format(itensAPI.semente_feijao.valor)}
+${emoji[4]} **|** ${emoji.canadeaçucar} - ${itensAPI.semente_cana.nome[0]} **|** ${Format(itensAPI.semente_cana.valor)}
+${emoji[5]} **|** ${emoji.cenoura} - ${itensAPI.semente_cenoura.nome[0]} **|** ${Format(itensAPI.semente_cenoura.valor)}
+${emoji[6]} **|** ${emoji.abóbora} - ${itensAPI.semente_abobora.nome[0]} **|** ${Format(itensAPI.semente_abobora.valor)}`)
             .setFooter({ text: `Você possui ${ms(TimeToClose)} • ${interaction.guild.name}`, iconURL: interaction.guild.iconURL() || undefined });
           
           const msg = await interaction.followUp({ embeds: [embed], components: [row2, row3] });
@@ -221,18 +257,19 @@ ${emoji[6]} **|** ${emoji.abóbora} - ${itensAPI.Abóbora.nome[0]} **|** ${Forma
           
           coletor.on('collect', async (i) => {
             await i.deferUpdate();
-            const Valor = itensAPI[i.customId].valor;
-            const NomeDoItem = itensAPI[i.customId].nome[0];
+            const seedKey = i.customId;
+            const Valor = itensAPI[seedKey].valor;
+            const NomeDoItem = itensAPI[seedKey].nome[0];
             
             const snapshot = await database.ref(`${DB_BASE}/nível/`).once('value');
             let nível = snapshot.val()?.nível || 0;
             
-            if (NomeDoItem === 'Feijão' && nível < 5) return RequiredNível(5);
-            if (NomeDoItem === 'CanaDeAçucar' && nível < 10) return RequiredNível(10);
-            if (NomeDoItem === 'Cenoura' && nível < 15) return RequiredNível(15);
-            if (NomeDoItem === 'Abóbora' && nível < 20) return RequiredNível(20);
+            if (seedKey === 'semente_feijao' && nível < 5) return RequiredNível(5);
+            if (seedKey === 'semente_cana' && nível < 10) return RequiredNível(10);
+            if (seedKey === 'semente_cenoura' && nível < 15) return RequiredNível(15);
+            if (seedKey === 'semente_abobora' && nível < 20) return RequiredNível(20);
             
-            await Store(DB_CONSUM, NomeDoItem, 2, true, 1, NomeDoItem, Valor, 999, `{emoji.saida} {mensagem.loja.compra} | ${Valor} | ${i.customId}`);
+            await Store(DB_CONSUM, seedKey, 2, true, 1, NomeDoItem, Valor, 999, `{emoji.saida} {mensagem.loja.compra} | ${Valor} | ${NomeDoItem}`);
           });
 
           coletor.on('end', () => { LojaFechada('Sementes'); msg.delete().catch(() => {}); });
@@ -300,21 +337,26 @@ ${l6 < 1 ? emoji[6] : emoji.cadeado} **|** Lote 6 **|** ${Format(50000)}`)
             new ButtonBuilder().setCustomId("1").setStyle(ButtonStyle.Secondary).setEmoji(emoji[1]),
             new ButtonBuilder().setCustomId("2").setStyle(ButtonStyle.Secondary).setEmoji(emoji[2]),
             new ButtonBuilder().setCustomId("3").setStyle(ButtonStyle.Secondary).setEmoji(emoji[3]),
+          );
+          const row2 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId("4").setStyle(ButtonStyle.Secondary).setEmoji(emoji[4]),
+            new ButtonBuilder().setCustomId("5").setStyle(ButtonStyle.Secondary).setEmoji(emoji[5]),
+            new ButtonBuilder().setCustomId("6").setStyle(ButtonStyle.Secondary).setEmoji(emoji[6]),
           );
           
           const embed = new EmbedBuilder()
             .setColor(color.embed)
-            .setAuthor({ name: `${client.user.username} • Loja`, iconURL: client.user.displayAvatarURL({ size: 1024 }) })
+            .setAuthor({ name: `${client.user.username} • Loja de Itens`, iconURL: client.user.displayAvatarURL({ size: 1024 }) })
             .setDescription(`
 ${emoji[1]} **|** ${itensAPI.porte.nome[0]} **|** ${Format(itensAPI.porte.valor)}
 ${emoji[2]} **|** ${itensAPI.anelcasamento.nome[0]} **|** ${Format(itensAPI.anelcasamento.valor)}
 ${emoji[3]} **|** ${itensAPI.vara.nome[0]} **|** ${Format(itensAPI.vara.valor)}
-${emoji[4]} **|** 7 ${itensAPI.isca.nome[1]} **|** ${Format(itensAPI.isca.valor * 7)}`)
-// ${emoji[5]} **|** ${itensAPI.backgroundticket.nome[0]} **|** ${Format(itensAPI.backgroundticket.valor)}`)
+${emoji[4]} **|** 7 ${itensAPI.isca.nome[1]} **|** ${Format(itensAPI.isca.valor * 7)}
+${emoji[5]} **|** ⛏️ ${itensAPI.enxada.nome[0]} **|** ${Format(itensAPI.enxada.valor)}
+${emoji[6]} **|** 🚿 ${itensAPI.regador.nome[0]} **|** ${Format(itensAPI.regador.valor)}`)
             .setFooter({ text: `Você possui ${ms(TimeToClose)} • ${interaction.guild.name}`, iconURL: interaction.guild.iconURL() || undefined });
           
-          const msg = await interaction.followUp({ embeds: [embed], components: [row1] });
+          const msg = await interaction.followUp({ embeds: [embed], components: [row1, row2] });
           const coletor = msg.createMessageComponentCollector({ filter: filtro, time: TimeToClose });
           
           coletor.on('collect', async (i) => {
@@ -333,6 +375,12 @@ ${emoji[4]} **|** 7 ${itensAPI.isca.nome[1]} **|** ${Format(itensAPI.isca.valor 
                 break;
               case '4':
                 ItemType = 2; Amount = 7; NomeItem = itensAPI.isca.nome[1]; Money = itensAPI.isca.valor * 7; Variável = 'isca'; Diretório = DB_CONSUM; Quanti = 14;
+                break;
+              case '5':
+                ItemType = 1; Amount = 1; NomeItem = itensAPI.enxada.nome[0]; Money = itensAPI.enxada.valor; Variável = 'enxada'; Diretório = DB_EQUIP; Quanti = 0;
+                break;
+              case '6':
+                ItemType = 1; Amount = 1; NomeItem = itensAPI.regador.nome[0]; Money = itensAPI.regador.valor; Variável = 'regador'; Diretório = DB_EQUIP; Quanti = 0;
                 break;
             }
             
@@ -438,18 +486,20 @@ ${verifyArma ? emoji.cadeado : emoji[6]} **|** ${itensAPI.arma[4].nome} **|** ${
             if (key === 'arma') {
               return Math.floor((itensAPI.arma[tier]?.valor || 0) / 2);
             }
-            if (['Trigo', 'Milho', 'Feijão', 'CanaDeAçucar', 'Cenoura', 'Abóbora', 'armacaça', 'vara', 'porte', 'anelcasamento'].includes(key)) {
-              return Math.floor((itensAPI[key]?.valor || 0) / 2);
-            }
             if (['peixe', 'carne', 'Ovo', 'Leite', 'Bacon'].includes(key)) {
               return itensAPI[key]?.valor || 0;
+            }
+            if (itensAPI[key]?.valor) {
+              return Math.floor(itensAPI[key].valor / 2);
             }
             return Math.floor((itensAPI[key]?.valor || 0) / 2);
           }
   
           function RowADD(Item, NomeItem, Emoji, Valorr, Quantia = 0) {
-            comp.addOptions([{ label: NomeItem, description: `Você irá receber ${Format(Quantia)} na venda`, emoji: Emoji, value: Valorr }]);
-            ROW.push(Valorr);
+            if (ROW.length < 25) {
+              comp.addOptions([{ label: NomeItem, description: `Você irá receber ${Format(Quantia)} na venda`, emoji: Emoji, value: Valorr }]);
+              ROW.push(Valorr);
+            }
           }
   
           if (consum.peixe > 0) RowADD(consum.peixe, `${consum.peixe}x Peixe`, '🐟', 'peixe', getItemSellPrice('peixe') * consum.peixe);
@@ -463,8 +513,23 @@ ${verifyArma ? emoji.cadeado : emoji[6]} **|** ${itensAPI.arma[4].nome} **|** ${
           if (consum.Ovo > 0) RowADD(consum.Ovo, `${consum.Ovo}x Ovo`, '🥚', 'Ovo', getItemSellPrice('Ovo') * consum.Ovo);
           if (consum.Leite > 0) RowADD(consum.Leite, `${consum.Leite}x Leite`, '🥛', 'Leite', getItemSellPrice('Leite') * consum.Leite);
           if (consum.Bacon > 0) RowADD(consum.Bacon, `${consum.Bacon}x Bacon`, '🥓', 'Bacon', getItemSellPrice('Bacon') * consum.Bacon);
+          if (consum.planta_podre > 0) RowADD(consum.planta_podre, `${consum.planta_podre}x Planta Podre`, '🥀', 'planta_podre', getItemSellPrice('planta_podre') * consum.planta_podre);
+
+          const cropList = ['Trigo', 'Milho', 'Feijão', 'CanaDeAçucar', 'Cenoura', 'Abóbora'];
+          const qualList = ['excelente', 'bom', 'ruim'];
+          cropList.forEach(c => {
+            qualList.forEach(q => {
+              const k = `${c}_${q}`;
+              if (consum[k] > 0 && itensAPI[k]) {
+                const icon = q === 'excelente' ? '⭐' : (q === 'bom' ? '✨' : '📉');
+                RowADD(consum[k], `${consum[k]}x ${itensAPI[k].nome[0]}`, icon, k, getItemSellPrice(k) * consum[k]);
+              }
+            });
+          });
           
           if (equip.armacaça?.item > 0) RowADD(equip.armacaça.item, `Arma de Caça`, '🏹', 'armacaça', getItemSellPrice('armacaça'));
+          if (equip.enxada?.item > 0) RowADD(equip.enxada.item, `Enxada`, '⛏️', 'enxada', getItemSellPrice('enxada'));
+          if (equip.regador?.item > 0) RowADD(equip.regador.item, `Regador`, '🚿', 'regador', getItemSellPrice('regador'));
           if (equip.arma?.item > 0) {
             const tierArma = equip.arma.item;
             const nomeArma = Array.isArray(itensAPI.arma[tierArma]?.nome) ? itensAPI.arma[tierArma].nome[0] : (itensAPI.arma[tierArma]?.nome || `Tier ${tierArma}`);
@@ -489,7 +554,7 @@ ${verifyArma ? emoji.cadeado : emoji[6]} **|** ${itensAPI.arma[4].nome} **|** ${
             
             let NomedoItem = '', Diretório = '', Variável = valor, Quantt = 1, DinheiroQuant = 0;
   
-            if (['vara', 'anelcasamento', 'porte', 'arma', 'armacaça'].includes(valor)) {
+            if (['vara', 'anelcasamento', 'porte', 'arma', 'armacaça', 'enxada', 'regador'].includes(valor)) {
               Diretório = DB_EQUIP;
               if (valor === 'arma') {
                 const tierArma = equip.arma.item;
