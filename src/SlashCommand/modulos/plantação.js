@@ -179,6 +179,27 @@ module.exports = {
             }
 
             if (loteInfo.status === 'empty') {
+              const inv = await getUserInventory(interaction.user);
+              const hasEnxada = inv.enxada && (typeof inv.enxada === 'object' ? inv.enxada.item > 0 : inv.enxada > 0);
+              const enxadaXp = typeof inv.enxada === 'object' ? (inv.enxada.Xp ?? 100) : 100;
+
+              if (!hasEnxada) {
+                return int.followUp({
+                  content: `⛏️ **|** Você precisa de uma **Enxada** (Enxada de Madeira ou superior) para arar e preparar a terra antes de plantar!\n💡 *Se você é novo por aqui, resgate seu kit com \`/start\` para ganhar suas primeiras ferramentas gratuitas, ou adquira uma enxada na \`/loja itens\`.*`,
+                  ephemeral: true
+                });
+              }
+
+              if (enxadaXp <= 0) {
+                const isMadeira = (typeof inv.enxada === 'object' && (inv.enxada.tipo === 'madeira' || inv.enxada.reparavel === false));
+                return int.followUp({
+                  content: isMadeira
+                    ? `⛏️ **|** Sua **Enxada de Madeira** quebrou completamente (0% de durabilidade)! Como ela é feita de madeira rústica, não pode ser consertada. Adquira uma nova na \`/loja itens\`.`
+                    : `⛏️ **|** Sua **Enxada** está quebrada (0% de durabilidade)! Conserte-a em \`/recuperar item:enxada\` ou adquira uma nova na \`/loja itens\`.`,
+                  ephemeral: true
+                });
+              }
+
               currentPlantingLote = loteNum;
               await renderPlantingMenu(loteNum);
               return;
@@ -437,19 +458,23 @@ module.exports = {
 
         // Status das Ferramentas
         const hasEnxada = inv.enxada && (typeof inv.enxada === 'object' ? inv.enxada.item > 0 : inv.enxada > 0);
-        const enxadaXp = typeof inv.enxada === 'object' ? (inv.enxada.Xp ?? 100) : 100;
+        const enxadaObj = typeof inv.enxada === 'object' ? inv.enxada : {};
+        const enxadaNome = enxadaObj.nome || (enxadaObj.tipo === 'madeira' ? 'Enxada de Madeira' : 'Enxada');
+        const enxadaXp = enxadaObj.Xp ?? 100;
         const enxadaTxt = hasEnxada
-          ? (enxadaXp > 0 ? `⛏️ Enxada: **${enxadaXp}%** durabilidade` : `⛏️ Enxada: ⚠️ **Quebrada (0%)**`)
-          : `⛏️ Enxada: ❌ **Não possui**`;
+          ? (enxadaXp > 0 ? `⛏️ ${enxadaNome}: **${enxadaXp}%** durabilidade` : `⛏️ ${enxadaNome}: ⚠️ **Quebrada (0%)**`)
+          : `⛏️ Enxada: ❌ **Não possui** (Use /start ou /loja)`;
 
         const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
-        const regadorXp = typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100;
-        const regadorAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
+        const regadorObj = typeof inv.regador === 'object' ? inv.regador : {};
+        const regadorNome = regadorObj.nome || (regadorObj.tipo === 'plastico' ? 'Regador de Plástico' : 'Regador de Ferro');
+        const regadorXp = regadorObj.Xp ?? 100;
+        const regadorAgua = regadorObj.agua ?? 100;
         const regadorTxt = hasRegador
           ? (regadorXp > 0 
-              ? `🚿 Regador: **${regadorXp}%** durabilidade • 💧 Água: **${regadorAgua}%**`
-              : `🚿 Regador: ⚠️ **Quebrado (0%)** • 💧 Água: **${regadorAgua}%**`)
-          : `🚿 Regador: ❌ **Não possui**`;
+              ? `🚿 ${regadorNome}: **${regadorXp}%** durabilidade • 💧 Água: **${regadorAgua}%**`
+              : `🚿 ${regadorNome}: ⚠️ **Quebrado (0%)** • 💧 Água: **${regadorAgua}%**`)
+          : `🚿 Regador: ❌ **Não possui** (Use /start ou /loja)`;
 
         // Descrição dos Lotes
         const lotesDesc = lotes.map(l => l.desc).join('\n');
@@ -502,7 +527,16 @@ module.exports = {
         const inv = await getUserInventory(interaction.user);
         const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
         if (!hasRegador) {
-          return int.followUp({ content: `❌ **|** Você não possui um **Regador**! Adquira um na loja (\`/loja itens\`).`, ephemeral: true });
+          return int.followUp({ content: `❌ **|** Você não possui um **Regador**! Adquira um na loja (\`/loja itens\`) ou no \`/start\`.`, ephemeral: true });
+        }
+
+        // Bloqueio do Regador de Plástico: Não pode ser enchido!
+        const isRegadorPlastico = (typeof inv.regador === 'object' && (inv.regador.tipo === 'plastico' || inv.regador.enchivel === false || String(inv.regador.nome).toLowerCase().includes('plástico')));
+        if (isRegadorPlastico) {
+          return int.followUp({
+            content: `🚫 **|** O seu **Regador de Plástico** é descartável e **não pode ser reabastecido** com água! Use a água restante com cuidado ou adquira um **Regador de Ferro** permanente na \`/loja itens\` para poder enchê-lo livremente.`,
+            ephemeral: true
+          });
         }
 
         const currentAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
@@ -512,7 +546,7 @@ module.exports = {
 
         await database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/regador`).update({
           item: 1,
-          nome: 'Regador',
+          nome: typeof inv.regador === 'object' && inv.regador.nome ? inv.regador.nome : 'Regador de Ferro',
           Xp: typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100,
           agua: 100
         });
@@ -526,19 +560,27 @@ module.exports = {
         const inv = await getUserInventory(interaction.user);
 
         const hasEnxada = inv.enxada && (typeof inv.enxada === 'object' ? inv.enxada.item > 0 : inv.enxada > 0);
-        const enxadaXp = typeof inv.enxada === 'object' ? (inv.enxada.Xp ?? 100) : 100;
+        const enxadaObj = typeof inv.enxada === 'object' ? inv.enxada : {};
+        const enxadaNome = enxadaObj.nome || (enxadaObj.tipo === 'madeira' ? 'Enxada de Madeira' : 'Enxada');
+        const enxadaXp = enxadaObj.Xp ?? 100;
+        const isEnxadaMadeira = (enxadaObj.tipo === 'madeira' || enxadaObj.reparavel === false);
         const enxadaTxt = hasEnxada
-          ? (enxadaXp > 0 ? `⛏️ Enxada: **${enxadaXp}%** durabilidade` : `⛏️ Enxada: ⚠️ **Quebrada (0%)** • Repare em \`/recuperar item:enxada\``)
-          : `⛏️ Enxada: ❌ **Não possui** • Compre em \`/loja itens\``;
+          ? (enxadaXp > 0
+              ? `⛏️ ${enxadaNome}: **${enxadaXp}%** durabilidade`
+              : (isEnxadaMadeira ? `⛏️ ${enxadaNome}: ⚠️ **Quebrada (0%)** • Não consertável` : `⛏️ ${enxadaNome}: ⚠️ **Quebrada (0%)** • Repare em \`/recuperar item:enxada\``))
+          : `⛏️ Enxada: ❌ **Não possui** • Use \`/start\` ou compre em \`/loja itens\``;
 
         const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
-        const regadorXp = typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100;
-        const regadorAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
+        const regadorObj = typeof inv.regador === 'object' ? inv.regador : {};
+        const regadorNome = regadorObj.nome || (regadorObj.tipo === 'plastico' ? 'Regador de Plástico' : 'Regador de Ferro');
+        const regadorXp = regadorObj.Xp ?? 100;
+        const regadorAgua = regadorObj.agua ?? 100;
+        const isRegadorPlastico = (regadorObj.tipo === 'plastico' || regadorObj.enchivel === false);
         const regadorTxt = hasRegador
           ? (regadorXp > 0
-              ? `🚿 Regador: **${regadorXp}%** durabilidade • 💧 Água: **${regadorAgua}%**`
-              : `🚿 Regador: ⚠️ **Quebrado (0%)** • 💧 Água: **${regadorAgua}%**`)
-          : `🚿 Regador: ❌ **Não possui** • Compre em \`/loja itens\``;
+              ? `🚿 ${regadorNome}: **${regadorXp}%** durabilidade • 💧 Água: **${regadorAgua}%**`
+              : (isRegadorPlastico ? `🚿 ${regadorNome}: ⚠️ **Quebrado (0%)** • Não consertável` : `🚿 ${regadorNome}: ⚠️ **Quebrado (0%)** • Repare em \`/recuperar item:regador\``))
+          : `🚿 Regador: ❌ **Não possui** • Use \`/start\` ou compre em \`/loja itens\``;
 
         const availableSeeds = [
           { cropId: 3, key: 'semente_trigo', name: 'Trigo', time: '2m', emoji: '🌾', xp: 12 },
@@ -643,28 +685,55 @@ module.exports = {
           return int.followUp({ content: `❌ **|** Você não possui sementes de **${crop.displayName}** no seu inventário! Adquira na loja (\`/loja sementes\`).`, ephemeral: true });
         }
 
-        // Validação da Enxada
+        // Validação da Enxada (Enxada de Madeira ou superior para preparar a terra)
         const hasEnxada = inv.enxada && (typeof inv.enxada === 'object' ? inv.enxada.item > 0 : inv.enxada > 0);
         if (!hasEnxada) {
-          return int.followUp({ content: `⛏️ **|** Você precisa de uma **Enxada** para arar e plantar neste terreno! Compre uma na loja (\`/loja itens\`).`, ephemeral: true });
+          return int.followUp({
+            content: `⛏️ **|** Você não pode plantar sem antes preparar a terra! Você precisa de uma **Enxada** (Enxada de Madeira ou superior) para arar o solo.\n💡 *Se você é novato na Sistine, utilize o comando \`/start\` para resgatar seu Kit Iniciante gratuito, ou compre uma enxada na \`/loja itens\`.*`,
+            ephemeral: true
+          });
         }
+
         const enxadaXp = typeof inv.enxada === 'object' ? (inv.enxada.Xp ?? 100) : 100;
         if (enxadaXp <= 0) {
-          return int.followUp({ content: `⛏️ **|** Sua **Enxada** quebrou (0% de durabilidade)! Repare-a no comando \`/recuperar item:enxada\`.`, ephemeral: true });
+          const isMadeira = (typeof inv.enxada === 'object' && (inv.enxada.tipo === 'madeira' || inv.enxada.reparavel === false));
+          return int.followUp({
+            content: isMadeira
+              ? `⛏️ **|** Sua **Enxada de Madeira** quebrou completamente (0% de durabilidade)! Por ser rústica, ela não pode ser consertada. Compre uma enxada de ferro na \`/loja itens\`.`
+              : `⛏️ **|** Sua **Enxada** quebrou (0% de durabilidade)! Repare-a no comando \`/recuperar item:enxada\` ou adquira outra na \`/loja itens\`.`,
+            ephemeral: true
+          });
         }
 
         // Validação do Regador
         const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
         if (!hasRegador) {
-          return int.followUp({ content: `🚿 **|** Você precisa de um **Regador** para hidratar o solo! Compre um na loja (\`/loja itens\`).`, ephemeral: true });
+          return int.followUp({
+            content: `🚿 **|** Você precisa de um **Regador** para hidratar o solo! Resgate seu kit em \`/start\` ou compre um na loja (\`/loja itens\`).`,
+            ephemeral: true
+          });
         }
+
         const regadorXp = typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100;
         if (regadorXp <= 0) {
-          return int.followUp({ content: `🚿 **|** Seu **Regador** está quebrado (0% de durabilidade)! Repare-o no comando \`/recuperar item:regador\`.`, ephemeral: true });
+          const isPlastico = (typeof inv.regador === 'object' && (inv.regador.tipo === 'plastico' || inv.regador.reparavel === false));
+          return int.followUp({
+            content: isPlastico
+              ? `🚿 **|** Seu **Regador de Plástico** quebrou completamente (0% de durabilidade)! Por ser descartável, não pode ser consertado. Adquira um Regador de Ferro permanente na \`/loja itens\`.`
+              : `🚿 **|** Seu **Regador** está quebrado (0% de durabilidade)! Repare-o no comando \`/recuperar item:regador\` ou adquira outro na \`/loja itens\`.`,
+            ephemeral: true
+          });
         }
+
         const regadorAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
-        if (regadorAgua < 10) {
-          return int.followUp({ content: `💧 **|** Seu Regador está sem água suficiente! Clique em **💧 Encher Regador** antes de semear.`, ephemeral: true });
+        if (regadorAgua < 1) {
+          const isPlastico = (typeof inv.regador === 'object' && (inv.regador.tipo === 'plastico' || inv.regador.enchivel === false));
+          return int.followUp({
+            content: isPlastico
+              ? `💧 **|** Seu **Regador de Plástico** está sem água! Como ele é descartável e não pode ser enchido, adquira um **Regador de Ferro** na \`/loja itens\` para continuar regando suas plantações.`
+              : `💧 **|** Seu Regador está sem água! Clique em **💧 Encher Regador** antes de semear.`,
+            ephemeral: true
+          });
         }
 
         // Checa se já tem algo plantado
@@ -673,25 +742,38 @@ module.exports = {
           return int.followUp({ content: `⚠️ **|** O Lote ${loteNum} já possui uma cultura plantada!`, ephemeral: true });
         }
 
-        // Novos valores de desgaste e água
-        const newEnxadaXp = Math.max(0, enxadaXp - 3);
-        const newRegadorXp = Math.max(0, regadorXp - 2);
-        const newRegadorAgua = Math.max(0, regadorAgua - 10);
+        // Desgaste inteligente conforme o tier
+        const enxadaObj = typeof inv.enxada === 'object' ? inv.enxada : {};
+        const regadorObj = typeof inv.regador === 'object' ? inv.regador : {};
+
+        const desgasteEnxada = enxadaObj.tipo === 'madeira' ? 1 : 2;
+        const desgasteRegador = regadorObj.tipo === 'plastico' ? 1 : 2;
+        const consumoAgua = regadorObj.tipo === 'plastico' ? 1 : 10;
+
+        const newEnxadaXp = Math.max(0, enxadaXp - desgasteEnxada);
+        const newRegadorXp = Math.max(0, regadorXp - desgasteRegador);
+        const newRegadorAgua = Math.max(0, regadorAgua - consumoAgua);
 
         // Atualiza consumíveis
         await database.ref(`economia/${interaction.user.id}/inventario/itens/Consumíveis`).update({
           [crop.seedKey]: seedCount - 1
         });
 
-        // Atualiza ferramentas
+        // Atualiza ferramentas no Firebase preservando metadados
         await database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/enxada`).update({
           item: 1,
-          nome: 'Enxada',
+          nome: enxadaObj.nome || (enxadaObj.tipo === 'madeira' ? 'Enxada de Madeira' : 'Enxada de Ferro'),
+          tipo: enxadaObj.tipo || 'ferro',
+          reparavel: enxadaObj.reparavel !== undefined ? enxadaObj.reparavel : true,
           Xp: newEnxadaXp
         });
+
         await database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/regador`).update({
           item: 1,
-          nome: 'Regador',
+          nome: regadorObj.nome || (regadorObj.tipo === 'plastico' ? 'Regador de Plástico' : 'Regador de Ferro'),
+          tipo: regadorObj.tipo || 'ferro',
+          enchivel: regadorObj.enchivel !== undefined ? regadorObj.enchivel : true,
+          reparavel: regadorObj.reparavel !== undefined ? regadorObj.reparavel : true,
           Xp: newRegadorXp,
           agua: newRegadorAgua
         });

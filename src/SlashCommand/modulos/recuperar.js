@@ -63,11 +63,20 @@ module.exports =  {
         if (item === 'vara' && (!vara || vara.item < 1)) {
           return interaction.error({ content: `Você não possui uma **Vara de Pescar** para consertar.` });
         }
+        if (item === 'vara' && (vara.reparavel === false || vara.tipo === 'bambu')) {
+          return interaction.error({ content: `A sua **${Array.isArray(vara.nome) ? vara.nome[0] : (vara.nome || 'Vara de Bambu')}** é um item inicial e **não pode ser consertada**! Adquira uma vara permanente na \`/loja itens\`.` });
+        }
         if (item === 'enxada' && (!enxada || enxada.item < 1)) {
           return interaction.error({ content: `Você não possui uma **Enxada** para consertar.` });
         }
+        if (item === 'enxada' && (enxada.reparavel === false || enxada.tipo === 'madeira')) {
+          return interaction.error({ content: `A sua **${Array.isArray(enxada.nome) ? enxada.nome[0] : (enxada.nome || 'Enxada de Madeira')}** é feita de madeira rústica e **não pode ser consertada**! Adquira uma enxada de ferro na \`/loja itens\`.` });
+        }
         if (item === 'regador' && (!regador || regador.item < 1)) {
           return interaction.error({ content: `Você não possui um **Regador** para consertar.` });
+        }
+        if (item === 'regador' && (regador.reparavel === false || regador.tipo === 'plastico')) {
+          return interaction.error({ content: `O seu **${Array.isArray(regador.nome) ? regador.nome[0] : (regador.nome || 'Regador de Plástico')}** é descartável e **não pode ser consertado**! Adquira um Regador de Ferro permanente na \`/loja itens\`.` });
         }
 
         if (item) {

@@ -75,6 +75,16 @@
     "valor": 2000,
     "tipo": 1
   },
+  "vara_bambu": {
+    "db": "/Equipamentos/",
+    "nome": [
+      "Vara de Bambu",
+      "Vara Bambu"
+    ],
+    "imagem": "ferramentas/vara_bambu.png",
+    "valor": 100,
+    "tipo": 1
+  },
   "enxada": {
     "db": "/Equipamentos/",
     "nome": [
@@ -85,14 +95,34 @@
     "valor": 3000,
     "tipo": 1
   },
+  "enxada_madeira": {
+    "db": "/Equipamentos/",
+    "nome": [
+      "Enxada de Madeira",
+      "Enxada Madeira"
+    ],
+    "imagem": "ferramentas/enxada_madeira.png",
+    "valor": 100,
+    "tipo": 1
+  },
   "regador": {
     "db": "/Equipamentos/",
     "nome": [
       "Regador",
-      "Regadores"
+      "Regador de Ferro"
     ],
-    "imagem": "ferramentas/regador.png",
+    "imagem": "ferramentas/regador_ferro.png",
     "valor": 3500,
+    "tipo": 1
+  },
+  "regador_plastico": {
+    "db": "/Equipamentos/",
+    "nome": [
+      "Regador de Plástico",
+      "Regador Plástico"
+    ],
+    "imagem": "ferramentas/regador_plastico.png",
+    "valor": 100,
     "tipo": 1
   },
   "baú": {

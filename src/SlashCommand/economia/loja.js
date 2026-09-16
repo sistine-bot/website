@@ -7,7 +7,7 @@ const TimeToClose = 70 * 1e3; //[cite: 2]
 
 module.exports = {
   "name": "loja",
-  "description": "⌊💸 Economia⌉ Compre e venda seus itens.",
+  "description": "⌊💸 Economia⌉ Compre itens, sementes, armas, lotes e animais.",
   "type": ApplicationCommandType.ChatInput,
   "options": [
     {
@@ -20,9 +20,7 @@ module.exports = {
         { "name": "🌱 Sementes", "value": "sementes" },
         { "name": "🚜 Fazenda", "value": "fazenda" },
         { "name": "🛠️ Itens", "value": "itens" },
-        { "name": "🔫 Armas", "value": "armas" },
-        // { "name": "🖼️ Perfil", "value": "perfil" },
-        { "name": "🛒 Vendas", "value": "vendas" }
+        { "name": "🔫 Armas", "value": "armas" }
       ],
     },
   ],
@@ -466,137 +464,6 @@ ${verifyArma ? emoji.cadeado : emoji[6]} **|** ${itensAPI.arma[4].nome} **|** ${
           });
 
           coletor.on('end', () => { LojaFechada('Armas'); msg.delete().catch(() => {}); });
-          break;
-        }
-        
-        case 'vendas': {
-          // Buscando inventários direto do banco para evitar funções globais soltas
-          const [snapConsum, snapEquip] = await Promise.all([
-            database.ref(DB_CONSUM).once('value'),
-            database.ref(DB_EQUIP).once('value')
-          ]);
-          
-          const consum = snapConsum.val() || {};
-          const equip = snapEquip.val() || {};
-
-          let comp = new StringSelectMenuBuilder().setCustomId('menu').setPlaceholder('Selecione algum item de seu inventário:');
-          let ROW = [];
-
-          function getItemSellPrice(key, tier = null) {
-            if (key === 'arma') {
-              return Math.floor((itensAPI.arma[tier]?.valor || 0) / 2);
-            }
-            if (['peixe', 'carne', 'Ovo', 'Leite', 'Bacon'].includes(key)) {
-              return itensAPI[key]?.valor || 0;
-            }
-            if (itensAPI[key]?.valor) {
-              return Math.floor(itensAPI[key].valor / 2);
-            }
-            return Math.floor((itensAPI[key]?.valor || 0) / 2);
-          }
-  
-          function RowADD(Item, NomeItem, Emoji, Valorr, Quantia = 0) {
-            if (ROW.length < 25) {
-              comp.addOptions([{ label: NomeItem, description: `Você irá receber ${Format(Quantia)} na venda`, emoji: Emoji, value: Valorr }]);
-              ROW.push(Valorr);
-            }
-          }
-  
-          if (consum.peixe > 0) RowADD(consum.peixe, `${consum.peixe}x Peixe`, '🐟', 'peixe', getItemSellPrice('peixe') * consum.peixe);
-          if (consum.carne > 0) RowADD(consum.carne, `${consum.carne}x Carne`, '🥩', 'carne', getItemSellPrice('carne') * consum.carne);
-          if (consum.Trigo > 0) RowADD(consum.Trigo, `${consum.Trigo}x Trigo`, '🌾', 'Trigo', getItemSellPrice('Trigo') * consum.Trigo);
-          if (consum.Milho > 0) RowADD(consum.Milho, `${consum.Milho}x Milho`, '🌽', 'Milho', getItemSellPrice('Milho') * consum.Milho);
-          if (consum.Feijão > 0) RowADD(consum.Feijão, `${consum.Feijão}x Feijão`, '🫘', 'Feijão', getItemSellPrice('Feijão') * consum.Feijão);
-          if (consum.CanaDeAçucar > 0) RowADD(consum.CanaDeAçucar, `${consum.CanaDeAçucar}x Cana-de-açúcar`, '🎋', 'CanaDeAçucar', getItemSellPrice('CanaDeAçucar') * consum.CanaDeAçucar);
-          if (consum.Cenoura > 0) RowADD(consum.Cenoura, `${consum.Cenoura}x Cenoura`, '🥕', 'Cenoura', getItemSellPrice('Cenoura') * consum.Cenoura);
-          if (consum.Abóbora > 0) RowADD(consum.Abóbora, `${consum.Abóbora}x Abóbora`, '🎃', 'Abóbora', getItemSellPrice('Abóbora') * consum.Abóbora);
-          if (consum.Ovo > 0) RowADD(consum.Ovo, `${consum.Ovo}x Ovo`, '🥚', 'Ovo', getItemSellPrice('Ovo') * consum.Ovo);
-          if (consum.Leite > 0) RowADD(consum.Leite, `${consum.Leite}x Leite`, '🥛', 'Leite', getItemSellPrice('Leite') * consum.Leite);
-          if (consum.Bacon > 0) RowADD(consum.Bacon, `${consum.Bacon}x Bacon`, '🥓', 'Bacon', getItemSellPrice('Bacon') * consum.Bacon);
-          if (consum.planta_podre > 0) RowADD(consum.planta_podre, `${consum.planta_podre}x Planta Podre`, '🥀', 'planta_podre', getItemSellPrice('planta_podre') * consum.planta_podre);
-
-          const cropList = ['Trigo', 'Milho', 'Feijão', 'CanaDeAçucar', 'Cenoura', 'Abóbora'];
-          const qualList = ['excelente', 'bom', 'ruim'];
-          cropList.forEach(c => {
-            qualList.forEach(q => {
-              const k = `${c}_${q}`;
-              if (consum[k] > 0 && itensAPI[k]) {
-                const icon = q === 'excelente' ? '⭐' : (q === 'bom' ? '✨' : '📉');
-                RowADD(consum[k], `${consum[k]}x ${itensAPI[k].nome[0]}`, icon, k, getItemSellPrice(k) * consum[k]);
-              }
-            });
-          });
-          
-          if (equip.armacaça?.item > 0) RowADD(equip.armacaça.item, `Arma de Caça`, '🏹', 'armacaça', getItemSellPrice('armacaça'));
-          if (equip.enxada?.item > 0) RowADD(equip.enxada.item, `Enxada`, '⛏️', 'enxada', getItemSellPrice('enxada'));
-          if (equip.regador?.item > 0) RowADD(equip.regador.item, `Regador`, '🚿', 'regador', getItemSellPrice('regador'));
-          if (equip.arma?.item > 0) {
-            const tierArma = equip.arma.item;
-            const nomeArma = Array.isArray(itensAPI.arma[tierArma]?.nome) ? itensAPI.arma[tierArma].nome[0] : (itensAPI.arma[tierArma]?.nome || `Tier ${tierArma}`);
-            RowADD(tierArma, `Arma (${nomeArma})`, '🔫', 'arma', getItemSellPrice('arma', tierArma));
-          }
-  
-          const embedfazenda = new EmbedBuilder()
-            .setColor(color.embed)
-            .setAuthor({ name: `${client.user.username} • Loja`, iconURL: client.user.displayAvatarURL({ size: 1024 }) })
-            .setDescription(ROW.length > 0 ? `ℹ️ **|** Selecione um item para vender` : `ℹ️ **|** Você não possui nenhum item para vender.`)
-            .setFooter({ text: `Você possui 30s • ${interaction.guild.name}`, iconURL: interaction.guild.iconURL() || undefined });
-          
-          const msg = await interaction.followUp({ embeds: [embedfazenda], components: ROW.length > 0 ? [new ActionRowBuilder().addComponents(comp)] : [] });
-          if (ROW.length === 0) return;
-
-          const collector = msg.createMessageComponentCollector({ filter: filtro, time: TimeToClose });
-          
-          collector.on('collect', async (collected) => {
-            await collected.deferUpdate();
-            let valor = collected.values[0];
-            collector.stop();
-            
-            let NomedoItem = '', Diretório = '', Variável = valor, Quantt = 1, DinheiroQuant = 0;
-  
-            if (['vara', 'anelcasamento', 'porte', 'arma', 'armacaça', 'enxada', 'regador'].includes(valor)) {
-              Diretório = DB_EQUIP;
-              if (valor === 'arma') {
-                const tierArma = equip.arma.item;
-                NomedoItem = Array.isArray(itensAPI.arma[tierArma]?.nome) ? itensAPI.arma[tierArma].nome[0] : (itensAPI.arma[tierArma]?.nome || 'Arma');
-                DinheiroQuant = getItemSellPrice('arma', tierArma);
-                Quantt = tierArma;
-              } else {
-                NomedoItem = Array.isArray(itensAPI[valor]?.nome) ? itensAPI[valor].nome[0] : (itensAPI[valor]?.nome || valor);
-                DinheiroQuant = getItemSellPrice(valor);
-              }
-            } else {
-              Diretório = DB_CONSUM;
-              Quantt = consum[valor];
-              NomedoItem = Array.isArray(itensAPI[valor]?.nome) ? itensAPI[valor].nome[0] : (itensAPI[valor]?.nome || valor);
-              DinheiroQuant = getItemSellPrice(valor) * Quantt;
-            }
-  
-            let Transação = `{emoji.entrada} {mensagem.loja.vendas} | ${DinheiroQuant} | ${NomedoItem}`;
-  
-            const EmbedVenda = new EmbedBuilder()
-              .setColor(color.embed)
-              .setDescription(`Confirma a venda de seu item: **${NomedoItem}** por: **${Format(DinheiroQuant)}**?`);
-  
-            const RowVendas = new ActionRowBuilder().addComponents(
-              new ButtonBuilder().setCustomId("sim").setStyle(ButtonStyle.Success).setEmoji(emoji.positivo || '✅'),
-              new ButtonBuilder().setCustomId("nao").setStyle(ButtonStyle.Danger).setEmoji(emoji.negativo || '❌'),
-            );
-  
-            let msg2 = await interaction.followUp({ embeds: [EmbedVenda], components: [RowVendas] });
-            const Colletor1 = msg2.createMessageComponentCollector({ filter: filtro, time: 30000 });
-  
-            Colletor1.on('collect', async (i) => {
-              await i.deferUpdate();
-              if (i.customId === 'sim') {
-                await Store(Diretório, Variável, Diretório === DB_EQUIP ? 1 : 2, false, Quantt, NomedoItem, DinheiroQuant, 0, Transação);
-                msg2.delete().catch(() => {});
-              } else {
-                msg2.delete().catch(() => {});
-                await interaction.followUp({ content: `Venda cancelada com sucesso.`, ephemeral: true });
-              }
-            });
-          });
           break;
         }
       }

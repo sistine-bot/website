@@ -5,6 +5,7 @@ const { Resvg } = require('@resvg/resvg-js');
 const path = require('path');
 const fs = require('fs');
 const itensAPI = require(`../../utils/itens.json`);
+const { createRegadorVNode, createVaraVNode, createEnxadaVNode } = require('../../utils/satoriItemTemplates.js');
 
 // ==========================================
 // MOTOR DE FONTES (SATORI)
@@ -165,10 +166,28 @@ module.exports = {
       // Equipamentos e Ferramentas
       if (inv.arma?.item > 0) pushItem(itensAPI.arma[inv.arma.item]?.imagem, `(${Format(inv.arma.Xp || 0, '')}%) 1x`);
       if (inv.armacaça?.item > 0) pushItem(itensAPI.armacaça.imagem, `(${Format(inv.armacaça.Xp || 0, '')}%) 1x`);
-      if (inv.vara?.item > 0) pushItem(itensAPI.vara.imagem, `(${Format(inv.vara.Xp || 0, '')}%) 1x`);
-      if (inv.enxada?.item > 0) pushItem(itensAPI.enxada.imagem, `(${Format(inv.enxada.Xp || 0, '')}%) 1x`);
-      if (inv.regador?.item > 0) pushItem(itensAPI.regador.imagem, `💧${inv.regador.agua !== undefined ? inv.regador.agua : 100}%`);
       if (inv.anelcasamento?.item > 0) pushItem(itensAPI.anelcasamento.imagem, '1x');
+
+      // Vara de Pesca (Vara de Bambu vs Clássica)
+      if (inv.vara?.item > 0) {
+        const isBambu = (inv.vara.tipo === 'bambu' || String(inv.vara.nome).toLowerCase().includes('bambu'));
+        const varaImg = isBambu ? 'ferramentas/vara_bambu.png' : (itensAPI.vara?.imagem || 'ferramentas/vara_pescar.png');
+        pushItem(varaImg, `(${Format(inv.vara.Xp || 0, '')}%) 1x`);
+      }
+
+      // Enxada (Enxada de Madeira vs Enxada de Ferro)
+      if (inv.enxada?.item > 0) {
+        const isMadeira = (inv.enxada.tipo === 'madeira' || String(inv.enxada.nome).toLowerCase().includes('madeira'));
+        const enxadaImg = isMadeira ? 'ferramentas/enxada_madeira.png' : (itensAPI.enxada?.imagem || 'ferramentas/enxada.png');
+        pushItem(enxadaImg, `(${Format(inv.enxada.Xp || 0, '')}%) 1x`);
+      }
+
+      // Regador (Regador de Plástico vs Regador de Ferro)
+      if (inv.regador?.item > 0) {
+        const isPlastico = (inv.regador.tipo === 'plastico' || String(inv.regador.nome).toLowerCase().includes('plástico'));
+        const regadorImg = isPlastico ? 'ferramentas/regador_plastico.png' : 'ferramentas/regador_ferro.png';
+        pushItem(regadorImg, `💧${inv.regador.agua !== undefined ? inv.regador.agua : 100}%`);
+      }
 
       // Consumíveis e Outros Itens
       if (inv.munição > 0) pushItem(itensAPI.munição.imagem, `${Format(inv.munição, '')}x`);
@@ -230,13 +249,17 @@ module.exports = {
       async function renderPage(pageIndex) {
         const pageItems = allItems.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
 
-        const urlsToFetch = [bgUrl, ...pageItems.map(i => i.img)];
+        const itemsNeedingFetch = pageItems.filter(i => !i.customVNode && i.img);
+        const urlsToFetch = [bgUrl, ...itemsNeedingFetch.map(i => i.img)];
         const fetchedDataUris = await Promise.all(urlsToFetch.map(url => fetchRemoteDataUri(url)));
 
         const bgDataUri = fetchedDataUris[0];
-        const itemDataUris = fetchedDataUris.slice(1);
-        
-        pageItems.forEach((item, idx) => { item.dataUri = itemDataUris[idx]; });
+        let fetchIdx = 1;
+        pageItems.forEach((item) => {
+          if (!item.customVNode && item.img) {
+            item.dataUri = fetchedDataUris[fetchIdx++];
+          }
+        });
 
         const elements = [];
 
@@ -288,25 +311,38 @@ module.exports = {
         // Grade de Itens (10 colunas x 4 linhas = 40 Slots)
         // Subiu 37px (155 - 37 = 118) e andou pra esquerda 9px (50 - 9 = 41)
         pageItems.forEach((slot, index) => {
-          if (!slot.dataUri) return;
+          if (!slot.customVNode && !slot.dataUri) return;
           
           const linha = Math.floor(index / 10);
           const coluna = index % 10;
           const baseX = 41 + (coluna * 115);
           const baseY = 118 + (linha * 114);
 
-          // Ícone do Item (80x80)
-          elements.push(h('img', {
-            src: slot.dataUri,
-            style: {
-              position: 'absolute',
-              top: baseY,
-              left: baseX,
-              width: '80px',
-              height: '80px',
-              objectFit: 'contain'
-            }
-          }));
+          // Renderização do Ícone: se for customVNode (ferramentas dinâmicas Satori) ou imagem (legado)
+          if (slot.customVNode) {
+            elements.push(h('div', {
+              style: {
+                position: 'absolute',
+                top: baseY,
+                left: baseX,
+                width: '80px',
+                height: '80px',
+                display: 'flex'
+              }
+            }, slot.customVNode));
+          } else if (slot.dataUri) {
+            elements.push(h('img', {
+              src: slot.dataUri,
+              style: {
+                position: 'absolute',
+                top: baseY,
+                left: baseX,
+                width: '80px',
+                height: '80px',
+                objectFit: 'contain'
+              }
+            }));
+          }
 
           // Texto de Quantidade / Durabilidade / Água
           const textTop = baseY + 66;
@@ -397,13 +433,19 @@ module.exports = {
             .setFooter({ text: 'Detalhes do Inventário', iconURL: user.displayAvatarURL({ extension: 'png' }) });
 
           let equipDesc = "";
-          if (freshInv.armacaça?.item) equipDesc += `<:armacaca:1002636342557155370> **|** ${itensAPI.armacaça.nome[0]}: ${freshInv.armacaça.Xp ? `✅ (${freshInv.armacaça.Xp}%)` : '❌'}\n`;
-          if (freshInv.arma?.item) equipDesc += `🔫 **|** ${freshInv.arma.nome}: ${freshInv.arma.Xp ? `✅ (${freshInv.arma.Xp}%)` : '❌'}\n`;
-          if (freshInv.vara?.item) equipDesc += `🎣 **|** ${freshInv.vara.nome[0]}: ${freshInv.vara.Xp ? `✅ (${freshInv.vara.Xp}%)` : '❌'}\n`;
-          if (freshInv.enxada?.item) equipDesc += `⛏️ **|** ${itensAPI.enxada.nome[0]}: ${freshInv.enxada.Xp ? `✅ (${freshInv.enxada.Xp}%)` : '❌'}\n`;
-          if (freshInv.regador?.item) equipDesc += `🚿 **|** ${itensAPI.regador.nome[0]}: ${freshInv.regador.Xp ? `✅ (${freshInv.regador.Xp}%)` : '❌'} | 💧 Água: **${freshInv.regador.agua !== undefined ? freshInv.regador.agua : 100}%**\n`;
-          if (freshInv.porte?.item) equipDesc += `📜 **|** ${freshInv.porte.nome}: ✅\n`;
-          if (freshInv.anelcasamento?.item) equipDesc += `💍 **|** ${freshInv.anelcasamento.nome}: ✅\n`;
+          const getToolName = (tool, fallback) => {
+            if (!tool) return fallback;
+            if (Array.isArray(tool.nome)) return tool.nome[0] || fallback;
+            return tool.nome || fallback;
+          };
+
+          if (freshInv.armacaça?.item) equipDesc += `<:armacaca:1002636342557155370> **|** ${getToolName(freshInv.armacaça, itensAPI.armacaça.nome[0])}: ${freshInv.armacaça.Xp ? `✅ (${freshInv.armacaça.Xp}%)` : '❌'}\n`;
+          if (freshInv.arma?.item) equipDesc += `🔫 **|** ${getToolName(freshInv.arma, freshInv.arma.nome)}: ${freshInv.arma.Xp ? `✅ (${freshInv.arma.Xp}%)` : '❌'}\n`;
+          if (freshInv.vara?.item) equipDesc += `🎣 **|** ${getToolName(freshInv.vara, itensAPI.vara.nome[0])}: ${freshInv.vara.Xp ? `✅ (${freshInv.vara.Xp}%)` : '❌'}\n`;
+          if (freshInv.enxada?.item) equipDesc += `⛏️ **|** ${getToolName(freshInv.enxada, itensAPI.enxada.nome[0])}: ${freshInv.enxada.Xp ? `✅ (${freshInv.enxada.Xp}%)` : '❌'}\n`;
+          if (freshInv.regador?.item) equipDesc += `🚿 **|** ${getToolName(freshInv.regador, itensAPI.regador.nome[0])}: ${freshInv.regador.Xp ? `✅ (${freshInv.regador.Xp}%)` : '❌'} | 💧 Água: **${freshInv.regador.agua !== undefined ? freshInv.regador.agua : 100}%**\n`;
+          if (freshInv.porte?.item) equipDesc += `📜 **|** ${freshInv.porte.nome || 'Porte de Armas'}: ✅\n`;
+          if (freshInv.anelcasamento?.item) equipDesc += `💍 **|** ${freshInv.anelcasamento.nome || 'Anel de Casamento'}: ✅\n`;
 
           let seedDesc = "";
           if (freshInv.semente_trigo) seedDesc += `🌾 **|** ${itensAPI.semente_trigo.nome[0]}: **${freshInv.semente_trigo}**\n`;

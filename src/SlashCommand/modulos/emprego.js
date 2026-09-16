@@ -1,230 +1,194 @@
-const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
-const { Format, UpdateMoneyWallet, CheckUserCooldowns } = require('../../../src/utils/functions.js');
+const {
+  ApplicationCommandType,
+  EmbedBuilder,
+  ActionRowBuilder,
+  StringSelectMenuBuilder
+} = require('discord.js');
 
-const ValorEmpregos = {
-  taxista: { min: 150, max: 280, label: '150 - 280' },
-  caminhoneiro: { min: 250, max: 420, label: '250 - 420' },
-  gari: { min: 350, max: 550, label: '350 - 550' },
-  entregador: { min: 450, max: 700, label: '450 - 700' },
-  frentista: { min: 600, max: 900, label: '600 - 900' },
-  mecânico: { min: 750, max: 1150, label: '750 - 1.150' }, 
-  medico: { min: 950, max: 1450, label: '950 - 1.450' },
-  policial: { min: 1250, max: 1750, label: '1.250 - 1.750' },
-};
+const LISTA_EMPREGOS = [
+  { id: 1, nome: 'Taxista', emote: '🚕', salario: '150 - 280', nivel: 0, ilegal: true },
+  { id: 2, nome: 'Caminhoneiro', emote: '🚚', salario: '250 - 420', nivel: 5, ilegal: true },
+  { id: 3, nome: 'Gari', emote: '🗑️', salario: '350 - 550', nivel: 10, ilegal: true },
+  { id: 4, nome: 'Entregador', emote: '🛵', salario: '450 - 700', nivel: 15, ilegal: true },
+  { id: 5, nome: 'Frentista', emote: '⛽', salario: '600 - 900', nivel: 20, ilegal: false },
+  { id: 6, nome: 'Mecânico', emote: '👨‍🔧', salario: '750 - 1.150', nivel: 25, ilegal: false },
+  { id: 7, nome: 'Médico', emote: '👨‍⚕️', salario: '950 - 1.450', nivel: 30, ilegal: false },
+  { id: 8, nome: 'Policial', emote: '👮', salario: '1.250 - 1.750', nivel: 50, ilegal: false },
+];
 
-const Tempo = 1800000; // 30m
-const Work = new Set();
+/**
+ * Gera uma barra visual de progresso de XP
+ * Ex: [██████░░░░] 60/100 XP (60%)
+ */
+function buildProgressBar(current, max, totalBars = 10) {
+  const percentage = Math.min(Math.max(current / max, 0), 1);
+  const filledBars = Math.round(percentage * totalBars);
+  const emptyBars = totalBars - filledBars;
+  return `[${'█'.repeat(filledBars)}${'░'.repeat(emptyBars)}] ${current}/${max} XP (${Math.round(percentage * 100)}%)`;
+}
 
-// Função auxiliar para mapear dados do ID do emprego e evitar duplicações de código
-function obterDadosEmprego(id) {
-  switch (id) {
-    case 1: return { nome: 'Taxista', min: ValorEmpregos.taxista.min, max: ValorEmpregos.taxista.max, salario: ValorEmpregos.taxista.label, nivel: 0, ilegal: true, emote: '🚕', chave: 'taxista' };
-    case 2: return { nome: 'Caminhoneiro', min: ValorEmpregos.caminhoneiro.min, max: ValorEmpregos.caminhoneiro.max, salario: ValorEmpregos.caminhoneiro.label, nivel: 5, ilegal: true, emote: '🚚', chave: 'caminhoneiro' };
-    case 3: return { nome: 'Gari', min: ValorEmpregos.gari.min, max: ValorEmpregos.gari.max, salario: ValorEmpregos.gari.label, nivel: 10, ilegal: true, emote: '🗑️', chave: 'gari' };
-    case 4: return { nome: 'Entregador', min: ValorEmpregos.entregador.min, max: ValorEmpregos.entregador.max, salario: ValorEmpregos.entregador.label, nivel: 15, ilegal: true, emote: '🛵', chave: 'entregador' };
-    case 5: return { nome: 'Frentista', min: ValorEmpregos.frentista.min, max: ValorEmpregos.frentista.max, salario: ValorEmpregos.frentista.label, nivel: 20, ilegal: false, emote: '⛽', chave: 'frentista' };
-    case 6: return { nome: 'Mecânico', min: ValorEmpregos.mecânico.min, max: ValorEmpregos.mecânico.max, salario: ValorEmpregos.mecânico.label, nivel: 25, ilegal: false, emote: '👨‍🔧', chave: 'mecânico' };
-    case 7: return { nome: 'Médico', min: ValorEmpregos.medico.min, max: ValorEmpregos.medico.max, salario: ValorEmpregos.medico.label, nivel: 30, ilegal: false, emote: '👨‍⚕️', chave: 'medico' };
-    case 8: return { nome: 'Policial', min: ValorEmpregos.policial.min, max: ValorEmpregos.policial.max, salario: ValorEmpregos.policial.label, nivel: 50, ilegal: false, emote: '👮', chave: 'policial' };
-    default: return { nome: 'Desempregado', min: 0, max: 0, salario: '0', nivel: 0, ilegal: true, emote: '🤷‍♂️', chave: 'nenhum' };
-  }
+/**
+ * Cria o Embed do Hub Informativo de Empregos
+ */
+function buildEmpregoHubEmbed(client, interaction, userLevel, userXp, currentJobId, color) {
+  const nextLevelXp = (userLevel > 0) ? (userLevel * 1000) : 1000;
+  const progressBar = buildProgressBar(userXp, nextLevelXp, 10);
+  const currentJob = LISTA_EMPREGOS.find(j => j.id === currentJobId) || {
+    id: 0,
+    nome: 'Desempregado',
+    emote: '🤷‍♂️',
+    salario: '0',
+    nivel: 0,
+    ilegal: true
+  };
+
+  // Monta a lista visual de profissões com status de bloqueio
+  const listaFormatada = LISTA_EMPREGOS.map(job => {
+    const isCurrent = job.id === currentJobId;
+    const isUnlocked = userLevel >= job.nivel;
+
+    let tagStatus = '';
+    if (isCurrent) tagStatus = ' `✨ ATUAL`';
+    else if (isUnlocked) tagStatus = ' `🔓 Desbloqueado`';
+    else tagStatus = ` \`🔒 Nível ${job.nivel}\``;
+
+    const tagIlegal = job.ilegal ? '' : ' *(🚫 Ilegal)*';
+    return `${job.emote} **${job.nome}** ≈ ${job.salario} moedas${tagIlegal}${tagStatus}`;
+  }).join('\n');
+
+  return new EmbedBuilder()
+    .setColor(color.embed || '#38bdf8')
+    .setAuthor({
+      name: `Central de Carreiras & Empregos ・ ${interaction.user.username}`,
+      iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+    })
+    .setDescription(
+      `Bem-vindo(a) ao Hub de Empregos! Aumente seu nível para desbloquear carreiras com maiores salários e benefícios.\n\n` +
+      `💼 **Profissão Atual:** ${currentJob.emote} **${currentJob.nome}**\n` +
+      `💸 **Faixa Salarial:** \`≈ ${currentJob.salario} Moedas por turno\`\n` +
+      `🔫 **Permite Atividades Ilegais:** \`${currentJob.ilegal ? 'Sim' : 'Não'}\`\n\n` +
+      `⭐ **Nível Atual:** \`Nível ${userLevel}\`\n` +
+      `📊 **Progresso para o Nível ${userLevel + 1}:**\n` +
+      `\`${progressBar}\`\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `📋 **CARREIRAS DISPONÍVEIS NO SERVIDOR:**\n` +
+      `${listaFormatada}\n\n` +
+      `💡 *Para iniciar o seu expediente de trabalho interativo, utilize o comando \`/trabalhar\`!*`
+    )
+    .setFooter({ text: 'Selecione abaixo uma das profissões já desbloqueadas para trocar de carreira.' })
+    .setTimestamp();
+}
+
+/**
+ * Cria o Select Menu apenas com as profissões desbloqueadas
+ */
+function buildUnlockedJobMenu(userLevel, currentJobId) {
+  const unlockedJobs = LISTA_EMPREGOS.filter(j => userLevel >= j.nivel);
+
+  const options = unlockedJobs.map(job => ({
+    label: `${job.nome} (Lvl ${job.nivel}+)`,
+    value: String(job.id),
+    emoji: job.emote,
+    description: `Salário: ≈${job.salario} moedas | ${job.ilegal ? 'Permite ilegal' : 'Proíbe ilegal'}`,
+    default: job.id === currentJobId
+  }));
+
+  return new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId('menu_selecionar_emprego')
+      .setPlaceholder('Selecione uma profissão desbloqueada...')
+      .addOptions(options)
+  );
 }
 
 module.exports = {
-  "name": "emprego",
-  "description": `⌊⚙️ Módulos⌉ Veja informações sobre empregos.`,
-  "type": ApplicationCommandType.ChatInput,
-  "options": [
-    {
-      "name": "escolha",
-      "description": "Faça sua escolha para o módulo.",
-      "type": ApplicationCommandOptionType.String,
-      "required": true,
-      "choices": [
-        { "name": "informações", "value": "informações" },
-        { "name": "escolher", "value": "escolher" },
-        { "name": "trabalhar", "value": "trabalhar" },
-      ]
-    },
-  ],
-  
+  name: 'emprego',
+  description: '⌊💼 Empregos⌉ Central de carreiras: veja seu status, barra de XP e troque de profissão.',
+  type: ApplicationCommandType.ChatInput,
+
   run: async (client, interaction, args, color, database, emoji) => {
     try {
-      const command = interaction.options.getString('escolha');
-      const mensagens = {
-        taxista: ["Pegou um passageiro no aeroporto e deixou ele no centro.", "Pegou um passageiro na esquina e deixou no hotel."],
-        caminhoneiro: ["Pegou a carga de eletrônicos em SP e deixou no RJ.", "Carregando carga de móveis em Curitiba e deixando em Floripa."],
-        gari: ["Pegando o lixo na esquina da rua Main e seguindo pro aterro.", "Limpando as ruas do bairro residencial e seguindo pro parque."],
-        entregador: ["Entregando pacote de roupas no bairro residencial.", "Entregando encomenda de alimentos na universidade."],
-        frentista: ["Abastecendo veículos com combustível na rua Main.", "Trocando pneus e verificando o nível de óleo no shopping."],
-        mecânico: ["Realizando manutenção preventiva em um carro.", "Reparando o sistema de freios em um carro no shopping."],
-        medico: ["Realizando consulta com paciente no consultório.", "Realizando exames de rotina no hospital."],
-        policial: ["Realizando patrulhamento na rua Main.", "Realizando investigação no estacionamento do shopping."]
-      };
+      const userId = interaction.user.id;
 
-      switch (command) {
-        case 'informações': {
-          const snapshot = await database.ref(`economia/${interaction.user.id}/emprego/`).once('value');
-          const empId = snapshot.val()?.emprego || 0;
-          const dados = obterDadosEmprego(empId);
-            
-          const embed = new EmbedBuilder() 
-            .setAuthor({ name: `Empregos`, iconURL: client.user.displayAvatarURL({ size: 256 }) })
-            .setColor(color.embed || "#00ff00")
-            .setDescription(empId ? `💼 **|** Emprego: \`${dados.nome}\`\n💸 **|** Salário: \`≈${dados.salario}\`\n🔫 **|** Permitido ilegal: \`${dados.ilegal ? 'Sim' : 'Não'}\`` : '💼 **|** Emprego: \`Desempregado\`')
-            .setTimestamp()
-            .setFooter({ text: `Empregos ・ ${interaction.guild.name}` });
-            
-          return interaction.followUp({ embeds: [embed] });
-        }
+      // 1. Busca nível e XP do usuário
+      const nivelSnap = await database.ref(`economia/${userId}/nível`).once('value');
+      const nivelData = nivelSnap.val() || {};
+      const userLevel = nivelData.nível || 0;
+      const userXp = nivelData.xp || 0;
 
-        case 'escolher': {
-          const cdSnapshot = await database.ref(`/economia/${interaction.user.id}/cooldowns/`).once('value');
-          const empregoCooldowns = cdSnapshot.val()?.emprego || 0;
-            
-          if (empregoCooldowns !== 0 && Tempo - (Date.now() - empregoCooldowns) > 0) {
-            const embed = new EmbedBuilder()
-              .setColor(color.embed || "#ff0000")
-              .setDescription(`⏰ **|** Você pode alterar de emprego **<t:${~~((empregoCooldowns + Tempo)/1000)}:R>**.`);
-            return interaction.followUp({ embeds: [embed] });
+      // 2. Busca o emprego atual
+      const empSnap = await database.ref(`economia/${userId}/emprego`).once('value');
+      let currentJobId = empSnap.val()?.emprego || 0;
+
+      // 3. Constrói Embed e Select Menu
+      let embed = buildEmpregoHubEmbed(client, interaction, userLevel, userXp, currentJobId, color);
+      let menuRow = buildUnlockedJobMenu(userLevel, currentJobId);
+
+      const msg = await interaction.followUp({
+        embeds: [embed],
+        components: [menuRow],
+        fetchReply: true
+      });
+
+      // 4. Collector para o Select Menu
+      const collector = msg.createMessageComponentCollector({
+        filter: (i) => i.user.id === userId,
+        time: 90000 // 90 segundos de interação
+      });
+
+      collector.on('collect', async (i) => {
+        if (i.customId === 'menu_selecionar_emprego') {
+          const selectedJobId = parseInt(i.values[0], 10);
+          const targetJob = LISTA_EMPREGOS.find(j => j.id === selectedJobId);
+
+          if (!targetJob) return;
+
+          // Validação de segurança de nível
+          if (userLevel < targetJob.nivel) {
+            return i.reply({
+              content: `${emoji.negativo || '❌'} **|** Você precisa atingir o nível **${targetJob.nivel}** para exercer a profissão de ${targetJob.nome}.`,
+              ephemeral: true
+            });
           }
-            
-          const lvlSnapshot = await database.ref(`economia/${interaction.user.id}/nível/`).once('value');
-          const nível = lvlSnapshot.val()?.nível || 0;
 
-          const row = new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-              .setCustomId('menu_empregos')
-              .setPlaceholder('Selecione um emprego.')
-              .addOptions(
-                { label: '🚕 Taxista', value: '1' },
-                { label: '🚚 Caminhoneiro', value: '2' },
-                { label: '🗑️ Gari', value: '3' },
-                { label: '🛵 Entregador', value: '4' },
-                { label: '⛽ Frentista', value: '5' },
-                { label: '👨‍🔧 Mecânico', value: '6' },
-                { label: '👨‍⚕️ Médico', value: '7' },
-                { label: '👮 Policial', value: '8' },
-              ),
-          );
-    
-          const embed = new EmbedBuilder()
-            .setAuthor({ name: `Selecione sua profissão`, iconURL: client.user.displayAvatarURL({ size: 256 }) })
-            .setColor(color.embed || "#00ff00")
-            .setDescription(`**Atualmente você é nível: ${nível}**\n\n🚕 **| Taxista** ≈${ValorEmpregos.taxista.label} (Lvl: \`0+\`)\n🚚 **| Caminhoneiro** ≈${ValorEmpregos.caminhoneiro.label} (Lvl: \`5+\`)\n🗑️ **| Gari** ≈${ValorEmpregos.gari.label} (Lvl: \`10+\`)\n🛵 **| Entregador** ≈${ValorEmpregos.entregador.label} (Lvl: \`15+\`)\n⛽ **| Frentista** ≈${ValorEmpregos.frentista.label} (Lvl: \`20+\`)\n👨‍🔧 **| Mecânico** ≈${ValorEmpregos.mecânico.label} (Lvl: \`25+\` - 🚫 Ilegal)\n👨‍⚕️ **| Médico** ≈${ValorEmpregos.medico.label} (Lvl: \`30+\` - 🚫 Ilegal)\n👮 **| Policial** ≈${ValorEmpregos.policial.label} (Lvl: \`50+\` - 🚫 Ilegal)`)
-            .setTimestamp();
-    
-          const msgMenu = await interaction.followUp({ embeds: [embed], components: [row] });
-          const Colector = msgMenu.createMessageComponentCollector({ filter: X => X.user.id === interaction.user.id, time: 60000 });
-    
-          Colector.on('collect', async (collected) => {
-            await collected.deferUpdate();
-            Colector.stop();
-              
-            const idEscolhido = parseInt(collected.values[0]);
-            const dadosAlvo = obterDadosEmprego(idEscolhido);
-    
-            if (nível < dadosAlvo.nivel) {
-              return await interaction.error({ content: `Você precisa ser no mínimo nível: **${dadosAlvo.nivel}** para escolher a profissão de ${dadosAlvo.nome}.` });
-            }
-              
-            await database.ref(`/economia/${interaction.user.id}/cooldowns/`).update({ emprego: Date.now() });
-            await database.ref(`economia/${interaction.user.id}/emprego`).update({ emprego: idEscolhido });
-    
-            const embedSucesso = new EmbedBuilder()
-              .setColor(color.embed || "#00ff00")
-              .setDescription(`Você selecionou com sucesso a profissão de: **${dadosAlvo.nome}**`);
-    
-            await interaction.followUp({ embeds: [embedSucesso] });
+          // Atualiza o emprego no Firebase
+          await database.ref(`economia/${userId}/emprego`).update({
+            emprego: selectedJobId,
+            alteradoEm: Date.now()
           });
 
-          Colector.on('end', () => {
-            row.components[0].setDisabled(true);
-            msgMenu.edit({ components: [row] }).catch(() => {});
+          currentJobId = selectedJobId;
+
+          // Atualiza o Hub visualmente
+          const updatedEmbed = buildEmpregoHubEmbed(client, interaction, userLevel, userXp, currentJobId, color);
+          const updatedRow = buildUnlockedJobMenu(userLevel, currentJobId);
+
+          await i.update({
+            embeds: [updatedEmbed],
+            components: [updatedRow]
+          });
+
+          await interaction.followUp({
+            content: `✅ **|** Profissão alterada com sucesso para **${targetJob.emote} ${targetJob.nome}**! Digite \`/trabalhar\` para iniciar seu expediente.`,
+            ephemeral: true
           });
         }
-          break;
-      
-        case 'trabalhar': {
-          if (Work.has(interaction.user.id)) {
-            return interaction.error({ content: `Aguarde terminar seu expediente ativo antes de tentar trabalhar novamente.` });
-          }
-          
-          const snapshot = await database.ref(`economia/${interaction.user.id}/emprego/`).once('value');
-          const empId = snapshot.val()?.emprego || 0;
-    
-          if (empId < 1) return interaction.error({ content: `Você está desempregado. Escolha uma profissão em \`/emprego escolha: escolher\`` });
-            
-          const { status } = await CheckUserCooldowns(interaction.user, Tempo, 'trabalho');
-          if (status) {
-            const embed = new EmbedBuilder()
-              .setColor(color.embed || "#ff0000")
-              .setDescription(`⏰ **|** Você poderá trabalhar novamente **<t:${~~((status)/1000)}:R>**.`);
-            return interaction.followUp({ embeds: [embed] });
-          }
-    
-          const dadosTrabalho = obterDadosEmprego(empId);
-          let rotas = Math.floor(Math.random() * 5) + 3; // Reduzido o número de cliques máximo de 11 para 8 para não cansar o usuário
-          
-          const obterFraseAleatoria = () => {
-            const listaFrases = mensagens[dadosTrabalho.chave] || ["Trabalhando firmemente no expediente."];
-            return listaFrases[Math.floor(Math.random() * listaFrases.length)];
-          };
+      });
 
-          const gerarEmbedTrabalho = (totalRotas, frase) => {
-            return new EmbedBuilder() 
-              .setAuthor({ name: `Trabalhando de ${dadosTrabalho.nome}`, iconURL: client.user.displayAvatarURL({ size: 256 }) })
-              .setColor(color.embed || "#00ff00")
-              .setDescription(`${dadosTrabalho.emote} **|** ${frase}\n> Restam: **${totalRotas}** rotas para concluir seu turno.`)
-              .setTimestamp();
-          };
-    
-          const rowAtiva = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("trampar").setStyle(ButtonStyle.Secondary).setEmoji(dadosTrabalho.emote));
-          const rowDesativada = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("trampar").setStyle(ButtonStyle.Secondary).setEmoji(dadosTrabalho.emote).setDisabled(true));
-    
-          Work.add(interaction.user.id);
-          let msgTrabalho = await interaction.followUp({ embeds: [gerarEmbedTrabalho(rotas, obterFraseAleatoria())], components: [rowAtiva] });
-    
-          const coletorTrabalho = msgTrabalho.createMessageComponentCollector({ filter: i => i.user.id === interaction.user.id, time: 45000 });
-    
-          coletorTrabalho.on('collect', async (i) => {
-            await i.deferUpdate();
-            rotas--;
-    
-            if (rotas > 0) {
-              await msgTrabalho.edit({ embeds: [gerarEmbedTrabalho(rotas, obterFraseAleatoria())] });
-            } else {
-              coletorTrabalho.stop('concluido');
-              Work.delete(interaction.user.id);
-    
-              const ganhoSorteado = Math.floor(Math.random() * (dadosTrabalho.max - dadosTrabalho.min + 1)) + dadosTrabalho.min;
-              
-              const embedFinal = new EmbedBuilder() 
-                .setAuthor({ name: `Expediente Encerrado`, iconURL: client.user.displayAvatarURL({ size: 256 }) })
-                .setColor("#00ff00")
-                .setDescription(`${dadosTrabalho.emote} **|** Você terminou todas as suas rotas do dia e recebeu seu pagamento de: **${Format(ganhoSorteado)}**!`)
-                .setTimestamp();
-    
-              await database.ref(`/economia/${interaction.user.id}/cooldowns/`).update({ trabalho: Date.now() });
-              await UpdateMoneyWallet(interaction, interaction.user, '+', ganhoSorteado, `{emoji.entrada} {mensagem.emprego} | ${ganhoSorteado} | ${dadosTrabalho.nome}`);
-              
-              await msgTrabalho.edit({ embeds: [embedFinal], components: [rowDesativada] });
-            }
-          });
-    
-          coletorTrabalho.on('end', (c, motivo) => {
-            Work.delete(interaction.user.id);
-            if (motivo === 'time') {
-              msgTrabalho.edit({ components: [rowDesativada] }).catch(() => {});
-            }
-          });
-        }
-          break;
-      }
+      collector.on('end', () => {
+        // Desativa o Select Menu após timeout
+        const disabledRow = new ActionRowBuilder().addComponents(
+          menuRow.components[0].setDisabled(true)
+        );
+        msg.edit({ components: [disabledRow] }).catch(() => {});
+      });
+
     } catch (error) {
-      console.error(error);
-      Work.delete(interaction.user.id);
-      return interaction.error({ content: `Ocorreu um erro inesperado na utilização do comando de empregos.` });
+      console.error('[SlashCommand /emprego]', error);
+      return interaction.followUp({
+        content: `${emoji.negativo || '❌'} **|** Ocorreu um erro ao abrir a central de empregos.`,
+        ephemeral: true
+      });
     }
   }
 };
