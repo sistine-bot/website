@@ -49,6 +49,9 @@ client.on('guildMemberAdd', async (member) => {
 // =======================================================
 client.on('guildMemberRemove', async (member) => {
   try {
+    if (!member || member.id === client.user?.id) return;
+    if (!member.guild || !client.guilds.cache.has(member.guild.id)) return;
+
     const dbSnap = await database.ref(`servers/${member.guild.id}/welcome`).once('value');
     const config = dbSnap.val();
 

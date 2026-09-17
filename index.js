@@ -28,6 +28,16 @@ client.commands = new Collection();
 client.slashCommands = new Collection();
 client.aliases = new Collection();
 
+// =========================================================
+// ANTI-CRASH SYSTEM (Process Protection)
+// =========================================================
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[AntiCrash] Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err, origin) => {
+  console.error('[AntiCrash] Uncaught Exception:', err, origin);
+});
+
 let configKeys = { TOKEN: "", CLIENT_ID: "" };
 try {
   configKeys = require('./src/config.js');

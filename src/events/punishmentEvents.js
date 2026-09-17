@@ -1,4 +1,4 @@
-const { EmbedBuilder, AuditLogEvent } = require('discord.js');
+const { EmbedBuilder, AuditLogEvent, PermissionsBitField } = require('discord.js');
 const client = require("../../index.js"); // Adapte para o caminho do seu index
 const firebase = require("firebase");
 const database = firebase.database();
@@ -8,6 +8,8 @@ const database = firebase.database();
 // =======================================================
 async function syncNativePunishment(guild, targetUser, executorUser, type, reason = 'Nenhum motivo definido', durationMs = null) {
   try {
+    if (!guild || !targetUser || !executorUser) return;
+
     // 1. Salva no Histórico do Painel
     const punishmentId = Date.now().toString();
     await database.ref(`servers/${guild.id}/punishments/${punishmentId}`).set({
@@ -41,7 +43,7 @@ async function syncNativePunishment(guild, targetUser, executorUser, type, reaso
     const config = configSnap.val() || {};
 
     if (config.logChannel) {
-      const logChannel = guild.channels.cache.get(config.logChannel);
+      const logChannel = guild.channels?.cache?.get(config.logChannel);
       if (logChannel) {
         const embed = new EmbedBuilder()
           .setTitle(`${emojiStr} Nova Punição: ${type}`)
@@ -51,7 +53,7 @@ async function syncNativePunishment(guild, targetUser, executorUser, type, reaso
             { name: '🛡️ Moderador', value: `${executorUser.username} \`(${executorUser.id})\``, inline: true },
             { name: '📝 Motivo da Punição', value: `\`\`\`${reason}\`\`\`` }
           )
-          .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
+          .setThumbnail(targetUser.displayAvatarURL ? targetUser.displayAvatarURL({ dynamic: true }) : "")
           .setTimestamp();
         
         if (type === 'Mute' && durationMs) {
@@ -72,33 +74,38 @@ async function syncNativePunishment(guild, targetUser, executorUser, type, reaso
 // =======================================================
 client.on('guildBanAdd', async (ban) => {
   try {
+    if (!ban || !ban.guild || !client.guilds.cache.has(ban.guild.id)) return;
+
+    const botMember = ban.guild.members.me || await ban.guild.members.fetchMe().catch(() => null);
+    if (!botMember || !botMember.permissions?.has(PermissionsBitField.Flags.ViewAuditLog)) return;
+
     // Busca no registro de auditoria quem deu o ban
     const fetchedLogs = await ban.guild.fetchAuditLogs({
       limit: 1,
       type: AuditLogEvent.MemberBanAdd,
-    });
+    }).catch(() => null);
     
-    const banLog = fetchedLogs.entries.first();
+    if (!fetchedLogs) return; // Não encontrou log
+
+    const banLog = fetchedLogs.entries?.first();
     if (!banLog) return; // Não encontrou log
 
     const { executor, target, reason } = banLog;
 
     // INTEGRAÇÃO DE SEGURANÇA: Se foi o PRÓPRIO BOT quem baniu (via dashboard ou comando), 
     // ele cancela para não enviar a mensagem duplicada!
-    if (executor.id === client.user.id) return; 
+    if (executor && executor.id === client.user?.id) return; 
     
     // Confirma se o alvo do log é a mesma pessoa que foi banida
-    if (target.id === ban.user.id) {
+    if (target && ban.user && target.id === ban.user.id) {
       const finalReason = reason || "Nenhum motivo especificado (Ação nativa)";
       await syncNativePunishment(ban.guild, ban.user, executor, 'Ban', finalReason);
     }
-  } catch (e) {
-    if (error.code === 50013) {
-      console.log(`[AVISO] Sem permissão de Auditoria no servidor: ${member.guild.name} (${member.guild.id})`);
-      return; // Interrompe a função silenciosamente
+  } catch (error) {
+    if (error.code === 50013 || error.code === 10004 || error.code === 50001) {
+      return; // Permissão ausente ou guild desconhecida/sem acesso
     }
-    
-    console.error("Erro ao buscar logs de auditoria:", error);
+    console.error("Erro ao buscar logs de auditoria (Ban):", error);
   }
 });
 
@@ -107,24 +114,31 @@ client.on('guildBanAdd', async (ban) => {
 // =======================================================
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
   try {
+    if (!newMember || !newMember.guild || !client.guilds.cache.has(newMember.guild.id)) return;
+
     // Verifica se a mudança foi especificamente um Timeout (Mute)
     const isNowMuted = !oldMember.isCommunicationDisabled() && newMember.isCommunicationDisabled();
     
     if (isNowMuted) {
+      const botMember = newMember.guild.members.me || await newMember.guild.members.fetchMe().catch(() => null);
+      if (!botMember || !botMember.permissions?.has(PermissionsBitField.Flags.ViewAuditLog)) return;
+
       const fetchedLogs = await newMember.guild.fetchAuditLogs({
         limit: 1,
         type: AuditLogEvent.MemberUpdate,
-      });
+      }).catch(() => null);
       
-      const muteLog = fetchedLogs.entries.first();
+      if (!fetchedLogs) return;
+
+      const muteLog = fetchedLogs.entries?.first();
       if (!muteLog) return;
       
       const { executor, target, reason } = muteLog;
 
       // Anti-Duplicação
-      if (executor.id === client.user.id) return;
+      if (executor && executor.id === client.user?.id) return;
       
-      if (target.id === newMember.id) {
+      if (target && target.id === newMember.id) {
         // Calcula quanto tempo de mute o admin colocou
         const muteEnd = newMember.communicationDisabledUntilTimestamp;
         const durationMs = muteEnd - Date.now();
@@ -133,13 +147,11 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
         await syncNativePunishment(newMember.guild, newMember.user, executor, 'Mute', finalReason, durationMs);
       }
     }
-  } catch (e) {
-    if (error.code === 50013) {
-      console.log(`[AVISO] Sem permissão de Auditoria no servidor: ${member.guild.name} (${member.guild.id})`);
-      return; // Interrompe a função silenciosamente
+  } catch (error) {
+    if (error.code === 50013 || error.code === 10004 || error.code === 50001) {
+      return;
     }
-    
-    console.error("Erro ao buscar logs de auditoria:", error);
+    console.error("Erro ao buscar logs de auditoria (Mute):", error);
   }
 });
 
@@ -148,34 +160,53 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 // =======================================================
 client.on('guildMemberRemove', async (member) => {
   try {
+    // Se o membro que saiu for o próprio bot, encerra imediatamente!
+    if (!member || member.id === client.user?.id) return;
+
+    // Se o servidor não existe ou o bot não está nele
+    if (!member.guild || !client.guilds.cache.has(member.guild.id)) return;
+
     setTimeout(async () => {
-      const fetchedLogs = await member.guild.fetchAuditLogs({
-        limit: 1,
-        type: AuditLogEvent.MemberKick,
-      });
+      try {
+        // Valida se o bot ainda está no servidor após o timeout
+        if (!member.guild || !client.guilds.cache.has(member.guild.id)) return;
 
-      const kickLog = fetchedLogs.entries.first();
-      if (!kickLog) return;
+        const botMember = member.guild.members.me || await member.guild.members.fetchMe().catch(() => null);
+        if (!botMember || !botMember.permissions?.has(PermissionsBitField.Flags.ViewAuditLog)) return;
 
-      const { executor, target, reason, createdAt } = kickLog;
-      
-      // Verifica se esse log é recente (menos de 5 segundos), para não puxar um log antigo sem querer
-      if (Date.now() - createdAt.getTime() > 5000) return;
+        const fetchedLogs = await member.guild.fetchAuditLogs({
+          limit: 1,
+          type: AuditLogEvent.MemberKick,
+        }).catch(() => null);
 
-      // Anti-Duplicação
-      if (executor.id === client.user.id) return;
+        if (!fetchedLogs) return;
 
-      if (target.id === member.id) {
-        const finalReason = reason || "Nenhum motivo especificado (Ação nativa)";
-        await syncNativePunishment(member.guild, member.user, executor, 'Kick', finalReason);
+        const kickLog = fetchedLogs.entries?.first();
+        if (!kickLog) return;
+
+        const { executor, target, reason, createdAt } = kickLog;
+        
+        // Verifica se esse log é recente (menos de 5 segundos), para não puxar um log antigo sem querer
+        if (Date.now() - createdAt.getTime() > 5000) return;
+
+        // Anti-Duplicação
+        if (executor && executor.id === client.user?.id) return;
+
+        if (target && target.id === member.id) {
+          const finalReason = reason || "Nenhum motivo especificado (Ação nativa)";
+          await syncNativePunishment(member.guild, member.user, executor, 'Kick', finalReason);
+        }
+      } catch (error) {
+        if (error.code === 50013 || error.code === 10004 || error.code === 50001) {
+          return;
+        }
+        console.error("Erro ao buscar logs de auditoria (Kick timeout):", error);
       }
     }, 1000);
-  } catch (e) {
-    if (error.code === 50013) {
-      console.log(`[AVISO] Sem permissão de Auditoria no servidor: ${member.guild.name} (${member.guild.id})`);
-      return; // Interrompe a função silenciosamente
+  } catch (error) {
+    if (error.code === 50013 || error.code === 10004 || error.code === 50001) {
+      return;
     }
-    
-    console.error("Erro ao buscar logs de auditoria:", error);
+    console.error("Erro ao processar guildMemberRemove (Kick):", error);
   }
 });
