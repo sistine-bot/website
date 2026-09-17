@@ -81,7 +81,18 @@ module.exports =  {
 
       const command = interaction.options.getSubcommand();
 
-      const guild = client.guilds.cache.get(interaction.options.getString('servidor')) || interaction.guild;
+      const targetGuildId = interaction.options.getString('servidor');
+      let guild = interaction.guild;
+      if (targetGuildId) {
+        guild = client.guilds.cache.get(targetGuildId) || (await client.guilds.fetch(targetGuildId).catch(() => null)) || interaction.guild;
+      }
+
+      if (!guild) {
+        return interaction.followUp({
+          content: `${emoji.negativo || '❌'} **|** Não foi possível encontrar as informações deste servidor.`,
+          ephemeral: true
+        });
+      }
 
       switch (interaction.options && interaction.options['_group']) {
 
@@ -167,30 +178,47 @@ module.exports =  {
       
               const serverIcon = guild.iconURL({ format: 'png', dynamic: true, size: 1024 });
               
-              const membros = new Intl.NumberFormat('Pt-Br', { maximumSignificantDigits: 20 }).format(guild.memberCount);
+              const membros = new Intl.NumberFormat('pt-BR').format(guild.memberCount || 0);
               
-              const owner = client.users.cache.get(guild.ownerId);
+              let ownerInfo = 'Não identificado';
+              if (guild.ownerId) {
+                try {
+                  const owner = (await guild.fetchOwner?.().catch(() => null)) || (await client.users?.fetch?.(guild.ownerId).catch(() => null));
+                  if (owner) {
+                    const user = owner.user || owner;
+                    const tag = user.discriminator && user.discriminator !== '0'
+                      ? `${user.username}#${user.discriminator}`
+                      : user.username;
+                    ownerInfo = `\`${tag}\` (${guild.ownerId})`;
+                  } else {
+                    ownerInfo = `\`ID: ${guild.ownerId}\``;
+                  }
+                } catch (e) {
+                  ownerInfo = `\`ID: ${guild.ownerId}\``;
+                }
+              }
               
               const embed = new EmbedBuilder()
               .setTitle(`${guild.name}`)
               .setColor(color.embed)
-              .setThumbnail(serverIcon)
               .addFields(
                 { name: `👤・Nome:`, value: `\`${guild.name}\``, inline: true },
                 { name: `👥・Id:`, value: `\`${guild.id}\``, inline: true },
-                { name: `👑・Dono:`, value: `\`${owner.username}\` (${owner.id}) `, inline: true },
+                { name: `👑・Dono:`, value: `${ownerInfo}`, inline: true },
                 { name: `🗓️・Criado em:`, value: `<t:${~~(guild.createdTimestamp/1000)}:D> (<t:${~~(guild.createdTimestamp/1000)}:R>)`, inline: true },
                 { name: `<:user:925955074222608505>・Membros: ${membros}`, value: `
 👤・**Humanos:** ${checkMembers(guild)}
 🤖・**Robôs:** ${checkBots(guild)}`, inline: false },
-                { name: `📂・Canais: ${guild.channels.cache.size}`, value: `
-📝 Texto: ${guild.channels.cache.filter(c => c.type == 0).size}
-🗣 Voz: ${guild.channels.cache.filter(c => c.type == 2).size}`, inline: false }
+                { name: `📂・Canais: ${guild.channels?.cache?.size || 0}`, value: `
+📝 Texto: ${guild.channels?.cache?.filter(c => c.type == 0).size || 0}
+🗣 Voz: ${guild.channels?.cache?.filter(c => c.type == 2).size || 0}`, inline: false }
               );
               
-              guild.bannerURL() ? embed.setThumbnail(guild.bannerURL({ format: 'png', dynamic: true, size: 1024 })) : ''
+              if (serverIcon) embed.setThumbnail(serverIcon);
+              const banner = guild.bannerURL({ format: 'png', dynamic: true, size: 1024 });
+              if (banner) embed.setImage(banner);
               
-              return interaction.followUp({ embeds: [embed] })
+              return interaction.followUp({ embeds: [embed] });
               
             };
             break;
