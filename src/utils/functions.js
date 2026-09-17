@@ -910,6 +910,8 @@ module.exports = {
   TransactionUpdate,
   XpUpdate,
   getXpForNextLevel: require('./experienceManager.js').getXpForNextLevel,
+  checkUserStarted: require('./experienceManager.js').checkUserStarted,
+  markUserStarted: require('./experienceManager.js').markUserStarted,
   ReputationUpdate,
   eventLog,
   getUserGlobalRank,

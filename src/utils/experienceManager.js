@@ -42,8 +42,10 @@ const CHAT_COOLDOWN_MS = 60 * 1000;   // 1 ganho por minuto por usuário por ser
 const SLASH_COOLDOWN_MS = 30 * 1000;  // 30 segundos global para comandos slash gerais
 
 // Caches em memória volátil de alta performance (Anti-Flood que poupa o Firebase)
-const chatCooldownMap = new Map();   // Key: `${userId}:${guildId}` -> timestamp
-const slashCooldownMap = new Map();  // Key: `${userId}` -> timestamp
+const chatCooldownMap = new Map();     // Key: `${userId}:${guildId}` -> timestamp
+const slashCooldownMap = new Map();    // Key: `${userId}` -> timestamp
+const startedUsersCache = new Set();   // Set: `${userId}` -> usuários que já usaram /start
+const unstartedUsersCache = new Map(); // Key: `${userId}` -> timestamp da última verificação negativa
 
 // Rotina de limpeza periódica de memória a cada 5 minutos
 setInterval(() => {
@@ -53,6 +55,9 @@ setInterval(() => {
   }
   for (const [key, exp] of slashCooldownMap.entries()) {
     if (now - exp > SLASH_COOLDOWN_MS) slashCooldownMap.delete(key);
+  }
+  for (const [key, time] of unstartedUsersCache.entries()) {
+    if (now - time > 60 * 1000) unstartedUsersCache.delete(key);
   }
 }, 5 * 60 * 1000).unref();
 
@@ -188,6 +193,64 @@ async function setLevelUpAlert(userId, enabled) {
 }
 
 /**
+ * Verifica se o usuário já resgatou o /start para liberar ganho de XP e evolução de nível.
+ * Utiliza cache volátil em memória (RAM) para poupar leituras no Firebase Realtime Database.
+ * @param {string} userId ID do usuário no Discord
+ * @returns {Promise<boolean>} Retorna true se o usuário já executou /start
+ */
+async function checkUserStarted(userId) {
+  if (!userId) return false;
+  const idStr = String(userId);
+
+  // 1. Verificação rápida em RAM (Usuários verificados ou recém-iniciados)
+  if (startedUsersCache.has(idStr)) return true;
+
+  // 2. Proteção contra flood de leituras para usuários não iniciados (Cache negativo de 60s)
+  const now = Date.now();
+  const unstartedTime = unstartedUsersCache.get(idStr);
+  if (unstartedTime && (now - unstartedTime < 60 * 1000)) {
+    return false;
+  }
+
+  // 3. Consulta ao Firebase Realtime Database
+  try {
+    const kitSnap = await database.ref(`economia/${idStr}/starterKitClaimed`).once('value');
+    if (kitSnap.val() === true) {
+      startedUsersCache.add(idStr);
+      unstartedUsersCache.delete(idStr);
+      return true;
+    }
+
+    // Retrocompatibilidade: Se já possui nível >= 1 gravado no banco, considera iniciado
+    const lvlSnap = await database.ref(`economia/${idStr}/nível/nível`).once('value');
+    if (typeof lvlSnap.val() === 'number' && lvlSnap.val() >= 1) {
+      startedUsersCache.add(idStr);
+      unstartedUsersCache.delete(idStr);
+      return true;
+    }
+
+    // Registra no cache negativo para evitar consultas repetidas em flood
+    unstartedUsersCache.set(idStr, now);
+    return false;
+  } catch (err) {
+    console.error('[ExperienceManager] Erro ao verificar status de inicialização (/start):', err);
+    return false;
+  }
+}
+
+/**
+ * Marca o usuário como iniciado imediatamente no cache em memória.
+ * Chamado logo após o resgate com sucesso do /start.
+ * @param {string} userId ID do usuário
+ */
+function markUserStarted(userId) {
+  if (!userId) return;
+  const idStr = String(userId);
+  startedUsersCache.add(idStr);
+  unstartedUsersCache.delete(idStr);
+}
+
+/**
  * Dispara o alerta visual de Level Up quando o jogador sobe de nível
  */
 async function handleLevelUp(context, user, oldLevel, newLevel, options = {}) {
@@ -253,6 +316,12 @@ async function handleLevelUp(context, user, oldLevel, newLevel, options = {}) {
 async function grantXpCore(context, user, rawXp, options = {}) {
   if (!user || !user.id || !rawXp || rawXp <= 0) return { success: false };
 
+  // Trava Obrigatória: Só ganha XP e evolução de nível após utilizar /start
+  const isStarted = await checkUserStarted(user.id);
+  if (!isStarted) {
+    return { success: false, skipped: true, reason: 'not_started' };
+  }
+
   try {
     // 1. Aplica bônus de VIP caso ativo
     let multiplier = 1;
@@ -273,7 +342,8 @@ async function grantXpCore(context, user, rawXp, options = {}) {
 
     // Transação Atômica no nó de nível para garantir consistência
     const transactionResult = await nivelRef.transaction((current) => {
-      const curLvl = (current && typeof current.nível === 'number') ? current.nível : 0;
+      // Como o usuário já usou /start, o nível mínimo da progressão é 1
+      const curLvl = (current && typeof current.nível === 'number' && current.nível >= 1) ? current.nível : 1;
       const curXp = (current && typeof current.xp === 'number') ? current.xp : 0;
       const totalXp = curXp + finalXpToAdd;
 
@@ -334,6 +404,12 @@ async function grantChatXp(message) {
     return { skipped: true, reason: 'too_short' };
   }
 
+  // Trava 0 (Starter Check): Só ganha XP quem já resgatou o /start
+  const isStarted = await checkUserStarted(message.author.id);
+  if (!isStarted) {
+    return { skipped: true, reason: 'not_started' };
+  }
+
   // Trava 1 (Cooldown): 1 ganho por minuto por usuário em cada servidor
   const cacheKey = `${message.author.id}:${message.guild.id}`;
   const now = Date.now();
@@ -361,6 +437,13 @@ async function grantSlashCommandXp(interaction) {
   }
 
   const userId = interaction.user.id;
+
+  // Trava 0 (Starter Check): Só ganha XP quem já resgatou o /start
+  const isStarted = await checkUserStarted(userId);
+  if (!isStarted) {
+    return { skipped: true, reason: 'not_started' };
+  }
+
   const now = Date.now();
   const lastEarned = slashCooldownMap.get(userId) || 0;
 
@@ -411,6 +494,9 @@ module.exports = {
   isLevelUpAlertEnabled,
   setLevelUpAlert,
   handleLevelUp,
+  checkUserStarted,
+  markUserStarted,
+  startedUsersCache,
   grantChatXp,
   grantSlashCommandXp,
   grantActionXp,

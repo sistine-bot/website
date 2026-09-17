@@ -17,13 +17,40 @@ module.exports =  {
     
     try {
 
-      const { getXpForNextLevel, isLevelUpAlertEnabled, setLevelUpAlert, LEVEL_UNLOCKS } = require('../../utils/experienceManager.js');
+      const { getXpForNextLevel, isLevelUpAlertEnabled, setLevelUpAlert, LEVEL_UNLOCKS, checkUserStarted } = require('../../utils/experienceManager.js');
 
       const user = interaction.options.getUser("usuário") || interaction.user;
+      const isSelf = user.id === interaction.user.id;
+
+      const isStarted = await checkUserStarted(user.id);
+      if (!isStarted) {
+        const notStartedEmbed = new EmbedBuilder()
+          .setColor('#ef4444')
+          .setAuthor({
+            name: `${isSelf ? 'Progressão Bloqueada' : 'Usuário Não Iniciado'} ・ ${user.username}`,
+            iconURL: typeof user.displayAvatarURL === 'function' ? user.displayAvatarURL({ dynamic: true }) : undefined
+          })
+          .setTitle(isSelf ? '🚀 Inicie sua Jornada para Ativar Níveis e XP!' : '⚠️ Este jogador ainda não iniciou sua jornada!')
+          .setDescription(
+            isSelf
+              ? `Olá, **${user.username}**! Você ainda não resgatou seu **Kit Iniciante**.\n\n` +
+                `🔒 **O ganho de XP e a evolução de nível estão bloqueados.**\n\n` +
+                `🎁 **Como desbloquear:**\n` +
+                `> Utilize o comando </start:0> *(ou \`/start\`)* para receber suas primeiras moedas, ferramentas e liberar o **Nível 1** com todas as vantagens iniciais (Taxista, Galinha, Lote 1 e muito mais)!`
+              : `**${user.username}** ainda não executou o comando \`/start\`.\n\nEles precisam iniciar sua jornada para ativar a progressão e desbloquear o **Nível 1**.`
+          )
+          .setFooter({ text: 'Sistine ・ Use /start para começar' })
+          .setTimestamp();
+
+        return interaction.followUp({ embeds: [notStartedEmbed] });
+      }
     
       return database.ref(`economia/${user.id}/nível/`).once('value').then(async function(snapshot) {
         let nível = (snapshot.val() && snapshot.val().nível);
-        if (nível === undefined || nível === null) nível = 0;
+        if (nível === undefined || nível === null || nível < 1) {
+          nível = 1;
+          await database.ref(`economia/${user.id}/nível`).update({ nível: 1 });
+        }
         
         let xp = (snapshot.val() && snapshot.val().xp);
         if (xp === undefined || xp === null) xp = 0;
@@ -50,14 +77,14 @@ module.exports =  {
             .setStyle(alertActive ? ButtonStyle.Success : ButtonStyle.Secondary)
             .setLabel(alertActive ? 'Alertas: Ativados' : 'Alertas: Desativados')
             .setEmoji(alertActive ? '🔔' : '🔕')
-            .setDisabled(user.id !== interaction.user.id),
+            .setDisabled(!isSelf),
         );
         
         const embed = new EmbedBuilder() 
           .setColor(color.embed || '#831396')
           .setAuthor({
             name: `Painel de Progressão & Nível ・ ${user.username}`,
-            iconURL: user.displayAvatarURL({ dynamic: true })
+            iconURL: typeof user.displayAvatarURL === 'function' ? user.displayAvatarURL({ dynamic: true }) : undefined
           })
           .setDescription(`
 💠 **| Nível Atual:** \`Nível ${nível}\`
@@ -93,6 +120,8 @@ ${unlockPreview}
                   .setLabel(newStatus ? 'Alertas: Ativados' : 'Alertas: Desativados')
                   .setEmoji(newStatus ? '🔔' : '🔕')
               );
+
+              await msg.edit({ components: [updatedRow] }).catch(() => {});
 
               return interaction.followUp({
                 content: `⚙️ **|** Notificações de novos níveis ${newStatus ? '**ativadas** 🔔' : '**desativadas** 🔕'} com sucesso!`,
