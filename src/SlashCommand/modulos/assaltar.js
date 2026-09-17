@@ -40,7 +40,7 @@ module.exports =  {
       const snapEmp = await database.ref(`economia/${interaction.user.id}/emprego`).once('value');
       let emprego = (snapEmp.val() && snapEmp.val().emprego) || 0;
       
-      if (emprego >= 6) {
+      if (emprego >= 5) {
         return interaction.error({ content: `Você não pode realizar assaltos pois sua profissão não permite condutas ilegais.` });
       }
       

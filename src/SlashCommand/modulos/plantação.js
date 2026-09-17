@@ -505,6 +505,25 @@ module.exports = {
           return int.followUp({ content: `Você já expandiu todos os terrenos disponíveis!`, ephemeral: true });
         }
 
+        const LOTES_REQUISITOS = {
+          2: { nivel: 3, preco: 5000 },
+          3: { nivel: 10, preco: 10000 },
+          4: { nivel: 15, preco: 20000 },
+          5: { nivel: 20, preco: 35000 },
+          6: { nivel: 25, preco: 50000 }
+        };
+
+        const req = LOTES_REQUISITOS[proximo.loteNum];
+        const lvlSnap = await database.ref(`economia/${interaction.user.id}/nível`).once('value');
+        const userLevel = lvlSnap.val()?.nível || 0;
+
+        if (req && userLevel < req.nivel) {
+          return int.followUp({
+            content: `🔒 **|** Você precisa atingir o **Nível ${req.nivel}** para expandir o seu terreno para o **Lote ${proximo.loteNum}**! (Seu nível atual: **${userLevel}**).\n💡 *Dica: Continue ativo no servidor, colhendo culturas e trabalhando para subir de nível!*`,
+            ephemeral: true
+          });
+        }
+
         const preco = proximo.preco;
         const { carteira } = await getUserMoney(interaction.user);
 
@@ -683,6 +702,26 @@ module.exports = {
         const seedCount = inv[crop.seedKey] || 0;
         if (seedCount < 1) {
           return int.followUp({ content: `❌ **|** Você não possui sementes de **${crop.displayName}** no seu inventário! Adquira na loja (\`/loja sementes\`).`, ephemeral: true });
+        }
+
+        // Validação de Nível Mínimo para Cultivo da Semente
+        const SEED_LEVELS = {
+          3: 0,   // Trigo
+          4: 0,   // Milho
+          5: 5,   // Feijão
+          6: 10,  // Cana-de-açúcar
+          7: 15,  // Cenoura
+          8: 20   // Abóbora
+        };
+        const requiredLevel = SEED_LEVELS[cropId] || 0;
+        const lvlSnap = await database.ref(`economia/${interaction.user.id}/nível`).once('value');
+        const userLevel = lvlSnap.val()?.nível || 0;
+
+        if (userLevel < requiredLevel) {
+          return int.followUp({
+            content: `🔒 **|** Você precisa atingir o **Nível ${requiredLevel}** para cultivar sementes de **${crop.displayName}**! (Seu nível atual: **${userLevel}**).\n💡 *Dica: Suba de nível colhendo culturas liberadas ou interagindo no servidor!*`,
+            ephemeral: true
+          });
         }
 
         // Validação da Enxada (Enxada de Madeira ou superior para preparar a terra)

@@ -645,38 +645,12 @@ async function UpdateMoneyBank(ctx, user, AddOrSub, quantia, transação) {
   }
 }
 
-async function XpUpdate(ctx, user, quantia = Math.floor(Math.random() * 10) + 25) {
+async function XpUpdate(ctx, user, quantia = null) {
   try {
-    if (!ctx || !user || !quantia) {
-      const errorMessage = "[LOGS] - [DETAILS_NOT_PROVIDED] (XpUpdate): Um ou mais parâmetros não foram definidos.";
-      console.warn(errorMessage);
-      if (ctx) return sendError(ctx, "Ocorreu um erro ao atualizar o dinheiro do seu banco.");
-      throw new Error(errorMessage);
-    }
-
-    const vipInfo = await CheckUserVip(user);
-    let multiplier = 1;
-    if (vipInfo.isVip) {
-      multiplier = vipInfo.level >= 2 ? 3 : 2;
-    }
-
-    const snapshotNivel = await database.ref(`economia/${user.id}/nível/`).once('value');
-    const nivelData = snapshotNivel.val() || {};
-
-    let nível = nivelData.nível || 0;
-    let xp = nivelData.xp || 0;
-
-    const NewXP = xp + (quantia * multiplier);
-    let NívelUp = (nível > 0) ? (nível * 1000) : 1000;
-
-    if (NewXP >= NívelUp) {
-      const remainingXp = NewXP - NívelUp;
-      await database.ref(`economia/${user.id}/nível/`).update({ nível: nível + 1, xp: remainingXp });
-    } else {
-      await database.ref(`economia/${user.id}/nível/`).update({ xp: NewXP });
-    }
+    const experienceManager = require('./experienceManager.js');
+    return await experienceManager.XpUpdate(ctx, user, quantia);
   } catch (error) {
-    console.error(error);
+    console.error('[FUNCTIONS - XpUpdate]', error);
     throw error;
   }
 }
@@ -935,6 +909,7 @@ module.exports = {
   UpdateMoneyBank,
   TransactionUpdate,
   XpUpdate,
+  getXpForNextLevel: require('./experienceManager.js').getXpForNextLevel,
   ReputationUpdate,
   eventLog,
   getUserGlobalRank,

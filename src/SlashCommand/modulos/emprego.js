@@ -31,7 +31,8 @@ function buildProgressBar(current, max, totalBars = 10) {
  * Cria o Embed do Hub Informativo de Empregos
  */
 function buildEmpregoHubEmbed(client, interaction, userLevel, userXp, currentJobId, color) {
-  const nextLevelXp = (userLevel > 0) ? (userLevel * 1000) : 1000;
+  const { getXpForNextLevel } = require('../../utils/experienceManager.js');
+  const nextLevelXp = getXpForNextLevel(userLevel);
   const progressBar = buildProgressBar(userXp, nextLevelXp, 10);
   const currentJob = LISTA_EMPREGOS.find(j => j.id === currentJobId) || {
     id: 0,

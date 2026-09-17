@@ -47,12 +47,28 @@ module.exports =  {
         let nível = (snapshot.val() && snapshot.val().nível);
         if (nível === undefined || nível === null) nível = 0;
         
-        if (!client.config.cargos.criador.includes(interaction.user.id) && !VIP && nível < 13) return interaction.error({ content: `Você precisa ser **nível 13** para recuperar a durabilidade de seus itens (Assinantes VIP possuem acesso antecipado!).` });
-        
+        const item = interaction.options.getString('item');
         const { armacaça, arma, vara, enxada, regador } = await getUserInventory(interaction.user);
         const { carteira } = await require('../../utils/functions.js').getUserMoney(interaction.user);
-        
-        const item = interaction.options.getString('item');
+
+        let minLevel = 1;
+        if (item === 'arma') {
+          const armaTier = Number(arma?.item || 1);
+          if (armaTier === 1) minLevel = 1;
+          else if (armaTier === 2) minLevel = 15;
+          else if (armaTier === 3) minLevel = 25;
+          else if (armaTier >= 4) minLevel = 40;
+        } else if (item === 'armacaça') {
+          minLevel = 1;
+        } else {
+          // Ferramentas de trabalho de ferro (vara, enxada, regador)
+          minLevel = 1;
+        }
+
+        const isCreator = client.config?.cargos?.criador?.includes(interaction.user.id);
+        if (!isCreator && !VIP && nível < minLevel) {
+          return interaction.error({ content: `Você precisa ser **nível ${minLevel}** para recuperar a durabilidade deste item (Assinantes VIP possuem acesso antecipado!).` });
+        }
         
         if (item === 'arma' && (!arma || arma.item < 1)) {
           return interaction.error({ content: `Você não possui uma **Arma** equipada para consertar.` });

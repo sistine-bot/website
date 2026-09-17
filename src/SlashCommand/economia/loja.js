@@ -155,6 +155,12 @@ ${emoji[4]} **|** ${emoji.porco} - ${itensAPI.Porco.nome[0]} **|** ${Format(iten
 
               await Store(DB_CONSUM, 'ração_animal', 2, true, 3, NomeDoItem, Valor, 6, `{emoji.saida} {mensagem.loja.compra} | ${Valor} | 3 ${NomeDoItem}`);
             } else {
+              const snapshot = await database.ref(`${DB_BASE}/nível/`).once('value');
+              let nível = snapshot.val()?.nível || 0;
+
+              if (i.customId === 'Vaca' && nível < 12) return RequiredNível(12);
+              if (i.customId === 'Porco' && nível < 22) return RequiredNível(22);
+
               const AnimalDB = await database.ref(`${DB_BASE}/Fazenda/Animal`).once('value');
               const dbData = AnimalDB.val() || {};
 
@@ -382,11 +388,6 @@ ${emoji[6]} **|** 🚿 ${itensAPI.regador.nome[0]} **|** ${Format(itensAPI.regad
                 break;
             }
             
-            const snapshot = await database.ref(`${DB_BASE}/nível/`).once('value');
-            let nível = snapshot.val()?.nível || 0;
-              
-            if (NomeItem === itensAPI.backgroundticket.nome[0] && nível < 23) return RequiredNível(23);
-              
             await Store(Diretório, Variável, ItemType, true, Amount, NomeItem, Money, Quanti, `{emoji.saida} {mensagem.loja.compra} | ${Money} | ${Amount} ${NomeItem}`);
           });
 
@@ -420,10 +421,10 @@ ${emoji[6]} **|** 🚿 ${itensAPI.regador.nome[0]} **|** ${Format(itensAPI.regad
             .setDescription(`
 ${emoji[1]} **|** 25 Munições **|** ${Format(itensAPI.munição.valor * 25)}
 ${verifyArmaCaça ? emoji.cadeado : emoji[2]} **|** Arma de caça **|** ${Format(itensAPI.armacaça.valor)}
-${verifyArma ? emoji.cadeado : emoji[3]} **|** ${itensAPI.arma[1].nome} **|** ${Format(itensAPI.arma[1].valor)}
-${verifyArma ? emoji.cadeado : emoji[4]} **|** ${itensAPI.arma[2].nome} **|** ${Format(itensAPI.arma[2].valor)}
-${verifyArma ? emoji.cadeado : emoji[5]} **|** ${itensAPI.arma[3].nome} **|** ${Format(itensAPI.arma[3].valor)}
-${verifyArma ? emoji.cadeado : emoji[6]} **|** ${itensAPI.arma[4].nome} **|** ${Format(itensAPI.arma[4].valor)}`)
+${verifyArma ? emoji.cadeado : emoji[3]} **|** ${itensAPI.arma[1].nome} \`(Nível 1+)\` **|** ${Format(itensAPI.arma[1].valor)}
+${verifyArma ? emoji.cadeado : emoji[4]} **|** ${itensAPI.arma[2].nome} \`(Nível 15+)\` **|** ${Format(itensAPI.arma[2].valor)}
+${verifyArma ? emoji.cadeado : emoji[5]} **|** ${itensAPI.arma[3].nome} \`(Nível 25+)\` **|** ${Format(itensAPI.arma[3].valor)}
+${verifyArma ? emoji.cadeado : emoji[6]} **|** ${itensAPI.arma[4].nome} \`(Nível 40+)\` **|** ${Format(itensAPI.arma[4].valor)}`)
             .setFooter({ text: `Você possui ${ms(TimeToClose)} • ${interaction.guild.name}`, iconURL: interaction.guild.iconURL() || undefined });
             
           const msg = await interaction.followUp({ embeds: [embed], components: [row1, row2] });
@@ -434,6 +435,14 @@ ${verifyArma ? emoji.cadeado : emoji[6]} **|** ${itensAPI.arma[4].nome} **|** ${
             let Diretório, Variável, ItemType, Amount, NomeItem, Money, Quanti;
               
             let porte = equipData.porte || 0;
+
+            const lvlSnap = await database.ref(`${DB_BASE}/nível/`).once('value');
+            let nível = lvlSnap.val()?.nível || 0;
+
+            if (i.customId === '3' && nível < 1) return RequiredNível(1);
+            if (i.customId === '4' && nível < 15) return RequiredNível(15);
+            if (i.customId === '5' && nível < 25) return RequiredNível(25);
+            if (i.customId === '6' && nível < 40) return RequiredNível(40);
                 
             switch (i.customId) {
               case '1':

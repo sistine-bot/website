@@ -729,6 +729,25 @@ module.exports = {
           return int.followUp({ content: `Você já expandiu todos os espaços disponíveis no rancho!`, ephemeral: true });
         }
 
+        const RANCHO_ESPACOS_REQUISITOS = {
+          2: { nivel: 4, preco: 5000 },
+          3: { nivel: 8, preco: 12000 },
+          4: { nivel: 14, preco: 25000 },
+          5: { nivel: 20, preco: 45000 },
+          6: { nivel: 28, preco: 70000 }
+        };
+
+        const req = RANCHO_ESPACOS_REQUISITOS[proximo.num];
+        const lvlSnap = await database.ref(`economia/${interaction.user.id}/nível`).once('value');
+        const userLevel = lvlSnap.val()?.nível || 0;
+
+        if (req && userLevel < req.nivel) {
+          return int.followUp({
+            content: `🔒 **|** Você precisa atingir o **Nível ${req.nivel}** para expandir o rancho para o **Espaço ${proximo.num}**! (Seu nível atual: **${userLevel}**).\n💡 *Dica: Continue cuidando dos seus animais e colhendo para subir de nível.*`,
+            ephemeral: true
+          });
+        }
+
         const preco = proximo.price;
         const { carteira } = await getUserMoney(interaction.user);
 
@@ -787,6 +806,22 @@ module.exports = {
         const fazendaData = await getFazendaData();
         if (fazendaData[`animal_${espacoNum}`] > 0) {
           return int.followUp({ content: `⚠️ **|** Este espaço já possui um animal abrigado!`, ephemeral: true });
+        }
+        const ANIMAL_LEVELS = {
+          1: 0,   // Galinha
+          2: 12,  // Vaca
+          3: 22   // Porco
+        };
+
+        const reqNivel = ANIMAL_LEVELS[animalId] || 0;
+        const lvlSnap = await database.ref(`economia/${interaction.user.id}/nível`).once('value');
+        const userLevel = lvlSnap.val()?.nível || 0;
+
+        if (userLevel < reqNivel) {
+          return int.followUp({
+            content: `🔒 **|** Você precisa atingir o **Nível ${reqNivel}** para adotar um filhote de **${animal.displayName}**! (Seu nível atual: **${userLevel}**).\n💡 *Dica: Ganhe XP alimentando e acariciando seus animais atuais para desbloquear novas espécies!*`,
+            ephemeral: true
+          });
         }
 
         const { carteira } = await getUserMoney(interaction.user);

@@ -2,8 +2,8 @@ const client = require("../../index.js");
 const firebase = require("firebase");
 const database = firebase.database();
 const emoji = require("../../src/utils/emoji.js");
-const { CheckUserBlacklisted, XpUpdate } = require('../../src/utils/functions.js');
-const LevelXP = new Set();
+const { CheckUserBlacklisted } = require('../../src/utils/functions.js');
+const { grantSlashCommandXp } = require('../../src/utils/experienceManager.js');
 
 client.on("interactionCreate", async (interaction) => { 
   try {
@@ -84,14 +84,8 @@ client.on("interactionCreate", async (interaction) => {
         const { blacklisted, blacklistedMensagem } = await CheckUserBlacklisted(interaction.user);
         if (blacklisted) return interaction.followUp({ content: blacklistedMensagem, ephemeral: true });
   
-        if (!LevelXP.has(interaction.user.id)) { 
-          XpUpdate(interaction, interaction.user);
-          
-          LevelXP.add(interaction.user.id);
-          setTimeout(() => {
-            LevelXP.delete(interaction.user.id);
-          }, 30 * 1e3);
-        }
+        // Processa ganho de XP para comandos slash gerais (10 a 15 XP com cooldown de 30s)
+        await grantSlashCommandXp(interaction);
   
         console.log(`${emoji.positivo} Comando utilizado | ${interaction.user.tag} (${interaction.user.id}) | ${interaction.channelId}\nComando:\n${interaction.commandName} ${args.slice(0).join(' ')}\n`);
   

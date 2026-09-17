@@ -17,6 +17,8 @@ module.exports =  {
     
     try {
 
+      const { getXpForNextLevel, isLevelUpAlertEnabled, setLevelUpAlert, LEVEL_UNLOCKS } = require('../../utils/experienceManager.js');
+
       const user = interaction.options.getUser("usuário") || interaction.user;
     
       return database.ref(`economia/${user.id}/nível/`).once('value').then(async function(snapshot) {
@@ -26,65 +28,81 @@ module.exports =  {
         let xp = (snapshot.val() && snapshot.val().xp);
         if (xp === undefined || xp === null) xp = 0;
         
-        let NívelNovo = (snapshot.val() && snapshot.val().notifyNível);
-        if (NívelNovo === null || NívelNovo === undefined) NívelNovo = 1;
+        const alertActive = await isLevelUpAlertEnabled(user.id);
+        const NívelUp = getXpForNextLevel(nível);
+        const xpRestante = Math.max(0, NívelUp - xp);
 
-        let Notify = (snapshot.val() && snapshot.val().notify);
-        if (Notify === null || Notify === undefined) Notify = 0;
-        
-        let NívelUp = (nível ? nível : 1) * 1000;
+        // Barra de progresso visual
+        const percent = Math.min(1, Math.max(0, xp / NívelUp));
+        const filled = Math.round(percent * 10);
+        const progressBar = `[${'█'.repeat(filled)}${'░'.repeat(10 - filled)}] ${Math.round(percent * 100)}%`;
+
+        const proximoDesbloqueio = LEVEL_UNLOCKS[nível + 1];
+        let unlockPreview = '';
+        if (proximoDesbloqueio && proximoDesbloqueio.length > 0) {
+          unlockPreview = `\n🎁 **Desbloqueios no Nível ${nível + 1}:**\n` +
+            proximoDesbloqueio.map(u => `> ${u.emoji} ${u.name}`).join('\n');
+        }
         
         const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId("config").setStyle(ButtonStyle.Secondary).setEmoji('⚙️').setDisabled(false),
-        )
+          new ButtonBuilder()
+            .setCustomId("config")
+            .setStyle(alertActive ? ButtonStyle.Success : ButtonStyle.Secondary)
+            .setLabel(alertActive ? 'Alertas: Ativados' : 'Alertas: Desativados')
+            .setEmoji(alertActive ? '🔔' : '🔕')
+            .setDisabled(user.id !== interaction.user.id),
+        );
         
         const embed = new EmbedBuilder() 
-        .setColor(color.embed)
-        .setDescription(`
-💠 **| Nível:** ${nível}
-✨ **| XP Atual:** ${xp}
-🎆 **| Restam:** ${NívelUp - xp}xp para: **${NívelUp}** (Nível ${nível+1})
-⚙️ **| Notificações de novos níveis:** ${NívelNovo ? 'Sim' : 'Não'}
+          .setColor(color.embed || '#831396')
+          .setAuthor({
+            name: `Painel de Progressão & Nível ・ ${user.username}`,
+            iconURL: user.displayAvatarURL({ dynamic: true })
+          })
+          .setDescription(`
+💠 **| Nível Atual:** \`Nível ${nível}\`
+✨ **| XP Atual:** \`${new Intl.NumberFormat('pt-BR').format(xp)} / ${new Intl.NumberFormat('pt-BR').format(NívelUp)} XP\`
+📊 **| Progresso:** \`${progressBar}\`
+🎆 **| Restam:** \`${new Intl.NumberFormat('pt-BR').format(xpRestante)} XP\` para o **Nível ${nível + 1}**
+🔔 **| Notificações de Level Up:** \`${alertActive ? 'Ativadas' : 'Desativadas'}\`
+${unlockPreview}
 
-🗣 **|** Continue conversando e sendo ativo, para passar de nível.`)
+🗣 **|** Converse no chat, complete turnos de trabalho e colha culturas para acumular XP!`)
+          .setFooter({ text: 'Sistine ・ Alterne notificações no botão abaixo ou no Dashboard' })
+          .setTimestamp();
         
         const msg = await interaction.followUp({ embeds: [embed], components: [row] });
         
-        const coletor = msg.createMessageComponentCollector({ filter: x => x.user.id === interaction.user.id });
+        if (user.id !== interaction.user.id) return;
 
-          coletor.on('collect', async(i) => {
-            i.deferUpdate()
+        const coletor = msg.createMessageComponentCollector({ filter: x => x.user.id === interaction.user.id, time: 60000 });
 
-            try {
+        coletor.on('collect', async(i) => {
+          await i.deferUpdate();
 
-              if (i.customId == 'config') {
-                
-                return database.ref(`economia/${interaction.user.id}/nível`).once('value').then(async function(snapshot) {
-                  let NívelNovo = (snapshot.val() && snapshot.val().notifyNível);
-                  if (NívelNovo === null || NívelNovo === undefined) NívelNovo = 1;
-                  
-                  if (NívelNovo == 1) {
-                    database.ref(`economia/${interaction.user.id}/nível`).update({
-                      notifyNível: 0
-                    });
-                    
-                    return interaction.followUp({ content: `✅ **|** Notificações de novos níveis desativado com sucesso.`, ephemeral: true });
-                  } else {
-                    database.ref(`economia/${interaction.user.id}/nível`).update({
-                      notifyNível: 1
-                    });
-                    
-                    return interaction.followUp({ content: `✅ **|** Notificações de novos níveis ativada com sucesso.`, ephemeral: true });
-                  }
-                });
-              }
+          try {
+            if (i.customId === 'config') {
+              const currentStatus = await isLevelUpAlertEnabled(interaction.user.id);
+              const newStatus = !currentStatus;
+              await setLevelUpAlert(interaction.user.id, newStatus);
               
-            } catch (error) {
-              console.error(`Ocorreu um erro ao configurar seu nível.`)
-              return error;
+              const updatedRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                  .setCustomId("config")
+                  .setStyle(newStatus ? ButtonStyle.Success : ButtonStyle.Secondary)
+                  .setLabel(newStatus ? 'Alertas: Ativados' : 'Alertas: Desativados')
+                  .setEmoji(newStatus ? '🔔' : '🔕')
+              );
+
+              return interaction.followUp({
+                content: `⚙️ **|** Notificações de novos níveis ${newStatus ? '**ativadas** 🔔' : '**desativadas** 🔕'} com sucesso!`,
+                ephemeral: true
+              });
             }
-            
-          });
+          } catch (error) {
+            console.error(`[nível.js] Erro ao alternar alertas:`, error);
+          }
+        });
         
       })
 

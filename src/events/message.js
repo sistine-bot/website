@@ -2,12 +2,11 @@ const client = require("../../index.js");
 const firebase = require("firebase");
 const database = firebase.database();
 const emoji = require("../../src/utils/emoji.js");
-const { CheckUserBlacklisted, XpUpdate } = require('../../src/utils/functions.js');
-const LevelXP = new Set();
+const { CheckUserBlacklisted } = require('../../src/utils/functions.js');
+const { grantChatXp } = require('../../src/utils/experienceManager.js');
 
 client.on("messageCreate", async (message) => {
   try {
-
     if (message.author.bot || message.webhookID || !message.guild) return;
     
     // Puxa os dados do servidor no Firebase de forma segura
@@ -38,15 +37,19 @@ client.on("messageCreate", async (message) => {
       });
     };
   
+    // Se não começar com o prefixo, processa como mensagem de chat comum para o sistema de XP
+    if (!message.content.startsWith(prefixo)) {
+      await grantChatXp(message);
+      return;
+    }
+
     const args = message.content.slice(prefixo.length).trim().split(/ +/g);
     let cmd = args.shift().toLowerCase();
-    if (!message.content.startsWith(prefixo)) return;
     
     let command = client.commands.get(cmd) || client.commands.get(client.aliases.get(cmd));
     
     if (command) {
       try {
-  
         // =============================================================
         // VERIFICAÇÃO DE COMANDOS DESATIVADOS PELO DASHBOARD
         // =============================================================
@@ -63,15 +66,6 @@ client.on("messageCreate", async (message) => {
         const { blacklisted, blacklistedMensagem } = await CheckUserBlacklisted(message.author);
         if (blacklisted) return message.reply({ content: blacklistedMensagem, ephemeral: true });
       
-        if (!LevelXP.has(message.author.id)) { 
-          XpUpdate(message, message.author);
-          
-          LevelXP.add(message.author.id);
-          setTimeout(() => {
-            LevelXP.delete(message.author.id);
-          }, 30 * 1e3);
-        }
-  
         console.log(`${emoji.positivo} Comando utilizado | ${message.author.username} (${message.author.id}) | ${message.channel.name} (${message.channel.id})\nComando:\n${command.name} ${args.slice(0).join(' ')}\n`);
         
         return command.run(client, message, args, prefixo, color, database, emoji);
@@ -88,22 +82,5 @@ client.on("messageCreate", async (message) => {
   } catch(error) {
     console.error(error);
     return message.reply({ content: `${emoji.negativo} **|** Ocorreu um erro inesperado na utilização deste comando.` });
-  }
-  
-});
-
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-  if (!message.guild) return;
-  
-  if (!LevelXP.has(message.author.id)) { 
-    if (message.content.length <= 2) return;
-    
-    XpUpdate(message, message.author);
-    
-    LevelXP.add(message.author.id);
-    setTimeout(() => {
-      LevelXP.delete(message.author.id);
-    }, 30 * 1e3);
   }
 });

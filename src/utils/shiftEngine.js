@@ -251,8 +251,8 @@ async function endShift(database, userId, interaction) {
 
   const totalPayout = shift.baseSalary + (shift.tips || 0);
 
-  // Calcula XP ganho pelo expediente (Base 30 XP + 5 XP por minuto trabalhado)
-  const baseShiftXp = 30 + Math.floor(shift.elapsedMinutes * 5);
+  // Calcula XP ganho pelo expediente (Bônus de ação +50 XP + 5 XP por minuto trabalhado)
+  const baseShiftXp = 50 + Math.floor(shift.elapsedMinutes * 5);
   const now = Date.now();
 
   // 1. Remove a sessão ativa de trabalho no Firebase
@@ -302,7 +302,8 @@ async function endShift(database, userId, interaction) {
   const nivelData = nivelSnap.val() || {};
   const currentLevel = nivelData.nível || 0;
   const currentXp = nivelData.xp || 0;
-  const nextLevelXp = (currentLevel > 0) ? (currentLevel * 1000) : 1000;
+  const { getXpForNextLevel } = require('./experienceManager.js');
+  const nextLevelXp = getXpForNextLevel(currentLevel);
 
   return {
     success: true,
