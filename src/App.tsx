@@ -23,6 +23,7 @@ import ServerSelectionTab from './components/UserDashboard/ServerSelectionTab';
 import VipShop from './components/UserDashboard/VipShop';
 import CoinShop from './components/UserDashboard/CoinShop';
 import BlockedAccountTab from './components/UserDashboard/BlockedAccountTab';
+import { preloadShopCatalog } from './utils/imagePreloader';
 
 // Componentes da Landing Page / Rotas
 import { Header } from './components/Header';
@@ -149,7 +150,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchStatus(); checkAuth(); fetchCommands();
+    fetchStatus(); 
+    checkAuth(); 
+    fetchCommands();
+    preloadShopCatalog();
     const retryAvatar = setInterval(() => {
       setStatus(current => {
         if (!current.botAvatar || current.botAvatar === "") fetchStatus();

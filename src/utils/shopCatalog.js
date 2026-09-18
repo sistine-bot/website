@@ -887,3 +887,24 @@ export function getAllBackgrounds() {
 export function getAllLayouts() {
   return LAYOUTS_CATALOG;
 }
+
+export function getDailyShopItems(limit = 12) {
+  const today = new Date();
+  const dateSeed = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+  let hash = 0;
+  for (let i = 0; i < dateSeed.length; i++) hash = Math.imul(31, hash) + dateSeed.charCodeAt(i) | 0;
+  hash = Math.abs(hash);
+
+  const allItems = [
+    ...BACKGROUNDS_CATALOG.filter(b => !b.isDefault).map(b => ({ ...b, itemType: 'background' })),
+    ...LAYOUTS_CATALOG.filter(l => !l.isDefault).map(l => ({ ...l, itemType: 'layout' }))
+  ];
+
+  const shuffled = [...allItems];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    hash = (hash * 9301 + 49297) % 233280;
+    const j = Math.floor((hash / 233280) * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, limit);
+}

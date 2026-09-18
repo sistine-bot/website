@@ -6,7 +6,8 @@ import {
   getLayoutById, 
   getLayoutConfig,
   getAllBackgrounds,
-  getAllLayouts 
+  getAllLayouts,
+  getDailyShopItems
 } from './shopCatalog.js';
 
 export interface WallpaperItem {
@@ -140,5 +141,6 @@ export {
   getLayoutById, 
   getLayoutConfig,
   getAllBackgrounds,
-  getAllLayouts 
+  getAllLayouts,
+  getDailyShopItems
 };

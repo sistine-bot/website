@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Coins, ShoppingBag, CheckCircle2, Crown, Eye, RotateCcw } from 'lucide-react';
-import { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, WallpaperItem, LayoutItem, getBackgroundById, getLayoutById } from '../../utils/shopCatalog';
+import { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, WallpaperItem, LayoutItem, getBackgroundById, getLayoutById, getDailyShopItems } from '../../utils/shopCatalog';
+import OptimizedShopImage from './OptimizedShopImage';
+import { preloadImagesInBatches } from '../../utils/imagePreloader';
 
 // Limite configurável de itens que aparecem diariamente na loja (padrão de testes: 99)
-export const DAILY_SHOP_LIMIT = 99;
+const DAILY_SHOP_LIMIT = 12;
 
 interface WallpaperShopProps {
   dbState: any;
@@ -13,10 +15,7 @@ interface WallpaperShopProps {
   onRefreshDb?: () => Promise<void>;
 }
 
-export { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG };
-export type { WallpaperItem, LayoutItem };
-
-export type ShopCatalogItem = (WallpaperItem & { itemType: 'background' }) | (LayoutItem & { itemType: 'layout' });
+type ShopCatalogItem = (WallpaperItem & { itemType: 'background' }) | (LayoutItem & { itemType: 'layout' });
 
 const getCsrfToken = () => {
   const meta = document.querySelector('meta[name="csrf-token"]');
@@ -65,25 +64,14 @@ export default function WallpaperShop({
   const equippedLayoutId = dbState?.Perfil?.Equipados?.layout || dbState?.Perfil?.Equipados?.layoutId || 'classic_azul';
 
   const dailyShopItems = useMemo<ShopCatalogItem[]>(() => {
-    const today = new Date();
-    const dateSeed = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
-    let hash = 0;
-    for (let i = 0; i < dateSeed.length; i++) hash = Math.imul(31, hash) + dateSeed.charCodeAt(i) | 0;
-    hash = Math.abs(hash);
-
-    const allItems: ShopCatalogItem[] = [
-      ...BACKGROUNDS_CATALOG.filter(b => !b.isDefault).map(b => ({ ...b, itemType: 'background' as const })),
-      ...LAYOUTS_CATALOG.filter(l => !l.isDefault).map(l => ({ ...l, itemType: 'layout' as const }))
-    ];
-
-    const shuffled = [...allItems];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      hash = (hash * 9301 + 49297) % 233280;
-      const j = Math.floor((hash / 233280) * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, DAILY_SHOP_LIMIT);
+    return getDailyShopItems(DAILY_SHOP_LIMIT) as ShopCatalogItem[];
   }, []);
+
+  useEffect(() => {
+    // Pré-carrega de imediato as imagens da vitrine do dia
+    const urls = dailyShopItems.map(item => ('previewUrl' in item && item.previewUrl) ? item.previewUrl : item.url);
+    preloadImagesInBatches(urls, 4);
+  }, [dailyShopItems]);
 
   useEffect(() => {
     const updateCountdown = () => {
@@ -196,8 +184,12 @@ export default function WallpaperShop({
                 isEquipped ? 'border-2 border-emerald-500 ring-4 ring-emerald-500/20' : isOwned ? 'border-2 border-zinc-800 opacity-80' : 'border-2 border-zinc-800 hover:border-zinc-500'
               }`}
             >
-              <img src={imageSrc} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 opacity-80" />
+              <OptimizedShopImage
+                src={imageSrc}
+                alt={item.name}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 opacity-80 pointer-events-none" />
 
               <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5">
                 {isEquipped ? (
@@ -250,7 +242,12 @@ export default function WallpaperShop({
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl space-y-4 p-5" onClick={e => e.stopPropagation()}>
             <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950">
-              <img src={previewImage.url} alt={previewImage.name} className="w-full h-full object-contain" />
+              <OptimizedShopImage
+                src={previewImage.url}
+                alt={previewImage.name}
+                className="w-full h-full object-contain"
+                loading="eager"
+              />
             </div>
             <div className="flex items-center justify-between">
               <div>

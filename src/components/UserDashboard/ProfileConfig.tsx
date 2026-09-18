@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Layout, ImageIcon, RotateCcw, Sparkles, Link as LinkIcon } from 'lucide-react';
+import { Layout, ImageIcon, RotateCcw, Sparkles, Link as LinkIcon, Crown, Rocket, ShieldCheck } from 'lucide-react';
 import { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, WallpaperItem, LayoutItem, getBackgroundById, getLayoutById, getLayoutConfig } from '../../utils/shopCatalog';
+import OptimizedShopImage from './OptimizedShopImage';
+import { preloadImagesInBatches } from '../../utils/imagePreloader';
 
 interface ProfileConfigProps {
   user: any;
@@ -39,6 +41,81 @@ export default function ProfileConfig({
   const containerRef = useRef<HTMLDivElement>(null);
   const userBalance = Number(dbState?.saldo?.carteira ?? dbState?.eco?.coins ?? 0);
 
+  // Validação de Permissão para 'Usar Imagem por URL' (VIPs, Boosters, Devs, etc.)
+  const { canUseCustomUrl, perkBadge } = useMemo(() => {
+    const userId = String(user?.id || dbState?.userId || '');
+    const OWNER_IDS = ['1443828312936812554'];
+
+    // 1. Desenvolvedores, Criadores e Equipe Oficial
+    const isDevOrOwner = 
+      OWNER_IDS.includes(userId) ||
+      Boolean(user?.isDeveloper || user?.isDev || user?.isCreator || user?.isOwner) ||
+      Boolean(dbState?.isOwnerOrDev || dbState?.isDeveloper || dbState?.isDev || dbState?.isCreator);
+
+    // 2. VIPs (VIP Ativo, VIP Prata, VIP Ouro)
+    const vipData = dbState?.vip || user?.vip || {};
+    let rawVip = vipData.vip;
+    let vipLevel = 0;
+    if (typeof rawVip === 'string') {
+      const low = rawVip.toLowerCase();
+      if (low === 'ouro' || low === 'diamante' || low === 'premium+') vipLevel = 2;
+      else if (low === 'prata' || low === 'premium') vipLevel = 1;
+      else vipLevel = parseInt(rawVip) || 0;
+    } else {
+      vipLevel = Number(rawVip || 0);
+    }
+    const vipTime = Number(vipData.tempo || 0);
+    const vipDate = Number(vipData.data || 0);
+    const isVipActive = vipLevel > 0 && (vipDate === 0 || vipTime === 0 || vipTime - (Date.now() - vipDate) > 0);
+
+    // 3. Badges e Custom Unlocked
+    const badgesData = dbState?.Perfil?.Badges || dbState?.Badges || {};
+    const customUnlockedRaw = badgesData.customUnlocked || [];
+    const customUnlocked: string[] = Array.isArray(customUnlockedRaw)
+      ? customUnlockedRaw
+      : typeof customUnlockedRaw === 'object'
+        ? Object.keys(customUnlockedRaw)
+        : [];
+
+    const isVipUnlocked = 
+      isVipActive || 
+      customUnlocked.includes('vip') || 
+      customUnlocked.includes('vip_prata') || 
+      customUnlocked.includes('vip_ouro') || 
+      Boolean(dbState?.isVip || user?.isVip);
+
+    // 4. Boosters (Nível de booster ou badge ativa)
+    const boosterLevel = Number(badgesData.boosterLevel || 0);
+    const isBooster = 
+      boosterLevel > 0 ||
+      customUnlocked.includes('booster') ||
+      customUnlocked.includes('server_booster') ||
+      Boolean(dbState?.isBooster || user?.isBooster);
+
+    // 5. Permissões explícitas / Whitelist
+    const isExplicitlyAllowed = 
+      Boolean(dbState?.canUseCustomBgUrl || user?.canUseCustomBgUrl) ||
+      Boolean(dbState?.Perfil?.allowCustomBgUrl || dbState?.Perfil?.allowUrlBg || dbState?.Perfil?.customBgUrlAllowed) ||
+      customUnlocked.includes('custom_bg') ||
+      customUnlocked.includes('url_bg') ||
+      Boolean(dbState?.Perfil?.Equipados?.backgroundId === 'custom');
+
+    const allowed = isDevOrOwner || isVipUnlocked || isBooster || isExplicitlyAllowed;
+
+    let perk = null;
+    if (isDevOrOwner) {
+      perk = { label: 'Desenvolvedor', color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30', type: 'dev' as const };
+    } else if (isBooster) {
+      perk = { label: 'Server Booster', color: 'bg-pink-500/15 text-pink-300 border-pink-500/30', type: 'booster' as const };
+    } else if (isVipUnlocked) {
+      perk = { label: vipLevel >= 2 ? 'VIP Ouro' : 'VIP', color: 'bg-amber-500/15 text-amber-300 border-amber-500/30', type: 'vip' as const };
+    } else if (isExplicitlyAllowed) {
+      perk = { label: 'Permitido', color: 'bg-purple-500/15 text-purple-300 border-purple-500/30', type: 'custom' as const };
+    }
+
+    return { canUseCustomUrl: allowed, perkBadge: perk };
+  }, [user, dbState]);
+
   // Inventários Unificados
   const userWallpaperInventory: string[] = useMemo(() => {
     const fromInv = dbState?.inventario?.wallpapers || dbState?.inventario?.backgrounds || dbState?.inventory?.wallpapers || [];
@@ -69,6 +146,21 @@ export default function ProfileConfig({
   const availableLayouts = useMemo(() => {
     return LAYOUTS_CATALOG.filter(l => userLayoutInventory.includes(l.id));
   }, [userLayoutInventory]);
+
+  // Pré-carrega de forma não-bloqueante as imagens do inventário do usuário
+  useEffect(() => {
+    const urlsToPreload: string[] = [];
+    availableWallpapers.forEach(w => {
+      if (w.url) urlsToPreload.push(w.url);
+    });
+    availableLayouts.forEach(l => {
+      if (l.previewUrl) urlsToPreload.push(l.previewUrl);
+      if (l.overlay) urlsToPreload.push(l.overlay);
+    });
+    if (urlsToPreload.length > 0) {
+      preloadImagesInBatches(urlsToPreload, 3);
+    }
+  }, [availableWallpapers, availableLayouts]);
 
   useEffect(() => {
     const updateScale = () => {
@@ -180,6 +272,12 @@ export default function ProfileConfig({
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
+      if (isUsingCustomUrl && !canUseCustomUrl) {
+        onTriggerSaveStatus('error', 'Apenas usuários VIP, Boosters ou Desenvolvedores podem utilizar imagens de fundo por URL.');
+        setIsSaving(false);
+        return;
+      }
+
       const finalBgUrl = isUsingCustomUrl && customBgUrl.trim() ? customBgUrl.trim() : currentWallpaper.url;
       const finalBgId = isUsingCustomUrl && customBgUrl.trim() ? 'custom' : currentWallpaper.id;
 
@@ -257,14 +355,15 @@ export default function ProfileConfig({
                         : 'border-2 border-zinc-800 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'
                     }`}
                   >
-                    <img src={layout.previewUrl || layout.overlay || ''} alt={layout.name} className="w-full h-full object-cover" />
+                    <OptimizedShopImage
+                      src={layout.previewUrl || layout.overlay || ''}
+                      alt={layout.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 );
               })}
             </div>
-            {availableLayouts.length === 1 && (
-              <p className="text-xs text-zinc-500">Dica: Você pode comprar novos layouts na Loja.</p>
-            )}
           </div>
 
           <hr className="border-zinc-800/50" />
@@ -296,45 +395,66 @@ export default function ProfileConfig({
                         : 'border-2 border-zinc-800 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'
                     }`}
                   >
-                    <img src={wp.url} alt={wp.name} className="w-full h-full object-cover" />
+                    <OptimizedShopImage
+                      src={wp.url}
+                      alt={wp.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 );
               })}
             </div>
 
-            <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800 space-y-3 mt-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                  <LinkIcon size={14} className="text-zinc-400" /> Usar Imagem por URL
-                </span>
-                {isUsingCustomUrl && (
-                  <span className="text-[10px] bg-white text-black px-2 py-0.5 rounded font-bold">Ativado</span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  placeholder="https://exemplo.com/imagem.png"
-                  value={customBgUrl}
-                  onChange={(e) => {
-                    setCustomBgUrl(e.target.value);
-                    if (e.target.value.trim()) setIsUsingCustomUrl(true);
-                  }}
-                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition font-mono"
-                />
-                {isUsingCustomUrl && (
-                  <button
-                    onClick={() => {
-                      setIsUsingCustomUrl(false);
-                      setCustomBgUrl('');
+            {canUseCustomUrl && (
+              <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800 space-y-3 mt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                      <LinkIcon size={14} className="text-zinc-400" /> Usar Imagem por URL
+                    </span>
+                    {perkBadge && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${perkBadge.color}`}>
+                        {perkBadge.type === 'vip' && <Crown size={11} />}
+                        {perkBadge.type === 'booster' && <Rocket size={11} />}
+                        {perkBadge.type === 'dev' && <ShieldCheck size={11} />}
+                        {perkBadge.type === 'custom' && <Sparkles size={11} />}
+                        <span>{perkBadge.label}</span>
+                      </span>
+                    )}
+                  </div>
+                  {isUsingCustomUrl && (
+                    <span className="text-[10px] bg-white text-black px-2 py-0.5 rounded font-bold">Ativado</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    placeholder="https://exemplo.com/imagem.png"
+                    value={customBgUrl}
+                    onChange={(e) => {
+                      setCustomBgUrl(e.target.value);
+                      if (e.target.value.trim()) setIsUsingCustomUrl(true);
                     }}
-                    className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-                  >
-                    Resetar
-                  </button>
-                )}
+                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition font-mono"
+                  />
+                  {isUsingCustomUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUsingCustomUrl(false);
+                        setCustomBgUrl('');
+                      }}
+                      className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      Resetar
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  Insira uma URL direta de imagem (PNG, JPG, WEBP ou GIF) para exibir no fundo do seu cartão de perfil.
+                </p>
               </div>
-            </div>
+            )}
           </div>
 
           <hr className="border-zinc-800/50" />
@@ -388,8 +508,8 @@ export default function ProfileConfig({
                   boxShadow: 'inset 0 0 100px rgba(255,255,255,0.1)'
                 }}
               >
-                <img src={currentWallpaper.url} style={{ position: 'absolute', width: 1200, height: 670, objectFit: 'cover' }} alt="Background" />
-                <img src={currentLayout.previewUrl || currentLayout.overlay || ''} style={{ position: 'absolute', width: 1200, height: 670, objectFit: 'cover' }} alt="Overlay" />
+                <img src={currentWallpaper.url} decoding="async" style={{ position: 'absolute', width: 1200, height: 670, objectFit: 'cover' }} alt="Background" />
+                <img src={currentLayout.previewUrl || currentLayout.overlay || ''} decoding="async" style={{ position: 'absolute', width: 1200, height: 670, objectFit: 'cover' }} alt="Overlay" />
 
                 {isModernLayout ? (
                   <>

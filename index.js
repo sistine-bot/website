@@ -705,6 +705,11 @@ async function startFullStackApp() {
       }
     } catch (e) {}
 
+    const isOwnerOrDev = ['1443828312936812554'].includes(String(session.userId)) || 
+                         Boolean(client.config?.cargos?.criador?.includes(String(session.userId))) ||
+                         Boolean(client.config?.cargos?.developer?.includes(String(session.userId)));
+    const isBooster = Boolean(client.config?.cargos?.booster?.includes(String(session.userId)));
+
     res.json({
       authenticated: true,
       user: { 
@@ -714,7 +719,11 @@ async function startFullStackApp() {
         avatar: userAvatar,
         flagsArray,
         isBlacklisted,
-        blacklist: blacklistInfo
+        blacklist: blacklistInfo,
+        isDeveloper: isOwnerOrDev,
+        isCreator: isOwnerOrDev,
+        isBooster,
+        canUseCustomBgUrl: isOwnerOrDev || isBooster
       },
       isBlacklisted,
       blacklist: blacklistInfo,
@@ -763,12 +772,48 @@ async function startFullStackApp() {
     }
     if (layoutFinal) ownedLayoutSet.add(layoutFinal);
 
-    const ownedBackgrounds = Array.from(ownedBgSet);
-    const ownedLayouts = Array.from(ownedLayoutSet);
+    const isOwnerOrDev = ['1443828312936812554'].includes(String(userId)) || 
+                         Boolean(client.config?.cargos?.criador?.includes(String(userId))) ||
+                         Boolean(client.config?.cargos?.developer?.includes(String(userId)));
+
+    const rawVip = userEcoData.vip?.vip;
+    let vipLevel = 0;
+    if (typeof rawVip === 'string') {
+      const low = rawVip.toLowerCase();
+      if (low === 'ouro' || low === 'diamante' || low === 'premium+') vipLevel = 2;
+      else if (low === 'prata' || low === 'premium') vipLevel = 1;
+      else vipLevel = parseInt(rawVip) || 0;
+    } else {
+      vipLevel = Number(rawVip || 0);
+    }
+    const vipDate = Number(userEcoData.vip?.data || 0);
+    const vipTime = Number(userEcoData.vip?.tempo || 0);
+    const isVipActive = vipLevel > 0 && (vipDate === 0 || vipTime === 0 || (vipTime - (Date.now() - vipDate) > 0));
+
+    const customUnlocked = Array.isArray(badges.customUnlocked) 
+      ? badges.customUnlocked 
+      : typeof badges.customUnlocked === 'object' 
+        ? Object.keys(badges.customUnlocked || {}) 
+        : [];
+    const isBooster = Boolean(client.config?.cargos?.booster?.includes(String(userId))) ||
+                      customUnlocked.includes('booster') ||
+                      customUnlocked.includes('server_booster') ||
+                      Number(badges.boosterLevel) > 0;
+
+    const isCustomBgAllowed = isOwnerOrDev || isBooster || isVipActive ||
+                              customUnlocked.includes('custom_bg') ||
+                              customUnlocked.includes('url_bg') ||
+                              Boolean(perfil.allowCustomBgUrl || perfil.allowUrlBg || userEcoData.allowCustomBgUrl);
 
     return {
       userId,
       flagsArray,
+      isOwnerOrDev,
+      isDeveloper: isOwnerOrDev,
+      isCreator: isOwnerOrDev,
+      isBooster,
+      isVip: isVipActive,
+      canUseCustomBgUrl: isCustomBgAllowed,
       ...userEcoData,
       Perfil: {
         ...perfil,
@@ -1081,6 +1126,25 @@ async function startFullStackApp() {
           : (value.backgroundUrl || value.imagemperfil || value.Equipados?.background || value.Informações?.imagemperfil || "");
         
         const backgroundId = value.backgroundId || value.equippedWallpaper || (BACKGROUNDS_CATALOG.find(b => b.url === background)?.id) || 'default_bg';
+
+        if (backgroundId === 'custom' || (!BACKGROUNDS_CATALOG.some(b => b.url === background || b.id === backgroundId) && background && background !== "/src/utils/assets/backgrounds/wallhaven-1kp5jv.png")) {
+          // Validação de permissões para URL customizada
+          const isOwnerOrDev = ['1443828312936812554'].includes(String(userId)) || 
+                               Boolean(client.config?.cargos?.criador?.includes(String(userId))) ||
+                               Boolean(client.config?.cargos?.developer?.includes(String(userId)));
+          const isBooster = Boolean(client.config?.cargos?.booster?.includes(String(userId)));
+          const userSnap = await db.ref(`economia/${userId}`).once('value');
+          const uEco = userSnap.val() || {};
+          const vipSnap = uEco.vip || {};
+          const vipLvl = typeof vipSnap.vip === 'string' ? (['ouro', 'diamante', 'premium+'].includes(vipSnap.vip.toLowerCase()) ? 2 : 1) : Number(vipSnap.vip || 0);
+          const vipActive = vipLvl > 0 && (!vipSnap.data || !vipSnap.tempo || (vipSnap.tempo - (Date.now() - vipSnap.data) > 0));
+          const customBadges = Array.isArray(uEco.Perfil?.Badges?.customUnlocked) ? uEco.Perfil.Badges.customUnlocked : Object.keys(uEco.Perfil?.Badges?.customUnlocked || {});
+          const allowed = isOwnerOrDev || isBooster || vipActive || customBadges.includes('custom_bg') || customBadges.includes('url_bg') || customBadges.includes('booster') || customBadges.includes('vip') || customBadges.includes('vip_prata') || customBadges.includes('vip_ouro') || Boolean(uEco.Perfil?.allowCustomBgUrl || uEco.Perfil?.allowUrlBg);
+
+          if (!allowed) {
+            return res.status(403).json({ error: "Apenas usuários VIP, Boosters ou Desenvolvedores podem utilizar imagens de fundo por URL." });
+          }
+        }
           
         let theme = value.theme || value.layout || value.Equipados?.layout || value.layoutId || "classic_azul";
         const matchedLayout = LAYOUTS_CATALOG.find(l => l.id === theme) || LAYOUTS_CATALOG.find(l => l.id === `classic_${theme}`);
@@ -1769,14 +1833,19 @@ async function startFullStackApp() {
     }
   });
 
-  // Servir imagens locais dos assets diretamente para a dashboard e API
+  // Servir imagens locais dos assets diretamente para a dashboard e API com cache agressivo
   const serveStaticAssetBypass = (dirPath) => {
-    const staticMiddleware = express.static(dirPath);
+    const staticMiddleware = express.static(dirPath, {
+      maxAge: '7d',
+      immutable: true,
+      etag: true
+    });
     return (req, res, next) => {
       // Se for uma requisição de módulo do Vite (ex: ?import ou ?raw), deixa o Vite processar como JavaScript
       if (req.query && (req.query.import !== undefined || req.query.raw !== undefined)) {
         return next();
       }
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
       staticMiddleware(req, res, next);
     };
   };

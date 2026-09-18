@@ -121,4 +121,9 @@ export interface UserProfile {
   flagsArray?: string[];
   isBlacklisted?: boolean;
   blacklist?: BlacklistData | null;
+  isDeveloper?: boolean;
+  isCreator?: boolean;
+  isBooster?: boolean;
+  isVip?: boolean;
+  canUseCustomBgUrl?: boolean;
 }
