@@ -37,6 +37,15 @@ client.on("messageCreate", async (message) => {
       });
     };
   
+    // 0. TRAVA GLOBAL DE BLACKLIST: Bloqueia qualquer interação e ganho de XP de usuários banidos
+    const { blacklisted, blacklistedMensagem } = await CheckUserBlacklisted(message.author);
+    if (blacklisted) {
+      if (message.content.startsWith(prefixo)) {
+        return message.reply({ content: blacklistedMensagem }).catch(() => {});
+      }
+      return; // Usuário banido: ignora mensagens de chat sem conceder XP
+    }
+
     // Se não começar com o prefixo, processa como mensagem de chat comum para o sistema de XP
     if (!message.content.startsWith(prefixo)) {
       await grantChatXp(message);
@@ -62,9 +71,6 @@ client.on("messageCreate", async (message) => {
           });
         }
         // =============================================================
-  
-        const { blacklisted, blacklistedMensagem } = await CheckUserBlacklisted(message.author);
-        if (blacklisted) return message.reply({ content: blacklistedMensagem, ephemeral: true });
       
         console.log(`${emoji.positivo} Comando utilizado | ${message.author.username} (${message.author.id}) | ${message.channel.name} (${message.channel.id})\nComando:\n${command.name} ${args.slice(0).join(' ')}\n`);
         

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Terminal, RefreshCw, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
-import type { DiscordServer, BotCommand } from './types';
+import type { DiscordServer, BotCommand, UserProfile, BlacklistData } from './types';
 
 // Paineis de Configuração do Bot (Servidor)
 import Sidebar from './components/BotDashboard/Sidebar';
@@ -22,6 +22,7 @@ import UserSettingsTabs from './components/UserDashboard/UserSettingsTabs';
 import ServerSelectionTab from './components/UserDashboard/ServerSelectionTab';
 import VipShop from './components/UserDashboard/VipShop';
 import CoinShop from './components/UserDashboard/CoinShop';
+import BlockedAccountTab from './components/UserDashboard/BlockedAccountTab';
 
 // Componentes da Landing Page / Rotas
 import { Header } from './components/Header';
@@ -47,8 +48,8 @@ const LoadingScreen = () => (
   </div>
 );
 
-// Tipo para facilitar (opcional, mas recomendado)
-type UserType = { id: string; username: string; avatar: string; global_name?: string } | null;
+// Tipo para usuário autenticado
+type UserType = UserProfile | null;
 
 const PublicLayout = ({ 
   children, 
@@ -83,7 +84,9 @@ export default function App() {
     loadedPrefix: 0, loadedSlash: 0, uptime: 0, botName: "", botAvatar: ""
   });
 
-  const [user, setUser] = useState<{ id: string; username: string; avatar: string; global_name?: string } | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isBlacklisted, setIsBlacklisted] = useState<boolean>(false);
+  const [blacklistData, setBlacklistData] = useState<BlacklistData | null>(null);
   const [csrfToken, setCsrfToken] = useState<string>('');
   const [authChecking, setAuthChecking] = useState<boolean>(true);
 
@@ -116,10 +119,33 @@ export default function App() {
       const res = await fetch('/api/auth/me');
       const data = await res.json();
       if (data.authenticated) {
-        setUser(data.user); setCsrfToken(data.csrfToken);
-        await fetchStatus(); await fetchServers(); await fetchUserDatabase();
-      } else setUser(null);
-    } catch (e) { setUser(null); } finally { setAuthChecking(false); }
+        setUser(data.user); 
+        setCsrfToken(data.csrfToken);
+        const blacklisted = Boolean(data.isBlacklisted || data.user?.isBlacklisted);
+        setIsBlacklisted(blacklisted);
+        setBlacklistData(data.blacklist || data.user?.blacklist || null);
+
+        await fetchStatus();
+        if (!blacklisted) {
+          await fetchServers();
+          await fetchUserDatabase();
+        } else {
+          setServers([]);
+          setSelectedServer(null);
+          setUserDatabase(null);
+        }
+      } else {
+        setUser(null);
+        setIsBlacklisted(false);
+        setBlacklistData(null);
+      }
+    } catch (e) { 
+      setUser(null); 
+      setIsBlacklisted(false);
+      setBlacklistData(null);
+    } finally { 
+      setAuthChecking(false); 
+    }
   };
 
   useEffect(() => {
@@ -134,7 +160,10 @@ export default function App() {
   }, []);
 
   const handleEnterDashboardClick = () => {
-    if (user) { setAppView('user_dashboard'); setUserActiveSection('servers'); } 
+    if (user) { 
+      setAppView('user_dashboard'); 
+      setUserActiveSection(isBlacklisted ? 'blocked' : 'servers'); 
+    } 
     else { setAppView('login'); }
   };
 
@@ -151,7 +180,7 @@ export default function App() {
         const messageListener = async (event: MessageEvent) => {
           if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
             setAuthChecking(true); await checkAuth();
-            setAppView('user_dashboard'); setUserActiveSection('servers');
+            setAppView('user_dashboard'); setUserActiveSection(isBlacklisted ? 'blocked' : 'servers');
             triggerToast('success', 'Autenticado com sucesso via Discord!');
             window.removeEventListener('message', messageListener);
           }
@@ -167,7 +196,7 @@ export default function App() {
       const res = await fetch('/api/auth/dev-login', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        await checkAuth(); setAppView('user_dashboard'); setUserActiveSection('servers');
+        await checkAuth(); setAppView('user_dashboard'); setUserActiveSection(isBlacklisted ? 'blocked' : 'servers');
         triggerToast('success', 'Modo de testes ativado!');
       } else {
         triggerToast('error', 'Falha ao ativar login de testes.'); setAuthChecking(false);
@@ -178,7 +207,12 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      setUser(null); setServers([]); setSelectedServer(null); setAppView('landing');
+      setUser(null);
+      setIsBlacklisted(false);
+      setBlacklistData(null);
+      setServers([]);
+      setSelectedServer(null);
+      setAppView('landing');
       triggerToast('success', 'Sessão encerrada.');
     } catch (e) {}
   };
@@ -192,6 +226,10 @@ export default function App() {
   };
 
   const handleSelectServer = async (srv: DiscordServer) => {
+    if (isBlacklisted) {
+      triggerToast('error', 'Sua conta está suspensa e não possui acesso a servidores.');
+      return;
+    }
     setAppView('dashboard'); setIsServerLoading(true); setSelectedServer(srv);
     triggerToast('success', `Acessando: ${srv.name}`);
     await fetchDatabase(srv.id); await fetchCommands(); await fetchConfig(srv.id); await fetchChannels(srv.id); await fetchRoles(srv.id); await fetchMembers(srv.id);
@@ -332,6 +370,20 @@ export default function App() {
   };
 
   const renderActiveView = () => {
+    if (isBlacklisted && (appView === 'user_dashboard' || appView === 'dashboard' || appView === 'premium' || appView === 'shop')) {
+      return (
+        <BlockedAccountTab
+          user={user}
+          blacklist={blacklistData}
+          onLogout={handleLogout}
+          onNavigateHome={() => setAppView('landing')}
+          supportLink={config.SUPPORT_LINK || "https://discord.gg/sistine"}
+          botName={status.botName || "Sistine"}
+          botAvatar={status.botAvatar}
+        />
+      );
+    }
+
     switch (appView) {
       case 'landing':
         return (

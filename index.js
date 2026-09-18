@@ -245,7 +245,7 @@ async function startFullStackApp() {
   });
 
   // requireAuth middleware for user-specific actions without server requirement
-  function requireAuth(req, res, next) {
+  async function requireAuth(req, res, next) {
     const sessionId = req.cookies?.session_id;
     if (!sessionId || !sessions[sessionId]) {
       return res.status(401).json({ error: "Sessão inválida ou expirada. Por favor, faça login novamente." });
@@ -264,6 +264,25 @@ async function startFullStackApp() {
         return res.status(403).json({ error: "Ação rejeitada por falha na verificação de CSRF." });
       }
     }
+
+    // Trava de Blacklist Global: Usuários banidos não podem interagir com a dashboard
+    try {
+      const { CheckUserBlacklisted } = require('./src/utils/functions.js');
+      const blCheck = await CheckUserBlacklisted(session.userId);
+      if (blCheck?.blacklisted) {
+        return res.status(403).json({ 
+          error: "Sua conta está suspensa de todos os sistemas da Sistine.", 
+          isBlacklisted: true,
+          blacklist: {
+            motivo: blCheck.motivo,
+            staff: blCheck.staff,
+            tempo: blCheck.tempo,
+            data: blCheck.data,
+            isPermanent: blCheck.isPermanent
+          }
+        });
+      }
+    } catch (e) {}
 
     req.session = session;
     next();
@@ -289,6 +308,25 @@ async function startFullStackApp() {
         return res.status(403).json({ error: "Ação rejeitada por falha na verificação de CSRF." });
       }
     }
+
+    // Trava de Blacklist Global: Usuários banidos não podem administrar servidores
+    try {
+      const { CheckUserBlacklisted } = require('./src/utils/functions.js');
+      const blCheck = await CheckUserBlacklisted(session.userId);
+      if (blCheck?.blacklisted) {
+        return res.status(403).json({ 
+          error: "Sua conta está suspensa de todos os sistemas da Sistine.", 
+          isBlacklisted: true,
+          blacklist: {
+            motivo: blCheck.motivo,
+            staff: blCheck.staff,
+            tempo: blCheck.tempo,
+            data: blCheck.data,
+            isPermanent: blCheck.isPermanent
+          }
+        });
+      }
+    } catch (e) {}
 
     const selectedServerId = req.headers['x-selected-server'];
     if (!selectedServerId) {
@@ -649,6 +687,24 @@ async function startFullStackApp() {
       } catch (e) {}
     }
 
+    // Consulta em tempo real o status de Blacklist do usuário
+    let isBlacklisted = false;
+    let blacklistInfo = null;
+    try {
+      const { CheckUserBlacklisted } = require('./src/utils/functions.js');
+      const bl = await CheckUserBlacklisted(session.userId);
+      if (bl?.blacklisted) {
+        isBlacklisted = true;
+        blacklistInfo = {
+          motivo: bl.motivo,
+          staff: bl.staff,
+          tempo: bl.tempo,
+          data: bl.data,
+          isPermanent: bl.isPermanent
+        };
+      }
+    } catch (e) {}
+
     res.json({
       authenticated: true,
       user: { 
@@ -656,8 +712,12 @@ async function startFullStackApp() {
         username: session.username, 
         global_name: session.global_name || session.username,
         avatar: userAvatar,
-        flagsArray 
+        flagsArray,
+        isBlacklisted,
+        blacklist: blacklistInfo
       },
+      isBlacklisted,
+      blacklist: blacklistInfo,
       csrfToken: session.csrfToken
     });
   });
@@ -1105,6 +1165,15 @@ async function startFullStackApp() {
     if (!sessionId || !sessions[sessionId]) return res.status(401).json({ error: "Sessão inválida" });
 
     const session = sessions[sessionId];
+
+    // Trava de Blacklist Global: Usuários banidos não podem carregar servidores
+    try {
+      const { CheckUserBlacklisted } = require('./src/utils/functions.js');
+      const blCheck = await CheckUserBlacklisted(session.userId);
+      if (blCheck?.blacklisted) {
+        return res.status(403).json({ error: "Sua conta está suspensa de todos os sistemas da Sistine.", isBlacklisted: true });
+      }
+    } catch (e) {}
 
     const isBotCreator = client.config?.cargos?.criador?.includes(session.userId) || 
                           client.config?.cargos?.developer?.includes(session.userId) ||

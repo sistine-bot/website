@@ -7,10 +7,24 @@ const { grantSlashCommandXp } = require('../../src/utils/experienceManager.js');
 
 client.on("interactionCreate", async (interaction) => { 
   try {
+    if (!interaction || !interaction.user) return;
+
+    // 0. TRAVA GLOBAL DE BLACKLIST: Bloqueia qualquer interação de usuários banidos
+    const { blacklisted, blacklistedMensagem } = await CheckUserBlacklisted(interaction.user);
+    if (blacklisted) {
+      if (interaction.isRepliable()) {
+        if (interaction.deferred || interaction.replied) {
+          return await interaction.followUp({ content: blacklistedMensagem, ephemeral: true }).catch(() => {});
+        } else {
+          return await interaction.reply({ content: blacklistedMensagem, ephemeral: true }).catch(() => {});
+        }
+      }
+      return;
+    }
 
     // Puxa os dados do servidor no Firebase de forma segura
-    const serverSnap = await database.ref(`servers/${interaction.guild.id}`).once('value');
-    const serverData = serverSnap.val() || {};
+    const serverSnap = interaction.guild ? await database.ref(`servers/${interaction.guild.id}`).once('value') : null;
+    const serverData = serverSnap ? (serverSnap.val() || {}) : {};
   
     // Extrai as configurações com valores padrão (fallbacks) garantidos
     const prefix = serverData.config?.prefix || serverData.config?.prefixo || '!';
@@ -81,9 +95,6 @@ client.on("interactionCreate", async (interaction) => {
       await interaction.deferReply({ ephemeral: false }).catch(e => { });
       
       try {
-        const { blacklisted, blacklistedMensagem } = await CheckUserBlacklisted(interaction.user);
-        if (blacklisted) return interaction.followUp({ content: blacklistedMensagem, ephemeral: true });
-  
         // Processa ganho de XP para comandos slash gerais (10 a 15 XP com cooldown de 30s)
         await grantSlashCommandXp(interaction);
   

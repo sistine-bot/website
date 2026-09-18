@@ -21,6 +21,7 @@ const database = new Proxy({}, {
   }
 });
 const ms = require('ms');
+const parseMs = require('parse-ms');
 const emojiConfig = require("../../src/utils/emoji.js");
 
 // ==========================================
@@ -447,23 +448,102 @@ async function CheckUserCooldowns(user, Cooldowns, variável) {
 
 async function CheckUserBlacklisted(user) {
   try {
-    const snapshot = await database.ref(`/BlackList/${user.id}`).once('value');
-    const dataVal = snapshot.val() || {};
+    const userId = typeof user === 'string' ? user.trim() : (user?.id || user?.userId);
+    if (!userId) return { blacklisted: false };
 
-    let temp = dataVal.tempo || 0;
+    const snapshot = await database.ref(`/BlackList/${userId}`).once('value');
+    const dataVal = snapshot.val();
+    if (!dataVal) return { blacklisted: false };
+
+    let temp = dataVal.tempo;
     let data = dataVal.data || 0;
     let motivo = dataVal.motivo || `Motivo não foi definido, entre em contato com a staff`;
-    let staff = dataVal.mod || 0;
+    let staff = dataVal.mod || dataVal.staff || 'Equipe Sistine';
 
-    const time = (temp === 'indeterminado') ? 'indeterminado' : ms(temp - (Date.now() - data));
-    const blacklisted = (data !== null && temp - (Date.now() - data) > 0 || temp === 'indeterminado');
-    const tempo = (temp === 'indeterminado') ? '`indeterminado`' : `\`${time.days}d ${time.hours}h ${time.minutes}m ${time.seconds}s\` <t:${~~((Date.now() + temp) / 1000)}:R>`;
+    // Determina se a punição é permanente/indeterminada
+    const isPermanent = temp === 'indeterminado' || temp === 'permanente' || temp === null || temp === undefined;
+    let blacklisted = false;
+    let tempoFormatado = '`Indeterminado (Permanente)`';
+    let timeLeftMs = null;
 
-    return { blacklisted, blacklistedMensagem: `⚠ **|** ${user}, está impossibilitado de utilizar meus comandos\n📆 **|** Tempo: ${tempo}\n🛠️ **|** Staff: \`${staff}\`\n📜 **|** Punição: \`${motivo}\`` };
+    if (isPermanent) {
+      blacklisted = true;
+    } else if (typeof temp === 'number') {
+      timeLeftMs = temp - (Date.now() - data);
+      if (timeLeftMs > 0) {
+        blacklisted = true;
+        const time = parseMs(timeLeftMs);
+        const expireTimestamp = Math.floor((data + temp) / 1000);
+        tempoFormatado = `\`${time.days || 0}d ${time.hours || 0}h ${time.minutes || 0}m ${time.seconds || 0}s\` (<t:${expireTimestamp}:R>)`;
+      } else {
+        // Punição expirou: auto-remove do banco
+        await database.ref(`/BlackList/${userId}`).remove().catch(() => {});
+        return { blacklisted: false };
+      }
+    } else if (typeof temp === 'string') {
+      const parsedMs = ParseDuration(temp);
+      if (parsedMs && parsedMs > 0) {
+        timeLeftMs = parsedMs - (Date.now() - data);
+        if (timeLeftMs > 0) {
+          blacklisted = true;
+          const time = parseMs(timeLeftMs);
+          const expireTimestamp = Math.floor((data + parsedMs) / 1000);
+          tempoFormatado = `\`${time.days || 0}d ${time.hours || 0}h ${time.minutes || 0}m ${time.seconds || 0}s\` (<t:${expireTimestamp}:R>)`;
+        } else {
+          await database.ref(`/BlackList/${userId}`).remove().catch(() => {});
+          return { blacklisted: false };
+        }
+      } else {
+        blacklisted = true;
+      }
+    }
+
+    if (!blacklisted) return { blacklisted: false };
+
+    return { 
+      blacklisted: true, 
+      motivo,
+      staff,
+      tempo: tempoFormatado,
+      data,
+      temp,
+      isPermanent,
+      timeLeftMs,
+      blacklistedMensagem: `⛔ **|** <@${userId}>, você está **banido** de utilizar qualquer funcionalidade, comando e dashboard da Sistine.\n\n📜 **Motivo:** \`${motivo}\`\n📆 **Duração:** ${tempoFormatado}\n🛡️ **Staff:** \`${staff}\`\n\n*Caso considere esta punição indevida, procure o suporte oficial no Discord.*` 
+    };
   } catch (error) {
-    console.error(error);
-    throw error;
+    console.error('[CheckUserBlacklisted] Erro:', error);
+    return { blacklisted: false };
   }
+}
+
+async function setUserBlacklist(userId, { motivo = 'Não definido', tempo = 'indeterminado', staff = 'Equipe Sistine', staffId = null } = {}) {
+  if (!userId) return { success: false, error: 'ID do usuário inválido' };
+  const targetId = String(userId).trim();
+
+  let tempValue = 'indeterminado';
+  if (tempo && tempo !== 'indeterminado' && tempo !== 'permanente') {
+    const parsed = typeof tempo === 'number' ? tempo : ParseDuration(tempo);
+    tempValue = parsed && parsed > 0 ? parsed : 'indeterminado';
+  }
+
+  const payload = {
+    data: Date.now(),
+    tempo: tempValue,
+    motivo: motivo || 'Violação das diretrizes do bot Sistine',
+    mod: staff || 'Equipe Sistine',
+    staffId: staffId || null
+  };
+
+  await database.ref(`/BlackList/${targetId}`).set(payload);
+  return { success: true, payload };
+}
+
+async function removeUserBlacklist(userId) {
+  if (!userId) return { success: false, error: 'ID do usuário inválido' };
+  const targetId = String(userId).trim();
+  await database.ref(`/BlackList/${targetId}`).remove();
+  return { success: true };
 }
 
 async function CheckUserAntiRoubo(user) {
@@ -901,6 +981,8 @@ module.exports = {
   CheckUserVip,
   CheckUserCooldowns,
   CheckUserBlacklisted,
+  setUserBlacklist,
+  removeUserBlacklist,
   CheckUserAntiRoubo,
   getCasamento,
   getUserReps,

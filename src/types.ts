@@ -104,3 +104,21 @@ export interface SystemAuditReport {
   commandsCount: number;
   dependency: string;
 }
+
+export interface BlacklistData {
+  motivo: string;
+  staff: string;
+  tempo: string;
+  data?: number;
+  isPermanent?: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  avatar: string;
+  global_name?: string;
+  flagsArray?: string[];
+  isBlacklisted?: boolean;
+  blacklist?: BlacklistData | null;
+}

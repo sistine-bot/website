@@ -322,6 +322,15 @@ async function grantXpCore(context, user, rawXp, options = {}) {
     return { success: false, skipped: true, reason: 'not_started' };
   }
 
+  // Trava de Blacklist: Usuários banidos não recebem XP em nenhum módulo
+  try {
+    const { CheckUserBlacklisted } = require('./functions.js');
+    const blStatus = await CheckUserBlacklisted(user);
+    if (blStatus?.blacklisted) {
+      return { success: false, skipped: true, reason: 'blacklisted' };
+    }
+  } catch (e) {}
+
   try {
     // 1. Aplica bônus de VIP caso ativo
     let multiplier = 1;
