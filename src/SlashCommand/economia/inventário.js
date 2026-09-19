@@ -166,6 +166,7 @@ module.exports = {
       // Equipamentos e Ferramentas
       if (inv.arma?.item > 0) pushItem(itensAPI.arma[inv.arma.item]?.imagem, `(${Format(inv.arma.Xp || 0, '')}%) 1x`);
       if (inv.armacaça?.item > 0) pushItem(itensAPI.armacaça.imagem, `(${Format(inv.armacaça.Xp || 0, '')}%) 1x`);
+      if (inv.porte?.item > 0) pushItem(itensAPI.porte?.imagem || 'armas/porte_armas.png', '1x');
       if (inv.anelcasamento?.item > 0) pushItem(itensAPI.anelcasamento.imagem, '1x');
 
       // Vara de Pesca (Vara de Bambu vs Clássica)

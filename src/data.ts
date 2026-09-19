@@ -62,7 +62,7 @@ export const systemsAuditList: SystemAuditReport[] = [
 export const shopItemsList = [
   { key: 'armacaça', name: 'Arma de Caça', valor: 15000, desc: 'Equipamento necessário para o comando de caça.', category: 'Equipamentos', img: 'https://i.postimg.cc/BQDPwzxR/5-i-QSSSF5.png' },
   { key: 'vara', name: 'Vara de Pescar', valor: 3000, desc: 'Equipamento básico necessário para pescar peixes.', category: 'Equipamentos', img: 'https://i.postimg.cc/8s8D6tc6/9-Rtm-NAp-F.png' },
-  { key: 'porte', name: 'Porte de Armas', valor: 12000, desc: 'Autorização legal para carregar armas e evitar prisão em abordagens.', category: 'Equipamentos', img: 'https://i.postimg.cc/vm81THpd/2-h-Uwk-XZd.png' },
+  { key: 'porte', name: 'Porte de Armas', valor: 12000, desc: 'Autorização legal para carregar armas e evitar prisão em abordagens.', category: 'Equipamentos', img: '/src/utils/assets/inventory/itens/armas/porte_armas.png' },
   { key: 'anelcasamento', name: 'Anel de Casamento', valor: 1000, desc: 'Item romântico para propor casamento a outro usuário.', category: 'Equipamentos', img: 'https://i.postimg.cc/J7skj0tr/8-Gp-Mfe7-F.png' },
   { key: 'chave', name: 'Chave Dourada', valor: 5000, desc: 'Consumível para abrir baús especiais de recompensas.', category: 'Consumíveis', img: 'https://i.postimg.cc/zBnFk9FS/image.png' },
   { key: 'munição', name: 'Munição de Caça', valor: 200, desc: 'Cartucho consumível utilizado a cada disparo na caçada.', category: 'Consumíveis', img: 'https://i.postimg.cc/RZL6vnpR/1-Cn-V6ukr.png' },

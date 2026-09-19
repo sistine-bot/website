@@ -552,9 +552,10 @@ async function CheckUserAntiRoubo(user) {
 
   const tempo = dataVal.tempo || 0;
   const data = dataVal.data || 0;
-  const Anti = (tempo === 'indeterminado' && (data !== null && tempo - (Date.now() - data) < 0));
+  const isPermanent = tempo === 'indeterminado' || tempo === 'permanente';
+  const isActive = isPermanent || (data > 0 && typeof tempo === 'number' && tempo > 0 && (tempo - (Date.now() - data) > 0));
 
-  return { anti: Anti, tempo, data };
+  return { anti: isActive, tempo, data };
 }
 
 async function getCasamento(user) {

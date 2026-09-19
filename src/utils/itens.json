@@ -52,6 +52,7 @@
       "Porte de Armas",
       "Porte"
     ],
+    "imagem": "armas/porte_armas.png",
     "valor": 15000,
     "tipo": 1
   },

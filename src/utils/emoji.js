@@ -54,6 +54,7 @@ module.exports = {
   "regador": "🚿",
   "semente": "🌱",
   "podre": "🥀",
+  "porte": "🪪",
   "gota": "💧",
   "estrela": "⭐",
 };
