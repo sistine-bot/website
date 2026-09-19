@@ -1,228 +1,484 @@
-const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
-const { XpUpdate, Format, UpdateMoneyWallet, getUserInventory, CheckUserVip } = require('../../utils/functions.js');
+const {
+  ApplicationCommandType,
+  EmbedBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ActionRowBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder
+} = require('discord.js');
+const {
+  XpUpdate,
+  Format,
+  UpdateMoneyWallet,
+  getUserInventory,
+  getUserMoney,
+  CheckUserVip
+} = require('../../utils/functions.js');
 
-module.exports =  {
-  "name": "recuperar",
-  "description": `⌊⚙️ Modulos⌉ Recupere seu item quebrado para não o perder.`,
-  "type": ApplicationCommandType.ChatInput,
-  "options": [
-    {
-      "name": "item",
-      "description": "⌊⚙️ Modulos⌉ Recupere seu item quebrado para não o perder.",
-      "type": ApplicationCommandOptionType.String,
-      "required": true,
-      "choices": [
-        {
-          "name": "🔫 Arma",
-          "value": "arma"
-        },
-        {
-          "name": "🏹 Arma de caça",
-          "value": "armacaça"
-        },
-        {
-          "name": "🎣 Vara de pescar",
-          "value": "vara"
-        },
-        {
-          "name": "⛏️ Enxada",
-          "value": "enxada"
-        },
-        {
-          "name": "🚿 Regador",
-          "value": "regador"
-        },
-      ]
-    },
-  ],
-  
-  run: async (client, interaction, args, color, database, emoji) => {
-    
-    try { 
+function getProgressBar(current, max = 100, length = 10) {
+  const percentage = Math.max(0, Math.min(1, current / max));
+  const filled = Math.round(percentage * length);
+  const empty = length - filled;
+  return '▰'.repeat(filled) + '▱'.repeat(empty);
+}
 
-      const vipInfo = await CheckUserVip(interaction.user);
-      const VIP = vipInfo.isVip;
-      
-      return database.ref(`economia/${interaction.user.id}/nível/`).once('value').then(async function(snapshot) {
-        let nível = (snapshot.val() && snapshot.val().nível);
-        if (nível === undefined || nível === null) nível = 0;
-        
-        const item = interaction.options.getString('item');
-        const { armacaça, arma, vara, enxada, regador } = await getUserInventory(interaction.user);
-        const { carteira } = await require('../../utils/functions.js').getUserMoney(interaction.user);
+function resolveItemDetails(key, data) {
+  switch (key) {
+    case 'arma': {
+      const tier = Number(data?.item || 1);
+      let name = 'Arma';
+      if (data?.nome) {
+        name = Array.isArray(data.nome) ? data.nome[0] : data.nome;
+      } else {
+        if (tier === 1) name = 'Glock';
+        else if (tier === 2) name = 'MP5';
+        else if (tier === 3) name = 'M4-A1';
+        else if (tier >= 4) name = 'AK-47';
+      }
 
-        let minLevel = 1;
-        if (item === 'arma') {
-          const armaTier = Number(arma?.item || 1);
-          if (armaTier === 1) minLevel = 1;
-          else if (armaTier === 2) minLevel = 15;
-          else if (armaTier === 3) minLevel = 25;
-          else if (armaTier >= 4) minLevel = 40;
-        } else if (item === 'armacaça') {
-          minLevel = 1;
-        } else {
-          // Ferramentas de trabalho de ferro (vara, enxada, regador)
-          minLevel = 1;
-        }
+      let costMultiplier = 25;
+      let minLevel = 1;
+      if (tier === 1) { costMultiplier = 25; minLevel = 1; }
+      else if (tier === 2) { costMultiplier = 50; minLevel = 15; }
+      else if (tier === 3) { costMultiplier = 85; minLevel = 25; }
+      else if (tier >= 4) { costMultiplier = 150; minLevel = 40; }
 
-        const isCreator = client.config?.cargos?.criador?.includes(interaction.user.id);
-        if (!isCreator && !VIP && nível < minLevel) {
-          return interaction.error({ content: `Você precisa ser **nível ${minLevel}** para recuperar a durabilidade deste item (Assinantes VIP possuem acesso antecipado!).` });
-        }
-        
-        if (item === 'arma' && (!arma || arma.item < 1)) {
-          return interaction.error({ content: `Você não possui uma **Arma** equipada para consertar.` });
-        }
-        if (item === 'armacaça' && (!armacaça || armacaça.item < 1)) {
-          return interaction.error({ content: `Você não possui uma **Arma de Caça** para consertar.` });
-        }
-        if (item === 'vara' && (!vara || vara.item < 1)) {
-          return interaction.error({ content: `Você não possui uma **Vara de Pescar** para consertar.` });
-        }
-        if (item === 'vara' && (vara.reparavel === false || vara.tipo === 'bambu')) {
-          return interaction.error({ content: `A sua **${Array.isArray(vara.nome) ? vara.nome[0] : (vara.nome || 'Vara de Bambu')}** é um item inicial e **não pode ser consertada**! Adquira uma vara permanente na \`/loja itens\`.` });
-        }
-        if (item === 'enxada' && (!enxada || enxada.item < 1)) {
-          return interaction.error({ content: `Você não possui uma **Enxada** para consertar.` });
-        }
-        if (item === 'enxada' && (enxada.reparavel === false || enxada.tipo === 'madeira')) {
-          return interaction.error({ content: `A sua **${Array.isArray(enxada.nome) ? enxada.nome[0] : (enxada.nome || 'Enxada de Madeira')}** é feita de madeira rústica e **não pode ser consertada**! Adquira uma enxada de ferro na \`/loja itens\`.` });
-        }
-        if (item === 'regador' && (!regador || regador.item < 1)) {
-          return interaction.error({ content: `Você não possui um **Regador** para consertar.` });
-        }
-        if (item === 'regador' && (regador.reparavel === false || regador.tipo === 'plastico')) {
-          return interaction.error({ content: `O seu **${Array.isArray(regador.nome) ? regador.nome[0] : (regador.nome || 'Regador de Plástico')}** é descartável e **não pode ser consertado**! Adquira um Regador de Ferro permanente na \`/loja itens\`.` });
-        }
-
-        if (item) {
-          let valor = 0,
-              XP = 0,
-              NomeItem = '';
-
-          switch (item) {
-            case 'arma': {
-              XP = arma.Xp || 0;
-              const missing = Math.max(0, 100 - XP);
-              if (arma.item == '1') valor = missing * 25;
-              else if (arma.item == '2') valor = missing * 50;
-              else if (arma.item == '3') valor = missing * 85;
-              else if (arma.item == '4') valor = missing * 150;
-              NomeItem = arma.nome || 'Arma';
-              break;
-            }
-
-            case 'armacaça': {
-              XP = armacaça.Xp || 0;
-              const missing = Math.max(0, 100 - XP);
-              valor = missing * 20;
-              NomeItem = armacaça.nome || 'Arma de Caça';
-              break;
-            }
-
-            case 'vara': {
-              XP = vara.Xp || 0;
-              const missing = Math.max(0, 100 - XP);
-              valor = missing * 10;
-              NomeItem = Array.isArray(vara.nome) ? vara.nome[0] : (vara.nome || 'Vara de Pescar');
-              break;
-            }
-
-            case 'enxada': {
-              XP = enxada.Xp || 0;
-              const missing = Math.max(0, 100 - XP);
-              valor = missing * 12;
-              NomeItem = Array.isArray(enxada.nome) ? enxada.nome[0] : (enxada.nome || 'Enxada');
-              break;
-            }
-
-            case 'regador': {
-              XP = regador.Xp || 0;
-              const missing = Math.max(0, 100 - XP);
-              valor = missing * 15;
-              NomeItem = Array.isArray(regador.nome) ? regador.nome[0] : (regador.nome || 'Regador');
-              break;
-            }
-          }
-          
-          if (XP >= 100) return interaction.error({ content: `Sua **${NomeItem}** não precisa ser reparada, ela já está com **100%** de durabilidade.` });
-
-          const valorOriginal = valor;
-          let vipDiscountMsg = '';
-          if (vipInfo.isVip && vipInfo.repairDiscount > 0) {
-            valor = Math.round(valor * (1 - vipInfo.repairDiscount));
-            vipDiscountMsg = `\n> 👑 **Desconto ${vipInfo.levelName} (-${Math.round(vipInfo.repairDiscount * 100)}%):** De ~~${Format(valorOriginal)}~~ por **${Format(valor)}**`;
-          }
-
-          if (carteira < valor) return interaction.error({ content: `Você não possui moedas suficientes na carteira. Custo do reparo: **${Format(valor)}**.` });
-
-          const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("sim").setStyle(ButtonStyle.Success).setEmoji(emoji.positivo || '✅').setLabel('Confirmar Reparo').setDisabled(false),
-            new ButtonBuilder().setCustomId("não").setStyle(ButtonStyle.Danger).setEmoji(emoji.negativo || '❌').setLabel('Cancelar').setDisabled(false),
-          );
-
-          let descText = `🛠️ **|** ${interaction.user}, Você deseja reparar sua **${NomeItem}** (Durabilidade atual: **${XP}%**) por: **${Format(valor)}**?${vipDiscountMsg}`;
-          if (item === 'regador') {
-            descText += `\n\n> 💧 **Água:** ${regador.agua || 0}%\n> ⚠️ *Atenção: O reparo restaura apenas a durabilidade do regador. O nível de água não é consertado no reparar e deve ser abastecido na plantação.*`;
-          }
-
-          const embed = new EmbedBuilder()
-            .setColor(color.embed || "#00ff00")
-            .setDescription(descText);
-
-          const msg = await interaction.followUp({ content: `${interaction.user}`, embeds: [embed], components: [row] });
-
-          const coletor = msg.createMessageComponentCollector({ filter: x => x.user.id === interaction.user.id, time: 60000 });
-
-          coletor.on('collect', async (i) => {
-            await i.deferUpdate();
-
-            switch (i.customId) {
-              case 'sim': {
-                coletor.stop();
-
-                const freshMoney = await require('../../utils/functions.js').getUserMoney(interaction.user);
-                if (freshMoney.carteira < valor) {
-                  return interaction.followUp({ content: `Saldo insuficiente para efetuar o reparo!`, ephemeral: true });
-                }
-
-                database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/${item}`).update({
-                  Xp: 100
-                });
-
-                await UpdateMoneyWallet(interaction, interaction.user, '-', valor, `{emoji.saida} {mensagem.recuperar} | ${Format(valor)} | ${NomeItem}`);
-
-                const embed2 = new EmbedBuilder()
-                  .setColor(color.embed || "#00ff00")
-                  .setDescription(`<:martelo:925966095712665631> **|** ${interaction.user}, Sua **${NomeItem}** foi reparada com sucesso para **100%**!`);
-
-                await XpUpdate(interaction, interaction.user, Math.floor(Math.random() * 10) + 20);
-                return msg.edit({ embeds: [embed2], components: [] });
-              }
-
-              case 'não': {
-                coletor.stop();
-
-                const embed2 = new EmbedBuilder()
-                  .setColor(color.embed || "#ff0000")
-                  .setDescription(`❌ **|** Reparo cancelado com sucesso.`);
-
-                return msg.edit({ embeds: [embed2], components: [] });
-              }
-            }
-          });
-
-        }
-        else {
-          return interaction.error({ content: `Você deve escolher um item para poder recuperar.` })
-        }
-      })
-      
-    } catch (error) {
-      console.error(error)
-      return interaction.error({ content: `Ocorreu um erro inesperado na utilização deste comando.` });
+      return {
+        key: 'arma',
+        name,
+        emoji: '🔫',
+        minLevel,
+        isNonRepairable: data?.reparavel === false,
+        calcBaseCost: (missing) => missing * costMultiplier
+      };
     }
 
-    
+    case 'armacaça': {
+      let name = 'Arma de Caça';
+      if (data?.nome) {
+        name = Array.isArray(data.nome) ? data.nome[0] : data.nome;
+      }
+      return {
+        key: 'armacaça',
+        name,
+        emoji: '🏹',
+        minLevel: 1,
+        isNonRepairable: data?.reparavel === false,
+        calcBaseCost: (missing) => missing * 20
+      };
+    }
+
+    case 'vara': {
+      let name = 'Vara de Pescar';
+      if (data?.nome) {
+        name = Array.isArray(data.nome) ? data.nome[0] : data.nome;
+      }
+      return {
+        key: 'vara',
+        name,
+        emoji: '🎣',
+        minLevel: 1,
+        isNonRepairable: Boolean(data?.reparavel === false || data?.tipo === 'bambu'),
+        calcBaseCost: (missing) => missing * 10
+      };
+    }
+
+    case 'enxada': {
+      let name = 'Enxada de Ferro';
+      if (data?.nome) {
+        name = Array.isArray(data.nome) ? data.nome[0] : data.nome;
+      }
+      return {
+        key: 'enxada',
+        name,
+        emoji: '⛏️',
+        minLevel: 1,
+        isNonRepairable: Boolean(data?.reparavel === false || data?.tipo === 'madeira'),
+        calcBaseCost: (missing) => missing * 12
+      };
+    }
+
+    case 'regador': {
+      let name = 'Regador de Ferro';
+      if (data?.nome) {
+        name = Array.isArray(data.nome) ? data.nome[0] : data.nome;
+      }
+      return {
+        key: 'regador',
+        name,
+        emoji: '🚿',
+        minLevel: 1,
+        isNonRepairable: Boolean(data?.reparavel === false || data?.tipo === 'plastico'),
+        calcBaseCost: (missing) => missing * 15
+      };
+    }
+
+    default:
+      return null;
   }
 }
+
+module.exports = {
+  name: 'recuperar',
+  description: '⌊⚙️ Modulos⌉ Recupere a durabilidade de seus equipamentos danificados.',
+  type: ApplicationCommandType.ChatInput,
+  options: [],
+
+  run: async (client, interaction, args, color, database, emoji) => {
+    try {
+      const vipInfo = await CheckUserVip(interaction.user);
+      const VIP = vipInfo.isVip;
+
+      const nivelSnap = await database.ref(`economia/${interaction.user.id}/nível/`).once('value');
+      let nível = (nivelSnap.val() && nivelSnap.val().nível);
+      if (nível === undefined || nível === null) nível = 0;
+
+      const inventory = await getUserInventory(interaction.user);
+      const { carteira } = await getUserMoney(interaction.user);
+      const isCreator = client.config?.cargos?.criador?.includes(interaction.user.id);
+
+      const candidateKeys = ['arma', 'armacaça', 'vara', 'enxada', 'regador'];
+      const recoverableItems = [];
+
+      for (const key of candidateKeys) {
+        const itemData = inventory[key];
+
+        // 1. O usuário precisa possuir o item no inventário
+        const hasItem = Boolean(
+          itemData && (typeof itemData === 'object' ? (itemData.item > 0 || itemData.Xp !== undefined) : itemData > 0)
+        );
+        if (!hasItem) continue;
+
+        const details = resolveItemDetails(key, itemData);
+        if (!details) continue;
+
+        // 2. Não pode ser item não-reparável (bambu, madeira, plástico ou reparável explicitamente falso)
+        if (details.isNonRepairable) continue;
+
+        // 3. Checagem de nível mínimo exigido
+        if (!isCreator && !VIP && nível < details.minLevel) continue;
+
+        // 4. Durabilidade atual deve ser MENOR que 100% (se já for 100%, o item não é recuperável)
+        const currentDurability = Math.max(0, Math.min(100, Number(itemData.Xp ?? 100)));
+        if (currentDurability >= 100) continue;
+
+        // Cálculo dos custos de restauração
+        const missing = 100 - currentDurability;
+        const baseCost = details.calcBaseCost(missing);
+        let finalCost = baseCost;
+        if (vipInfo.isVip && vipInfo.repairDiscount > 0) {
+          finalCost = Math.round(baseCost * (1 - vipInfo.repairDiscount));
+        }
+
+        recoverableItems.push({
+          key,
+          name: details.name,
+          emoji: details.emoji,
+          data: itemData,
+          currentDurability,
+          missingDurability: missing,
+          baseCost,
+          finalCost,
+          minLevel: details.minLevel
+        });
+      }
+
+      // CENÁRIO 1: Nenhum item recuperável encontrado
+      if (recoverableItems.length === 0) {
+        const emptyEmbed = new EmbedBuilder()
+          .setColor(color.embed || '#831396')
+          .setAuthor({
+            name: 'Oficina de Manutenção & Reparos',
+            iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+          })
+          .setTitle('🛠️ Nenhum Equipamento Recuperável')
+          .setDescription(
+            `Olá ${interaction.user}, você **não possui nenhum equipamento recuperável** no momento!\n\n` +
+            `> 🛡️ **Durabilidade Completa:** Seus itens utilizáveis já estão com **100% de integridade**;\n` +
+            `> 🪵 **Itens Iniciais:** Ferramentas rústicas de madeira, bambu ou plástico são descartáveis e **não podem ser consertadas**;\n` +
+            `> 📦 **Inventário:** Não foram encontradas ferramentas ou armas danificadas em sua posse;\n` +
+            `> 🛒 **Loja:** Caso queira adquirir ferramentas permanentes de ferro ou armas de fogo, consulte a </loja:1>.`
+          )
+          .setFooter({
+            text: 'Sistine • Módulo de Oficina & Equipamentos',
+            iconURL: client.user.displayAvatarURL()
+          });
+
+        return interaction.followUp({ embeds: [emptyEmbed] });
+      }
+
+      // CENÁRIO 2: Existem itens recuperáveis -> Montar Select Menu
+      const buildInitialEmbed = (currentCarteira) => {
+        const descList = recoverableItems.map(item => {
+          const progressBar = getProgressBar(item.currentDurability, 100, 10);
+          const costText = (vipInfo.isVip && vipInfo.repairDiscount > 0)
+            ? `~~R$ ${Format(item.baseCost)}~~ ➔ **R$ ${Format(item.finalCost)}**`
+            : `**R$ ${Format(item.finalCost)}**`;
+
+          return `${item.emoji} **${item.name}**\n` +
+                 `> \`[${progressBar}]\` **${item.currentDurability}%** de durabilidade • Custo: ${costText}`;
+        }).join('\n\n');
+
+        let vipNotice = '';
+        if (vipInfo.isVip && vipInfo.repairDiscount > 0) {
+          vipNotice = `\n> 👑 **Benefício ${vipInfo.levelName}:** Você possui **${Math.round(vipInfo.repairDiscount * 100)}% de desconto** em todos os reparos!`;
+        }
+
+        return new EmbedBuilder()
+          .setColor(color.embed || '#831396')
+          .setAuthor({
+            name: 'Oficina de Manutenção & Reparos',
+            iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+          })
+          .setTitle('🛠️ Selecione o Item para Recuperar')
+          .setDescription(
+            `Olá ${interaction.user}, foram identificados os seguintes itens danificados em seu inventário:\n\n` +
+            `${descList}\n\n` +
+            `💰 **Seu Saldo em Carteira:** **R$ ${Format(currentCarteira)}**${vipNotice}\n\n` +
+            `👇 *Selecione no menu abaixo o equipamento que deseja reparar para 100%.*`
+          )
+          .setFooter({
+            text: 'Tempo limite: 60 segundos • Sistine Oficina',
+            iconURL: client.user.displayAvatarURL()
+          });
+      };
+
+      const buildMenuRow = () => {
+        const selectMenu = new StringSelectMenuBuilder()
+          .setCustomId('selecionar_item_recuperar')
+          .setPlaceholder('🔧 Escolha um equipamento para restaurar a durabilidade...')
+          .addOptions(
+            recoverableItems.map(item => {
+              const discountLabel = (vipInfo.isVip && vipInfo.repairDiscount > 0)
+                ? ` (VIP -${Math.round(vipInfo.repairDiscount * 100)}%)`
+                : '';
+
+              return new StringSelectMenuOptionBuilder()
+                .setLabel(item.name)
+                .setValue(item.key)
+                .setDescription(`Durabilidade: ${item.currentDurability}% • Custo: R$ ${Format(item.finalCost)}${discountLabel}`)
+                .setEmoji(item.emoji);
+            })
+          );
+
+        return new ActionRowBuilder().addComponents(selectMenu);
+      };
+
+      const buildConfirmEmbed = (item, currentCarteira) => {
+        const progressBar = getProgressBar(item.currentDurability, 100, 10);
+        const temSaldo = currentCarteira >= item.finalCost;
+
+        let desc = `🛠️ **|** ${interaction.user}, você selecionou **${item.name}** para manutenção.\n\n` +
+                   `> ${item.emoji} **Equipamento:** ${item.name}\n` +
+                   `> 📊 **Durabilidade Atual:** \`[${progressBar}]\` **${item.currentDurability}%**\n` +
+                   `> 🔧 **Restauração:** +**${item.missingDurability}%** (será restaurado para **100%**)\n`;
+
+        if (vipInfo.isVip && vipInfo.repairDiscount > 0) {
+          desc += `> 👑 **Desconto ${vipInfo.levelName} (-${Math.round(vipInfo.repairDiscount * 100)}%):** De ~~R$ ${Format(item.baseCost)}~~ por **R$ ${Format(item.finalCost)}**\n`;
+        } else {
+          desc += `> 💰 **Custo do Reparo:** **R$ ${Format(item.finalCost)}**\n`;
+        }
+
+        desc += `> 💼 **Seu Saldo em Carteira:** **R$ ${Format(currentCarteira)}**\n`;
+
+        if (item.key === 'regador') {
+          const regadorAgua = item.data?.agua ?? 100;
+          desc += `\n> 💧 **Nível de Água:** ${regadorAgua}%\n> ⚠️ *Nota: O reparo restaura apenas a durabilidade física do regador (100%). A água deve ser abastecida na plantação.*\n`;
+        }
+
+        if (!temSaldo) {
+          desc += `\n❌ **Saldo Insuficiente:** Você precisa de **R$ ${Format(item.finalCost)}**, mas possui apenas **R$ ${Format(currentCarteira)}** na carteira. Saque dinheiro no </banco:1> antes de prosseguir.`;
+        } else {
+          desc += `\n✅ **Confirmar Manutenção:** Clique no botão abaixo para concluir o reparo e restaurar sua ferramenta para 100%.`;
+        }
+
+        return new EmbedBuilder()
+          .setColor(temSaldo ? (color.embed || '#831396') : '#ef4444')
+          .setAuthor({
+            name: 'Oficina de Manutenção & Reparos',
+            iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+          })
+          .setTitle(`🔧 Inspecionando: ${item.name}`)
+          .setDescription(desc)
+          .setFooter({
+            text: temSaldo ? 'Confirme o reparo ou escolha outro item.' : 'Saldo insuficiente na carteira.',
+            iconURL: client.user.displayAvatarURL()
+          });
+      };
+
+      const buildConfirmRow = (item, currentCarteira) => {
+        const temSaldo = currentCarteira >= item.finalCost;
+
+        return new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId('confirmar_reparo')
+            .setLabel(`Confirmar Reparo (R$ ${Format(item.finalCost)})`)
+            .setStyle(ButtonStyle.Success)
+            .setEmoji(emoji?.positivo || '✅')
+            .setDisabled(!temSaldo),
+          new ButtonBuilder()
+            .setCustomId('voltar_menu')
+            .setLabel('Escolher Outro')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('🔙'),
+          new ButtonBuilder()
+            .setCustomId('cancelar_reparo')
+            .setLabel('Cancelar')
+            .setStyle(ButtonStyle.Danger)
+            .setEmoji(emoji?.negativo || '❌')
+        );
+      };
+
+      const initialEmbed = buildInitialEmbed(carteira);
+      const initialRow = buildMenuRow();
+
+      const msg = await interaction.followUp({
+        embeds: [initialEmbed],
+        components: [initialRow]
+      });
+
+      let currentSelectedItem = null;
+
+      const collector = msg.createMessageComponentCollector({
+        filter: (i) => i.user.id === interaction.user.id,
+        time: 60000
+      });
+
+      collector.on('collect', async (i) => {
+        // Se for a seleção no menu
+        if (i.isStringSelectMenu() && i.customId === 'selecionar_item_recuperar') {
+          await i.deferUpdate();
+          const selectedKey = i.values[0];
+          const matched = recoverableItems.find(it => it.key === selectedKey);
+
+          if (!matched) {
+            return interaction.followUp({ content: 'Item selecionado inválido ou não encontrado.', ephemeral: true });
+          }
+
+          currentSelectedItem = matched;
+          const freshMoney = await getUserMoney(interaction.user);
+          const confirmEmbed = buildConfirmEmbed(matched, freshMoney.carteira);
+          const confirmRow = buildConfirmRow(matched, freshMoney.carteira);
+
+          return msg.edit({
+            embeds: [confirmEmbed],
+            components: [confirmRow]
+          });
+        }
+
+        // Se for o botão Voltar
+        if (i.isButton() && i.customId === 'voltar_menu') {
+          await i.deferUpdate();
+          currentSelectedItem = null;
+          const freshMoney = await getUserMoney(interaction.user);
+          const resetEmbed = buildInitialEmbed(freshMoney.carteira);
+          const resetRow = buildMenuRow();
+
+          return msg.edit({
+            embeds: [resetEmbed],
+            components: [resetRow]
+          });
+        }
+
+        // Se for o botão Cancelar
+        if (i.isButton() && i.customId === 'cancelar_reparo') {
+          await i.deferUpdate();
+          collector.stop('cancelled');
+
+          const cancelEmbed = new EmbedBuilder()
+            .setColor('#ef4444')
+            .setAuthor({
+              name: 'Oficina de Manutenção & Reparos',
+              iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+            })
+            .setDescription(`❌ **|** Operação de reparo cancelada pelo usuário.`);
+
+          return msg.edit({
+            embeds: [cancelEmbed],
+            components: []
+          });
+        }
+
+        // Se for o botão Confirmar Reparo
+        if (i.isButton() && i.customId === 'confirmar_reparo') {
+          await i.deferUpdate();
+
+          if (!currentSelectedItem) {
+            return interaction.followUp({ content: 'Nenhum equipamento selecionado para reparo.', ephemeral: true });
+          }
+
+          const freshMoney = await getUserMoney(interaction.user);
+          if (freshMoney.carteira < currentSelectedItem.finalCost) {
+            return interaction.followUp({
+              content: `${emoji?.negativo || '❌'} **|** Saldo insuficiente na carteira para efetuar o reparo! Você precisa de **R$ ${Format(currentSelectedItem.finalCost)}**.`,
+              ephemeral: true
+            });
+          }
+
+          collector.stop('repaired');
+
+          // Atualiza a durabilidade do item para 100% no Firebase
+          await database.ref(`economia/${interaction.user.id}/inventario/itens/Equipamentos/${currentSelectedItem.key}`).update({
+            Xp: 100
+          });
+
+          // Debita o valor da carteira e registra a transação financeira
+          const transacaoDesc = `{emoji.saida} {mensagem.recuperar} | ${Format(currentSelectedItem.finalCost)} | ${currentSelectedItem.name}`;
+          await UpdateMoneyWallet(interaction, interaction.user, '-', currentSelectedItem.finalCost, transacaoDesc);
+
+          // Concede XP de comando ao usuário
+          await XpUpdate(interaction, interaction.user, Math.floor(Math.random() * 10) + 20);
+
+          const hammerEmoji = emoji?.martelo || '<:martelo:925966095712665631>' || '🔨';
+
+          const successEmbed = new EmbedBuilder()
+            .setColor('#10b981')
+            .setAuthor({
+              name: 'Oficina de Manutenção & Reparos',
+              iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+            })
+            .setTitle('🛠️ Reparo Concluído com Sucesso!')
+            .setDescription(
+              `${hammerEmoji} **|** ${interaction.user}, sua **${currentSelectedItem.name}** foi restaurada com sucesso para **100%** de durabilidade!\n\n` +
+              `> 💰 **Valor Pago:** R$ ${Format(currentSelectedItem.finalCost)}\n` +
+              `> 🛡️ **Durabilidade Atual:** \`[▰▰▰▰▰▰▰▰▰▰]\` **100%** (+${currentSelectedItem.missingDurability}%)\n` +
+              `> 💼 **Saldo Restante:** R$ ${Format(freshMoney.carteira - currentSelectedItem.finalCost)}\n` +
+              `> ⭐ **Experiência:** Você ganhou XP por utilizar a oficina!`
+            )
+            .setFooter({
+              text: 'Sistine • Módulo de Oficina & Equipamentos',
+              iconURL: client.user.displayAvatarURL()
+            });
+
+          return msg.edit({
+            embeds: [successEmbed],
+            components: []
+          });
+        }
+      });
+
+      collector.on('end', async (collected, reason) => {
+        if (reason === 'time') {
+          const timeoutEmbed = new EmbedBuilder()
+            .setColor('#71717a')
+            .setAuthor({
+              name: 'Oficina de Manutenção & Reparos',
+              iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+            })
+            .setTitle('🕛 Tempo Expirado')
+            .setDescription(`O tempo limite para escolher um equipamento na oficina expirou. Caso ainda deseje reparar seus itens, use \`/recuperar\` novamente.`);
+
+          await msg.edit({
+            embeds: [timeoutEmbed],
+            components: []
+          }).catch(() => {});
+        }
+      });
+
+    } catch (error) {
+      console.error('[SlashCommand /recuperar]', error);
+      return interaction.error({ content: 'Ocorreu um erro inesperado na utilização deste comando.' });
+    }
+  }
+};

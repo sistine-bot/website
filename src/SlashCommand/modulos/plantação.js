@@ -195,7 +195,7 @@ module.exports = {
                 return int.followUp({
                   content: isMadeira
                     ? `⛏️ **|** Sua **Enxada de Madeira** quebrou completamente (0% de durabilidade)! Como ela é feita de madeira rústica, não pode ser consertada. Adquira uma nova na \`/loja itens\`.`
-                    : `⛏️ **|** Sua **Enxada** está quebrada (0% de durabilidade)! Conserte-a em \`/recuperar item:enxada\` ou adquira uma nova na \`/loja itens\`.`,
+                    : `⛏️ **|** Sua **Enxada** está quebrada (0% de durabilidade)! Conserte-a em \`/recuperar\` ou adquira uma nova na \`/loja itens\`.`,
                   ephemeral: true
                 });
               }
@@ -586,7 +586,7 @@ module.exports = {
         const enxadaTxt = hasEnxada
           ? (enxadaXp > 0
               ? `⛏️ ${enxadaNome}: **${enxadaXp}%** durabilidade`
-              : (isEnxadaMadeira ? `⛏️ ${enxadaNome}: ⚠️ **Quebrada (0%)** • Não consertável` : `⛏️ ${enxadaNome}: ⚠️ **Quebrada (0%)** • Repare em \`/recuperar item:enxada\``))
+              : (isEnxadaMadeira ? `⛏️ ${enxadaNome}: ⚠️ **Quebrada (0%)** • Não consertável` : `⛏️ ${enxadaNome}: ⚠️ **Quebrada (0%)** • Repare em \`/recuperar\``))
           : `⛏️ Enxada: ❌ **Não possui** • Use \`/start\` ou compre em \`/loja itens\``;
 
         const hasRegador = inv.regador && (typeof inv.regador === 'object' ? inv.regador.item > 0 : inv.regador > 0);
@@ -598,7 +598,7 @@ module.exports = {
         const regadorTxt = hasRegador
           ? (regadorXp > 0
               ? `🚿 ${regadorNome}: **${regadorXp}%** durabilidade • 💧 Água: **${regadorAgua}%**`
-              : (isRegadorPlastico ? `🚿 ${regadorNome}: ⚠️ **Quebrado (0%)** • Não consertável` : `🚿 ${regadorNome}: ⚠️ **Quebrado (0%)** • Repare em \`/recuperar item:regador\``))
+              : (isRegadorPlastico ? `🚿 ${regadorNome}: ⚠️ **Quebrado (0%)** • Não consertável` : `🚿 ${regadorNome}: ⚠️ **Quebrado (0%)** • Repare em \`/recuperar\``))
           : `🚿 Regador: ❌ **Não possui** • Use \`/start\` ou compre em \`/loja itens\``;
 
         const availableSeeds = [
@@ -739,7 +739,7 @@ module.exports = {
           return int.followUp({
             content: isMadeira
               ? `⛏️ **|** Sua **Enxada de Madeira** quebrou completamente (0% de durabilidade)! Por ser rústica, ela não pode ser consertada. Compre uma enxada de ferro na \`/loja itens\`.`
-              : `⛏️ **|** Sua **Enxada** quebrou (0% de durabilidade)! Repare-a no comando \`/recuperar item:enxada\` ou adquira outra na \`/loja itens\`.`,
+              : `⛏️ **|** Sua **Enxada** quebrou (0% de durabilidade)! Repare-a no comando \`/recuperar\` ou adquira outra na \`/loja itens\`.`,
             ephemeral: true
           });
         }
@@ -759,7 +759,7 @@ module.exports = {
           return int.followUp({
             content: isPlastico
               ? `🚿 **|** Seu **Regador de Plástico** quebrou completamente (0% de durabilidade)! Por ser descartável, não pode ser consertado. Adquira um Regador de Ferro permanente na \`/loja itens\`.`
-              : `🚿 **|** Seu **Regador** está quebrado (0% de durabilidade)! Repare-o no comando \`/recuperar item:regador\` ou adquira outro na \`/loja itens\`.`,
+              : `🚿 **|** Seu **Regador** está quebrado (0% de durabilidade)! Repare-o no comando \`/recuperar\` ou adquira outro na \`/loja itens\`.`,
             ephemeral: true
           });
         }
@@ -848,7 +848,7 @@ module.exports = {
         }
         const regadorXp = typeof inv.regador === 'object' ? (inv.regador.Xp ?? 100) : 100;
         if (regadorXp <= 0) {
-          return int.followUp({ content: `Seu Regador está quebrado! Repare-o em \`/recuperar item:regador\`.`, ephemeral: true });
+          return int.followUp({ content: `Seu Regador está quebrado! Repare-o em \`/recuperar\`.`, ephemeral: true });
         }
         const regadorAgua = typeof inv.regador === 'object' ? (inv.regador.agua ?? 100) : 100;
         if (regadorAgua < 10) {

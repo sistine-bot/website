@@ -576,7 +576,7 @@ function buildConfirmEmbed(item, color) {
       } else if (item.durabilityPercent < 100) {
         const lossAmount = item.baseSellPrice - item.unitPrice;
         details += `\n⚠️ **Desvalorização por Desgaste:** Este equipamento perdeu **-${Format(lossAmount)}** do valor de venda por estar com **${item.durabilityPercent}%** de durabilidade!\n` +
-                   `🛠️ **Dica Econômica:** Em vez de vender desvalorizado, use o comando \`/recuperar item:${item.toolType}\` para restaurar sua durabilidade para 100% e recuperar o valor total de **${Format(item.baseSellPrice)}**!`;
+                   `🛠️ **Dica Econômica:** Em vez de vender desvalorizado, use o comando \`/recuperar\` para restaurar sua durabilidade para 100% e recuperar o valor total de **${Format(item.baseSellPrice)}**!`;
       }
     } else {
       details += `• **Preço de Venda:** **${Format(item.unitPrice)}**\n`;
