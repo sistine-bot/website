@@ -32,7 +32,7 @@ module.exports =  {
       
       if (banco < number) return interaction.error({ content: `Você não possui esta quantia no banco para sacar.` })
       
-      await UpdateMoneyBank(interaction, interaction.user, '-', number, `{emoji.saida} {mensagem.saque} | ${number}`);
+      await UpdateMoneyBank(interaction, interaction.user, '-', number, { type: 'saque', amount: number });
       await UpdateMoneyWallet(interaction, interaction.user, '+', number);
       
       const embed = new EmbedBuilder()

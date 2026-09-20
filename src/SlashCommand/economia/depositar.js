@@ -32,7 +32,7 @@ module.exports =  {
       if (number > carteira) return interaction.error({ content: `Você não possui dinheiro o suficiente na carteira para depositar`})
 
       await UpdateMoneyWallet(interaction, interaction.user, '-', number);
-      await UpdateMoneyBank(interaction, interaction.user, '+', number, `{emoji.entrada} {mensagem.deposito} | ${number}`);
+      await UpdateMoneyBank(interaction, interaction.user, '+', number, { type: 'deposito', amount: number });
       
       const embed = new EmbedBuilder()
       .setColor(color.embed)

@@ -130,6 +130,29 @@ module.exports = {
         return message.reply({ embeds: [embed] });
       }
 
+      if (['list', 'listar', 'todos'].includes(subCommand)) {
+        const snap = await database.ref('blacklist').once('value');
+        const listData = snap.val() || {};
+        const entries = Object.entries(listData);
+
+        if (entries.length === 0) {
+          return message.reply({ content: `✅ **|** Não há nenhum usuário banido na Blacklist no momento.` });
+        }
+
+        const formattedList = entries.slice(0, 15).map(([id, data], i) => {
+          return `\`${i + 1}.\` <@${id}> (\`${id}\`) — **Motivo:** ${data.motivo || 'N/A'}`;
+        }).join('\n');
+
+        const embed = new EmbedBuilder()
+          .setColor('#ef4444')
+          .setTitle(`📋 Usuários na Blacklist Global (${entries.length})`)
+          .setDescription(formattedList + (entries.length > 15 ? `\n\n*... e mais ${entries.length - 15} usuários.*` : ''))
+          .setFooter({ text: 'Sistine Segurança & Moderação Global' })
+          .setTimestamp();
+
+        return message.reply({ embeds: [embed] });
+      }
+
       // Ajuda padrão
       const helpEmbed = new EmbedBuilder()
         .setColor(color.embed || '#831396')
@@ -139,7 +162,8 @@ module.exports = {
           `**Comandos disponíveis:**\n` +
           `> \`${prefixo}blacklist add <@user/ID> <tempo> <motivo>\` - Bane o usuário de comandos e da dashboard.\n` +
           `> \`${prefixo}blacklist remove <@user/ID>\` - Remove o usuário da Blacklist.\n` +
-          `> \`${prefixo}blacklist check <@user/ID>\` - Verifica a situação atual de um usuário.\n\n` +
+          `> \`${prefixo}blacklist check <@user/ID>\` - Verifica a situação atual de um usuário.\n` +
+          `> \`${prefixo}blacklist list\` - Exibe a lista de usuários banidos no momento.\n\n` +
           `💡 *Tempos aceitos:* \`1h\`, \`1d\`, \`7d\`, \`30d\`, \`permanente\``
         )
         .setFooter({ text: 'Apenas Criadores e Desenvolvedores podem utilizar este comando.' });

@@ -1,38 +1,87 @@
-const { EmbedBuilder } = require('discord.js')
-const ms = require("parse-ms");
-const { NumberConvert, UpdateMoneyWallet, UpdateMoneyBank, Format, getUser } = require('../../utils/functions.js');
+const { EmbedBuilder } = require('discord.js');
+const { NumberConvert, UpdateMoneyWallet, Format, getUser, isStaff, getUserMoney } = require('../../utils/functions.js');
 
 module.exports = {
   name: "removecarteira",
-  aliases: [],
-  
+  aliases: ["removercarteira", "delcarteira", "tirarmoedas"],
+  description: "Remove uma quantia da carteira de um usuário.",
+
   run: async (client, message, args, prefixo, color, database, emoji) => {
-    
     try {
-
-      if (!(client.config.cargos.criador).includes(message.author.id)) {
-        return false;
+      if (!isStaff(client, message.author.id)) {
+        return message.reply({
+          content: `${emoji.negativo || '❌'} **|** Apenas a Staff Global (Criadores e Desenvolvedores) pode executar este comando.`
+        });
       }
-      
-      if (!args[0]) return message.reply(`Você deve inserir uma quantia para adicionar.`);
-      let quantia = NumberConvert(args[0]);
-      if (!quantia) return message.reply(`\`${args[0]}\` não me parece um número.`);
 
-      let user = getUser(message, args[1]);
-      
-      await UpdateMoneyWallet(message, user, '-', quantia);
-      
+      if (!args[0]) {
+        return message.reply({
+          content: `📖 **Uso Correto:**\n> \`${prefixo}removecarteira <quantia> [@usuário/ID]\` ou \`${prefixo}removecarteira <@usuário/ID> <quantia>\`\n\n💡 **Exemplo:** \`${prefixo}removecarteira 50000 @user\` ou \`${prefixo}removecarteira 10k\``
+        });
+      }
+
+      let quantiaRaw;
+      let targetUser;
+
+      // Suporta ambas as ordens: <quantia> <user> ou <user> <quantia>
+      const parsedFirst = NumberConvert(args[0]);
+      if (!isNaN(parsedFirst) && parsedFirst > 0) {
+        quantiaRaw = parsedFirst;
+        targetUser = args[1] ? getUser(message, args[1]) : message.author;
+      } else {
+        targetUser = getUser(message, args[0]);
+        quantiaRaw = args[1] ? NumberConvert(args[1]) : null;
+      }
+
+      if (!quantiaRaw || isNaN(quantiaRaw) || quantiaRaw <= 0) {
+        return message.reply({
+          content: `${emoji.negativo || '❌'} **|** Por favor, especifique uma quantia válida maior que 0 para remover. Ex: \`5000\`, \`50k\`, \`1m\`.`
+        });
+      }
+
+      if (!targetUser || !targetUser.id) {
+        return message.reply({
+          content: `${emoji.negativo || '❌'} **|** Usuário não encontrado ou inválido.`
+        });
+      }
+
+      const userMoney = await getUserMoney(targetUser);
+      const atualCarteira = userMoney.carteira || 0;
+      const quantiaRemover = Math.min(atualCarteira, quantiaRaw);
+
+      if (quantiaRemover <= 0) {
+        return message.reply({
+          content: `${emoji.aviso || '⚠️'} **|** O usuário <@${targetUser.id}> já possui carteira zerada.`
+        });
+      }
+
+      await UpdateMoneyWallet(
+        message,
+        targetUser,
+        '-',
+        quantiaRemover,
+        { type: 'admin_remocao', amount: quantiaRemover }
+      );
+
       const embed = new EmbedBuilder()
-      .setDescription(`${emoji.dinheiro} **|** ${user} perdeu ${Format(quantia)} direto da carteira`)
-      .setColor(color.embed)
-      
-      return message.reply({ embeds: [embed] })
-      
+        .setColor(color.embed || '#831396')
+        .setTitle('💵 Saldo na Carteira Removido')
+        .setDescription(
+          `${emoji.negativo || '❌'} **|** Foram removidos **${Format(quantiaRemover)}** da carteira de <@${targetUser.id}>!\n\n` +
+          `👤 **Usuário afetado:** \`${targetUser.username || targetUser.tag || targetUser.id}\` (\`${targetUser.id}\`)\n` +
+          `💰 **Saldo restante na carteira:** \`${Format(atualCarteira - quantiaRemover)}\`\n` +
+          `🛡️ **Administrador:** <@${message.author.id}>`
+        )
+        .setFooter({ text: 'Sistine Administração' })
+        .setTimestamp();
+
+      return message.reply({ embeds: [embed] });
 
     } catch (error) {
-      console.error(error);
-      return message.error()
+      console.error('[Command removecarteira]', error);
+      return message.reply({
+        content: `${emoji.negativo || '❌'} **|** Ocorreu um erro ao remover dinheiro da carteira.`
+      });
     }
-    
   }
 };

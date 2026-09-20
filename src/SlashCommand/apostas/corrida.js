@@ -79,7 +79,10 @@ Clique em: \`🎟️\` para participar.
           await msg.edit({ components: [row3] }).catch(() => {});
           for (const participant of Row) {
             const pUser = client.users.cache.get(participant.id) || { id: participant.id };
-            await UpdateMoneyWallet(interaction, pUser, '+', number);
+            await UpdateMoneyWallet(interaction, pUser, '+', number, {
+              type: 'corrida_reembolso',
+              amount: number
+            });
           }
           return interaction.followUp({ 
             content: `${emoji.negativo || '❌'} **|** <@${interaction.user.id}>, a corrida foi cancelada por falta de participantes. O valor de **${Format(number)}** foi reembolsado.`, 
@@ -103,7 +106,10 @@ Clique em: \`🎟️\` para participar.
           const taxa = Math.floor(totalAcumulado * taxaPercentual);
           const valorLiquido = totalAcumulado - taxa;
           
-          await UpdateMoneyWallet(interaction, ganhadorUser, '+', valorLiquido, `{emoji.entrada} {mensagem.corrida.vitoria} | ${valorLiquido}`);
+          await UpdateMoneyWallet(interaction, ganhadorUser, '+', valorLiquido, {
+            type: 'corrida_vitoria',
+            amount: valorLiquido
+          });
 
           const winMSG = (ganhador !== interaction.user.id) ? ` *(corrida iniciada por: **${interaction.user.username}**)*` : '';
           return interaction.channel.send({ 
@@ -146,7 +152,10 @@ Clique em: \`🎟️\` para participar.
       Row.push({ user: `${RandomEmote} <@${interaction.user.id}>`, emote: RandomEmote, id: interaction.user.id });
 
       rifa.add(interaction.user.id);
-      await UpdateMoneyWallet(interaction, interaction.user, '-', number);
+      await UpdateMoneyWallet(interaction, interaction.user, '-', number, {
+        type: 'corrida_derrota',
+        amount: number
+      });
       await editMSG(msg, Row, number);
 
       const coletor = msg.createMessageComponentCollector({ time: timer * 1000 });
@@ -172,7 +181,10 @@ Clique em: \`🎟️\` para participar.
             Row.push({ user: `${rEmote} <@${user.id}>`, emote: rEmote, id: user.id });
             rifa.add(user.id);
 
-            await UpdateMoneyWallet(interaction, user, '-', number);
+            await UpdateMoneyWallet(interaction, user, '-', number, {
+              type: 'corrida_derrota',
+              amount: number
+            });
             await editMSG(msg, Row, number * Row.length);
 
             if (Row.length >= 10) {

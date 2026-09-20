@@ -75,8 +75,16 @@ module.exports =  {
             const taxa = Math.floor(number * 0.05);
             const valorLiquido = number - taxa;
 
-            await UpdateMoneyWallet(interaction, interaction.user, '-', number, `{emoji.saida} {mensagem.transferencia.enviou} | ${number} | ${user.id}`);
-            await UpdateMoneyWallet(interaction, user, '+', valorLiquido, `{emoji.entrada} {mensagem.transferencia.recebeu} | ${valorLiquido} | ${interaction.user.id}`);
+            await UpdateMoneyWallet(interaction, interaction.user, '-', number, {
+              type: 'transferencia_enviou',
+              amount: number,
+              targetUser: user
+            });
+            await UpdateMoneyWallet(interaction, user, '+', valorLiquido, {
+              type: 'transferencia_recebeu',
+              amount: valorLiquido,
+              targetUser: interaction.user
+            });
 
             return msg.reply({ 
               content: `💵 **|** <@${interaction.user.id}> transferiu **${Format(number)}** para <@${user.id}>!\n> 🏛️ **Taxa Bancária (5%):** **${Format(taxa)}** foram retidos pelos cofres públicos. Destinatário recebeu **${Format(valorLiquido)}**.` 

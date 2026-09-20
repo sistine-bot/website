@@ -392,13 +392,16 @@ async function executeSale(item, qtyToSell, userId, interaction, database) {
   }
 
   if (totalEarned > 0) {
-    const transacao = `{emoji.entrada} {mensagem.loja.vendas} | ${totalEarned} | ${qtyToSell > 1 ? `${qtyToSell}x ` : ''}${item.name}`;
     await UpdateMoneyWallet(
       interaction,
       interaction.user,
       '+',
       totalEarned,
-      transacao
+      {
+        type: 'loja_vendas',
+        amount: totalEarned,
+        item: `${qtyToSell > 1 ? `${qtyToSell}x ` : ''}${item.name}`
+      }
     );
   }
 
@@ -418,13 +421,16 @@ async function executeMassResourceSale(resourceItems, userId, interaction, datab
 
   await database.ref(`economia/${userId}/inventario/itens/Consumíveis`).update(updates);
 
-  const transacao = `{emoji.entrada} {mensagem.loja.vendas} | ${totalEarned} | Liquidação de Recursos (${totalCount}x)`;
   await UpdateMoneyWallet(
     interaction,
     interaction.user,
     '+',
     totalEarned,
-    transacao
+    {
+      type: 'loja_vendas',
+      amount: totalEarned,
+      item: `Liquidação de Recursos (${totalCount}x)`
+    }
   );
 
   return { totalEarned, totalCount };

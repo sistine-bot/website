@@ -424,8 +424,11 @@ module.exports = {
           });
 
           // Debita o valor da carteira e registra a transação financeira
-          const transacaoDesc = `{emoji.saida} {mensagem.recuperar} | ${Format(currentSelectedItem.finalCost)} | ${currentSelectedItem.name}`;
-          await UpdateMoneyWallet(interaction, interaction.user, '-', currentSelectedItem.finalCost, transacaoDesc);
+          await UpdateMoneyWallet(interaction, interaction.user, '-', currentSelectedItem.finalCost, {
+            type: 'recuperar',
+            amount: currentSelectedItem.finalCost,
+            item: currentSelectedItem.name
+          });
 
           // Concede XP de comando ao usuário
           await XpUpdate(interaction, interaction.user, Math.floor(Math.random() * 10) + 20);

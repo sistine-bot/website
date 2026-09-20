@@ -758,8 +758,11 @@ module.exports = {
           });
         }
 
-        await UpdateMoneyWallet(interaction, interaction.user, '-', preco, `{emoji.saida} Expansão de Rancho Espaço ${proximo.num} | ${Format(preco)}`);
-        TransactionUpdate(interaction, `{emoji.saida} Compra de Espaço de Rancho ${proximo.num} | ${Format(preco)}`, interaction.user);
+        await UpdateMoneyWallet(interaction, interaction.user, '-', preco, {
+          type: 'fazenda_compra',
+          amount: preco,
+          item: `Rancho Espaço ${proximo.num}`
+        });
 
         await database.ref(`economia/${interaction.user.id}/Fazenda/Animal/espaco_${proximo.num}_desbloqueado`).set(1);
 
@@ -785,8 +788,11 @@ module.exports = {
         const inv = await getUserInventory(interaction.user);
         const currentRacao = inv.ração_animal || 0;
 
-        await UpdateMoneyWallet(interaction, interaction.user, '-', preco, `{emoji.saida} Compra de 3x Ração Animal | ${Format(preco)}`);
-        TransactionUpdate(interaction, `{emoji.saida} Compra de 3x Ração Animal | ${Format(preco)}`, interaction.user);
+        await UpdateMoneyWallet(interaction, interaction.user, '-', preco, {
+          type: 'fazenda_compra',
+          amount: preco,
+          item: '3x Ração Animal'
+        });
 
         await database.ref(`economia/${interaction.user.id}/inventario/itens/Consumíveis`).update({
           ração_animal: currentRacao + 3
@@ -832,8 +838,11 @@ module.exports = {
           });
         }
 
-        await UpdateMoneyWallet(interaction, interaction.user, '-', animal.babyPrice, `{emoji.saida} Adoção de Filhote ${animal.babyName} | ${Format(animal.babyPrice)}`);
-        TransactionUpdate(interaction, `{emoji.saida} Compra de Filhote ${animal.babyName} | ${Format(animal.babyPrice)}`, interaction.user);
+        await UpdateMoneyWallet(interaction, interaction.user, '-', animal.babyPrice, {
+          type: 'fazenda_compra',
+          amount: animal.babyPrice,
+          item: `Filhote ${animal.babyName}`
+        });
 
         await database.ref(`economia/${interaction.user.id}/Fazenda/Animal`).update({
           [`animal_${espacoNum}`]: animal.id,
@@ -1049,8 +1058,11 @@ module.exports = {
         const isBaby = fazendaData[`animal_${espacoNum}_fase`] === 'filhote';
         const valorVenda = isBaby ? Math.round(animal.babyPrice * 0.5) : animal.adultSellPrice;
 
-        await UpdateMoneyWallet(interaction, interaction.user, '+', valorVenda, `{emoji.entrada} Venda de Animal ${animal.displayName} | ${Format(valorVenda)}`);
-        TransactionUpdate(interaction, `{emoji.entrada} Venda de Animal ${animal.displayName} | ${Format(valorVenda)}`, interaction.user);
+        await UpdateMoneyWallet(interaction, interaction.user, '+', valorVenda, {
+          type: 'fazenda_venda',
+          amount: valorVenda,
+          item: `Animal ${animal.displayName}`
+        });
 
         await database.ref(`economia/${interaction.user.id}/Fazenda/Animal`).update({
           [`animal_${espacoNum}`]: 0,

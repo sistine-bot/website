@@ -47,7 +47,7 @@ module.exports =  {
         daily: Date.now()
       });
 
-      await UpdateMoneyWallet(interaction, interaction.user, '+', DailyMoney, `{emoji.entrada} {mensagem.daily} | ${DailyMoney}`);
+      await UpdateMoneyWallet(interaction, interaction.user, '+', DailyMoney, { type: 'daily', amount: DailyMoney });
 
       const EMBED = new EmbedBuilder()
       .setColor(color.embed)

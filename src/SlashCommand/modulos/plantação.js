@@ -531,8 +531,11 @@ module.exports = {
           return int.followUp({ content: `❌ **|** Saldo insuficiente! Você precisa de **${Format(preco)}** na mão para expandir para o Lote ${proximo.loteNum}.`, ephemeral: true });
         }
 
-        await UpdateMoneyWallet(interaction, interaction.user, '-', preco, `{emoji.saida} Expansão de Terreno Lote ${proximo.loteNum} | ${Format(preco)}`);
-        TransactionUpdate(interaction, `{emoji.saida} Compra de Lote ${proximo.loteNum} | ${Format(preco)}`, interaction.user);
+        await UpdateMoneyWallet(interaction, interaction.user, '-', preco, {
+          type: 'plantacao_expansao',
+          amount: preco,
+          item: `Lote ${proximo.loteNum}`
+        });
         
         await database.ref(`economia/${interaction.user.id}/Plantação/lote${proximo.loteNum}`).set(1);
 

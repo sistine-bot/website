@@ -1,197 +1,199 @@
 const {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder
 } = require('discord.js');
 
-const { CheckUserBlacklisted, Format, getUserInventory, UpdateMoneyWallet, getUser } = require('../../utils/functions.js');
+const { CheckUserBlacklisted, Format, getUserInventory, UpdateMoneyWallet, isStaff, NumberConvert } = require('../../utils/functions.js');
 
 module.exports = {
-    name: "drop",
-    aliases: ["airdrop"],
+  name: "drop",
+  aliases: ["airdrop", "caixa"],
+  description: "Inicia um evento de drop/airdrop no canal para os membros participarem.",
 
-    run: async (client, message, args, prefixo, color, database, emoji) => {
+  run: async (client, message, args, prefixo, color, database, emoji) => {
+    try {
+      if (!isStaff(client, message.author.id)) {
+        return message.reply({
+          content: `${emoji.negativo || '❌'} **|** Apenas a Staff Global (Criadores e Desenvolvedores) pode executar este comando.`
+        });
+      }
 
-        try {
+      // Se o admin passou uma quantia personalizada de moedas (ex: !drop 50000)
+      const customMoney = args[0] ? NumberConvert(args[0]) : null;
+      const isCustomMoney = typeof customMoney === 'number' && !isNaN(customMoney) && customMoney > 0;
 
-            if (!(client.config.cargos.criador).includes(message.author.id)) {
-                return;
-            }
+      const ImagemDrop = 'https://i.redd.it/sesjas1u9pz41.jpg';
+      const participantes = [];
 
-            const ImagemDrop = 'https://i.redd.it/sesjas1u9pz41.jpg';
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('participar_drop')
+          .setLabel('Coletar Recompensa')
+          .setEmoji('📦')
+          .setStyle(ButtonStyle.Success)
+      );
 
-            const participantes = [];
+      const embedInicial = new EmbedBuilder()
+        .setColor(color.embed || '#831396')
+        .setTitle('📦 Um Airdrop Misterioso Caiu na Área!')
+        .setDescription(
+          `Um suprimento valioso acabou de cair dos céus!\n\n` +
+          `${isCustomMoney ? `💰 **Recompensa Garantida:** \`${Format(customMoney)}\` moedas!\n` : `🎁 **Recompensa:** Dinheiro ou recursos raros de sobrevivência!\n`}` +
+          `⏱️ **Tempo para Coletar:** \`20 segundos\`\n\n` +
+          `Clique no botão abaixo para tentar a sorte!`
+        )
+        .setImage(ImagemDrop)
+        .setFooter({ text: `Iniciado por ${message.author.username}` })
+        .setTimestamp();
 
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId('participar')
-                    .setLabel('Coletar')
-                    .setEmoji('📦')
-                    .setStyle(ButtonStyle.Secondary)
-            );
+      const msg = await message.channel.send({
+        embeds: [embedInicial],
+        components: [row]
+      });
 
-            const msg = await message.channel.send({
-                content: `**Um airdrop comum apareceu**
+      const coletor = msg.createMessageComponentCollector({
+        time: 20 * 1000
+      });
 
-> Para ter a chance de pegar clique em: **Coletar**.`,
-                files: [ImagemDrop],
-                components: [row]
-            });
+      coletor.on('collect', async (interaction) => {
+        if (interaction.customId !== 'participar_drop') return;
 
-            const coletor = msg.createMessageComponentCollector({
-                time: 15 * 1000
-            });
-
-            coletor.on('collect', async (interaction) => {
-
-                if (interaction.customId !== 'participar') return;
-
-                await interaction.deferUpdate();
-
-                const blacklist = await CheckUserBlacklisted(interaction.user);
-
-                if (blacklist?.blacklisted) {
-                    return;
-                }
-                
-                if (participantes.includes(interaction.user.id)) {
-                    return;
-                }
-
-                participantes.push(interaction.user.id);
-
-                await msg.edit({
-                    content: `**Um airdrop comum apareceu**
-
-> Para ter a chance de pegar clique em: **Coletar**.
-
-> Participantes:
-${participantes.map((p, i) => `\`${i + 1}.\` <@${p}>`).join('\n')}`,
-                    files: [ImagemDrop],
-                    components: [row]
-                });
-            });
-
-            coletor.on('end', async () => {
-
-                try {
-
-                    const rowDisabled = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder()
-                            .setCustomId('participar')
-                            .setLabel('Coletar')
-                            .setEmoji('📦')
-                            .setStyle(ButtonStyle.Secondary)
-                            .setDisabled(true)
-                    );
-
-                    await msg.edit({
-                        components: [rowDisabled]
-                    });
-
-                    if (participantes.length < 1) {
-                        return message.channel.send(
-                            '😢 **|** O baú foi ignorado! Ninguém tentou participar e foi cancelado.'
-                        );
-                    }
-
-                    const ganhadorID =
-                        participantes[Math.floor(Math.random() * participantes.length)];
-                    const ganhador = message.guild.members.cache.get(ganhadorID)
-
-                    const premio = Math.floor(Math.random() * 7) + 1;
-                    
-                    const inventario = await getUserInventory(ganhadorID);
-                    let mensagemWin = "";
-
-                    // Dinheiro
-                    if (premio === 1) {
-                        const quantia = Math.floor(Math.random() * 15000) + 230;
-
-                        mensagemWin = `💵 \`${Format(quantia)}\``;
-                        
-                        await UpdateMoneyWallet(message, ganhador.user, '+', quantia, `{emoji.entrada} {mensagem.airdrop} | ${quantia}`);
-
-                    } else {
-
-                        const premios = {
-                            2: {
-                                item: "carne",
-                                nome: "carne",
-                                quantidade: () => Math.floor(Math.random() * 5) + 1
-                            },
-                            3: {
-                                item: "peixe",
-                                nome: "peixe",
-                                quantidade: () => Math.floor(Math.random() * 5) + 1
-                            },
-                            4: {
-                                item: "munição",
-                                nome: "munições",
-                                quantidade: () => Math.floor(Math.random() * 20) + 5
-                            },
-                            5: {
-                                item: "Trigo",
-                                nome: "Trigos",
-                                quantidade: () => Math.floor(Math.random() * 31) + 10
-                            },
-                            6: {
-                                item: "Milho",
-                                nome: "Milhos",
-                                quantidade: () => Math.floor(Math.random() * 16) + 10
-                            },
-                            7: {
-                                item: "Feijão",
-                                nome: "Feijões",
-                                quantidade: () => Math.floor(Math.random() * 8) + 5
-                            }
-                        };
-                        
-                        const drops = { 
-                            Trigo: Math.floor(Math.random() * 31) + 10,// 10-40 
-                            Milho: Math.floor(Math.random() * 16) + 10, // 10-25
-                            Feijão: Math.floor(Math.random() * 8) + 5, // 5-12
-                            CanaDeAçucar: Math.floor(Math.random() * 5) + 4, // 4-8 
-                            Cenoura: Math.floor(Math.random() * 4) + 3, // 3-6
-                            Abóbora: Math.floor(Math.random() * 2) + 2, // 2-3 
-                        };
-
-                        const premioInfo = premios[premio];
-                        
-                        if (premioInfo) {
-                            const quantia = drops[premioInfo.item];
-
-                            if (typeof quantia !== 'number') {
-                                console.log('Item sem quantidade configurada:', premioInfo.item);
-                                return;
-                            }
-
-                            await database
-                                .ref(`/economia/${ganhadorID}/inventario/itens/Consumíveis`)
-                                .update({
-                                    [premioInfo.item]: (inventario[premioInfo.item] || 0) + quantia,
-                                });
-
-                            mensagemWin = `\`${Format(quantia)}\` ${premioInfo.nome}`;
-                        }
-                    }
-
-
-                    return message.channel.send(
-                        `🎉 **|** Parabéns <@${ganhadorID}>!\n\nVocê recebeu: ${mensagemWin}`
-                    );
-
-                } catch (err) {
-                    console.error(err);
-                }
-            });
-
-        } catch (error) {
-            console.error(error);
-
-            if (message.error) {
-                return message.error();
-            }
+        const blacklist = await CheckUserBlacklisted(interaction.user);
+        if (blacklist?.blacklisted) {
+          return interaction.reply({
+            content: `${emoji.negativo || '❌'} **|** Você está na Blacklist e não pode participar de eventos.`,
+            ephemeral: true
+          });
         }
+
+        if (participantes.includes(interaction.user.id)) {
+          return interaction.reply({
+            content: `${emoji.aviso || '⚠️'} **|** Você já está participando deste airdrop! Aguarde o sorteio.`,
+            ephemeral: true
+          });
+        }
+
+        participantes.push(interaction.user.id);
+
+        await interaction.reply({
+          content: `${emoji.positivo || '✅'} **|** Você entrou na disputa pelo airdrop!`,
+          ephemeral: true
+        });
+
+        // Atualiza a embed com o número de inscritos
+        const embedAtualizada = EmbedBuilder.from(embedInicial)
+          .setFields({
+            name: `👥 Participantes (${participantes.length})`,
+            value: participantes.slice(0, 15).map(id => `<@${id}>`).join(', ') + (participantes.length > 15 ? ` e mais ${participantes.length - 15}...` : '')
+          });
+
+        await msg.edit({ embeds: [embedAtualizada] }).catch(() => {});
+      });
+
+      coletor.on('end', async () => {
+        try {
+          const rowDisabled = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setCustomId('participar_drop')
+              .setLabel('Encerrado')
+              .setEmoji('🔒')
+              .setStyle(ButtonStyle.Secondary)
+              .setDisabled(true)
+          );
+
+          await msg.edit({ components: [rowDisabled] }).catch(() => {});
+
+          if (participantes.length < 1) {
+            const embedCancelada = new EmbedBuilder()
+              .setColor('#ef4444')
+              .setTitle('📦 Airdrop Expirado')
+              .setDescription('😢 **|** O baú foi ignorado! Ninguém tentou abrir a caixa a tempo e os suprimentos foram perdidos.')
+              .setTimestamp();
+
+            return message.channel.send({ embeds: [embedCancelada] });
+          }
+
+          const ganhadorID = participantes[Math.floor(Math.random() * participantes.length)];
+          const ganhadorUser = await client.users.fetch(ganhadorID).catch(() => null) || { id: ganhadorID, username: `ID ${ganhadorID}` };
+
+          let mensagemPremio = '';
+
+          if (isCustomMoney) {
+            await UpdateMoneyWallet(
+              message,
+              ganhadorUser,
+              '+',
+              customMoney,
+              { type: 'airdrop', amount: customMoney }
+            );
+            mensagemPremio = `💵 **${Format(customMoney)}** moedas direto na carteira!`;
+          } else {
+            // Tabela balanceada de prêmios aleatórios
+            const sorteioTipo = Math.floor(Math.random() * 8) + 1;
+
+            if (sorteioTipo === 1) {
+              const quantiaDinheiro = Math.floor(Math.random() * 15000) + 1500;
+              await UpdateMoneyWallet(
+                message,
+                ganhadorUser,
+                '+',
+                quantiaDinheiro,
+                { type: 'airdrop', amount: quantiaDinheiro }
+              );
+              mensagemPremio = `💵 **${Format(quantiaDinheiro)}** moedas!`;
+            } else {
+              const premiosConfig = {
+                2: { item: "carne", nome: "Carne(s)", quantia: Math.floor(Math.random() * 6) + 3 },
+                3: { item: "peixe", nome: "Peixe(s)", quantia: Math.floor(Math.random() * 8) + 4 },
+                4: { item: "munição", nome: "Munições", quantia: Math.floor(Math.random() * 25) + 10 },
+                5: { item: "Trigo", nome: "Trigos", quantia: Math.floor(Math.random() * 30) + 15 },
+                6: { item: "Milho", nome: "Milhos", quantia: Math.floor(Math.random() * 20) + 10 },
+                7: { item: "Feijão", nome: "Feijões", quantia: Math.floor(Math.random() * 15) + 5 },
+                8: { item: "baús", nome: "Baú de Suprimentos", quantia: 1 }
+              };
+
+              const selecionado = premiosConfig[sorteioTipo] || premiosConfig[2];
+              const inventario = await getUserInventory(ganhadorUser);
+              const atual = inventario[selecionado.item] || 0;
+
+              await database
+                .ref(`/economia/${ganhadorID}/inventario/itens/Consumíveis`)
+                .update({
+                  [selecionado.item]: atual + selecionado.quantia
+                });
+
+              mensagemPremio = `📦 **${selecionado.quantia}x ${selecionado.nome}**`;
+            }
+          }
+
+          const embedVencedor = new EmbedBuilder()
+            .setColor('#10b981')
+            .setTitle('🎉 Airdrop Coletado com Sucesso!')
+            .setDescription(
+              `🏆 **Ganhador:** <@${ganhadorID}>\n\n` +
+              `🎁 **Recompensa Recebida:**\n> ${mensagemPremio}\n\n` +
+              `👥 **Total de Participantes:** \`${participantes.length}\``
+            )
+            .setFooter({ text: 'Sistine Eventos Globais' })
+            .setTimestamp();
+
+          return message.channel.send({
+            content: `🎉 Parabéns <@${ganhadorID}>!`,
+            embeds: [embedVencedor]
+          });
+
+        } catch (err) {
+          console.error('[Drop collector end error]', err);
+        }
+      });
+
+    } catch (error) {
+      console.error('[Command drop]', error);
+      return message.reply({
+        content: `${emoji.negativo || '❌'} **|** Ocorreu um erro ao iniciar o airdrop.`
+      });
     }
+  }
 };

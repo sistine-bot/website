@@ -188,7 +188,11 @@ module.exports = {
         let finalEmbed;
         if (motivo === "ganhou") {
           finalEmbed = gerarEmbedGame(`${client.user.username} • Ganhou!`, `🎉 Você ganhou **${Format(number * 2)}**`, "#01ff45");
-          await UpdateMoneyWallet(interaction, interaction.user, '+', number * 2, `{emoji.entrada} {mensagem.bj.vitoria} | ${number} | ${interaction.user.id}`);
+          await UpdateMoneyWallet(interaction, interaction.user, '+', number * 2, {
+            type: 'bj_vitoria',
+            amount: number,
+            targetUser: interaction.user
+          });
         } 
         else if (motivo === "empate") {
           // CORREÇÃO ECONOMIA: Devolve o dinheiro exato que ele apostou de volta para a carteira
@@ -197,11 +201,19 @@ module.exports = {
         }
         else if (motivo === "perdeu_estourou") {
           finalEmbed = gerarEmbedGame(`${client.user.username} • Estourou!`, `❌ Você passou de 21 e perdeu **${Format(number, 'R$')}**`, "#ff0101");
-          await TransactionUpdate(interaction, `{emoji.saida} {mensagem.bj.derrota} | ${number} | ${interaction.user.id}`, interaction.user);
+          await TransactionUpdate(interaction, {
+            type: 'bj_derrota',
+            amount: number,
+            targetUser: interaction.user
+          }, interaction.user);
         } 
         else if (motivo === "perdeu_dealer_maior") {
           finalEmbed = gerarEmbedGame(`${client.user.username} • O Dealer ganhou!`, `❌ A mesa fez mais pontos e você perdeu **${Format(number, 'R$')}**`, "#ff0101");
-          await TransactionUpdate(interaction, `{emoji.saida} {mensagem.bj.derrota} | ${number} | ${interaction.user.id}`, interaction.user);
+          await TransactionUpdate(interaction, {
+            type: 'bj_derrota',
+            amount: number,
+            targetUser: interaction.user
+          }, interaction.user);
         } 
         else {
           finalEmbed = gerarEmbedGame(`${client.user.username} • Cancelado`, `⏰ Tempo esgotado! A mesa recolheu as cartas.`, color.embed || "#00ff00");

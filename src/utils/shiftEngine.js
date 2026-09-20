@@ -270,7 +270,11 @@ async function endShift(database, userId, interaction) {
       interaction.user,
       '+',
       totalPayout,
-      `{emoji.entrada} {mensagem.emprego} | ${totalPayout} | ${shift.jobName}`
+      {
+        type: 'emprego',
+        amount: totalPayout,
+        jobName: shift.jobName
+      }
     );
   }
 

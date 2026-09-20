@@ -53,7 +53,7 @@ module.exports =  {
         munição: (cur.munição || 0) + municaoBonus
       });
 
-      await UpdateMoneyWallet(interaction, interaction.user, '+', weeklyMoney, `{emoji.entrada} {mensagem.weekly} | ${weeklyMoney}`);
+      await UpdateMoneyWallet(interaction, interaction.user, '+', weeklyMoney, { type: 'weekly', amount: weeklyMoney });
 
       const tierBadge = isTier2 ? '🌟 **VIP Ouro**' : '⭐ **VIP Prata**';
 

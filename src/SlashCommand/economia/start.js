@@ -62,14 +62,14 @@ module.exports = {
       const now = Date.now();
       await userRef.child('starterKitDate').set(now);
 
-      // 3. Injeção das 1.000 Moedas na Carteira com Padronização de Transações
+      // 3. Injeção das 1.000 Moedas no Banco com Padronização de Transações
       const coinsGranted = 1000;
       await UpdateMoneyBank(
         interaction,
         interaction.user,
         '+',
         coinsGranted,
-        `{emoji.entrada} Recebeu: \`{quantia}\` no Kit Iniciante. | ${coinsGranted}`
+        { type: 'start', amount: coinsGranted }
       );
 
       // 4. Injeção de Equipamentos no Inventário (Baixa durabilidade, não reparáveis, não enchíveis)

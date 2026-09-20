@@ -2,7 +2,7 @@ const client = require("../../index.js");
 const firebase = require("firebase");
 const database = firebase.database();
 const emoji = require("../../src/utils/emoji.js");
-const { CheckUserBlacklisted } = require('../../src/utils/functions.js');
+const { CheckUserBlacklisted, isStaff } = require('../../src/utils/functions.js');
 const { grantChatXp } = require('../../src/utils/experienceManager.js');
 
 client.on("messageCreate", async (message) => {
@@ -50,6 +50,17 @@ client.on("messageCreate", async (message) => {
     if (!message.content.startsWith(prefixo)) {
       await grantChatXp(message);
       return;
+    }
+
+    // 0.1 TRAVA GLOBAL DE MANUTENÇÃO: Bloqueia comandos de prefixo quando a manutenção estiver ativa
+    const isStaffMember = isStaff(client, message.author.id);
+    const maintSnap = await database.ref('Administração/Manutencao').once('value');
+    const maintData = maintSnap.val();
+
+    if (maintData?.ativa && !isStaffMember) {
+      return message.reply({
+        content: `🛠️ **| O bot Sistine está em manutenção técnica no momento!**\n> 📋 **Motivo:** *${maintData.motivo || 'Melhorias nos sistemas'}*\n> ⏳ **Previsão:** *${maintData.previsao || 'Em breve'}*`
+      }).catch(() => {});
     }
 
     const args = message.content.slice(prefixo.length).trim().split(/ +/g);

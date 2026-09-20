@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType } = require('discord.js');
-const { getUserMoney, UpdateMoneyWallet, NumberConvert, Format } = require('../../utils/functions.js');
+const { getUserMoney, UpdateMoneyWallet, NumberConvert, Format, TransactionUpdate } = require('../../utils/functions.js');
 
 module.exports =  {
   "name": "jokenpo",
@@ -132,11 +132,17 @@ module.exports =  {
       } else if (resultado === 'vitoria') {
         const ganhoLiquido = Math.floor(number * 0.90);
         const totalDevolvido = number + ganhoLiquido; // Retorno de 1.90x
-        await UpdateMoneyWallet(interaction, interaction.user, '+', totalDevolvido, `{emoji.entrada} {mensagem.jokenpo.vitoria} | ${ganhoLiquido}`);
+        await UpdateMoneyWallet(interaction, interaction.user, '+', totalDevolvido, {
+          type: 'jokenpo_vitoria',
+          amount: ganhoLiquido
+        });
         await UpdateApostas(interaction.user, '+', ganhoLiquido, 0);
         mensagemResultado = `🎉 **<@${interaction.user.id}> ganhou ${Format(ganhoLiquido)} líquido!** *(Taxa de banca de 5%: ${Format(number - ganhoLiquido)})*`;
       } else {
-        await database.ref(`economia/${interaction.user.id}/Transações/`).push(`{emoji.saida} {mensagem.jokenpo.derrota} | ${number}`);
+        await TransactionUpdate(interaction, {
+          type: 'jokenpo_derrota',
+          amount: number
+        }, interaction.user);
         await UpdateApostas(interaction.user, '-', 0, number);
         mensagemResultado = `❌ **<@${interaction.user.id}> perdeu ${Format(number)}.**`;
       }

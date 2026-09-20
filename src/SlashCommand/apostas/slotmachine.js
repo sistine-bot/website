@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
-const { getUserMoney, UpdateMoneyWallet, NumberConvert, Format, CheckUserCooldowns } = require('../../utils/functions.js');
+const { getUserMoney, UpdateMoneyWallet, NumberConvert, Format, CheckUserCooldowns, TransactionUpdate } = require('../../utils/functions.js');
 
 module.exports =  {
   "name": "slotmachine",
@@ -74,10 +74,16 @@ module.exports =  {
 
         if (win) {
           // Adiciona o prêmio multiplicado de volta à carteira
-          await UpdateMoneyWallet(interaction, interaction.user, '+', premioFinal, `{emoji.entrada} {mensagem.slotmachine.vitoria} | ${premioFinal}`);
+          await UpdateMoneyWallet(interaction, interaction.user, '+', premioFinal, {
+            type: 'slotmachine_vitoria',
+            amount: premioFinal
+          });
         } else {
-          // Registra apenas a transação de perda na database (o dinheiro já foi tirado antes)
-          await database.ref(`economia/${interaction.user.id}/Transações/`).push(`{emoji.saida} {mensagem.slotmachine.derrota} | ${number}`);
+          // Registra a transação de perda modularmente (o dinheiro já foi debitado na entrada)
+          await TransactionUpdate(interaction, {
+            type: 'slotmachine_derrota',
+            amount: number
+          }, interaction.user);
         }
 
         let embedFinal = new EmbedBuilder()

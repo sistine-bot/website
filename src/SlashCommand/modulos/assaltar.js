@@ -273,7 +273,7 @@ module.exports = {
           interaction.user,
           '-',
           multaFuga,
-          `{emoji.saida} Multa policial por tentativa de assalto | ${multaFuga} | ${targetUser.id}`
+          { type: 'assalto_multa', amount: multaFuga, targetUser: targetUser }
         );
 
         const defeatNarratives = [
@@ -316,13 +316,13 @@ module.exports = {
       stolenAmount = Math.max(80, stolenAmount);
       if (stolenAmount > victimWallet) stolenAmount = victimWallet;
 
-      // Transferência de fundos com histórico de transação
+      // Transferência de fundos com histórico de transação modular
       await UpdateMoneyWallet(
         interaction,
         interaction.user,
         '+',
         stolenAmount,
-        `{emoji.entrada} {mensagem.assalto.vitoria} | ${stolenAmount} | ${targetUser.id}`
+        { type: 'assalto_vitoria', amount: stolenAmount, targetUser: targetUser }
       );
 
       await UpdateMoneyWallet(
@@ -330,7 +330,7 @@ module.exports = {
         targetUser,
         '-',
         stolenAmount,
-        `{emoji.saida} {mensagem.assalto.derrota} | ${stolenAmount} | ${interaction.user.id}`
+        { type: 'assalto_derrota', amount: stolenAmount, targetUser: interaction.user }
       );
 
       // Atualização atômica das estatísticas de crimes (/top assaltos)

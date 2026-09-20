@@ -624,69 +624,65 @@ function getUser(message, toFind = '') {
 
     return target || message.author;
   } catch (e) {
-    if (message?.channel?.error) message.channel.error(`Um erro interno aconteceu ao utilizar uma função, tente novamente mais tarde.`)
+    if (message?.channel?.error) message.channel.error(`Um erro interno aconteceu ao utilizar uma função, tente novamente mais tarde.`);
     return console.error(e);
   }
 }
 
+const {
+  TRANSACTION_TYPES,
+  buildTransactionString,
+  recordTransaction,
+  resolveTransactionList
+} = require('./transactionManager.js');
+
 async function TransactionUpdate(ctx, mensagem, user) {
   try {
-    if (!ctx || !user || !mensagem) {
+    const targetUser = user || ctx?.user || ctx?.author;
+    if (!targetUser || !mensagem) {
       const errorMessage = "[LOGS] - [DETAILS_NOT_PROVIDED] (TransactionUpdate): Um ou mais parâmetros não foram definidos.";
       console.warn(errorMessage);
-      if (ctx) return await sendError(ctx, "Ocorreu um erro ao atualizar o dinheiro do seu banco.");
-      throw new Error(errorMessage);
-    }
-
-    if (user.bot) {
-      console.error("[FUNCTIONS] - [STOP FUNCTION] (TransactionUpdate) - Bots não recebem dinheiro");
+      if (ctx && typeof sendError === 'function') await sendError(ctx, "Ocorreu um erro ao registrar a transação.");
       return;
     }
 
-    let tempo1 = `<t:${~~(Date.now() / 1000)}:d>`;
-    let tempo2 = `<t:${~~(Date.now() / 1000)}:t>`;
-    let tempo3 = `<t:${~~(Date.now() / 1000)}:R>`;
+    if (targetUser.bot) {
+      return;
+    }
 
-    const snapshot = await database.ref(`/economia/${user.id}/Transações`).once('value');
-    let transações = snapshot.val()?.transações || [];
-
-    let Mensagem = `[${tempo1} ${tempo2}] | ${tempo3} ${mensagem}`;
-    transações.unshift(Mensagem);
-
-    await database.ref(`economia/${user.id}/Transações`).set({ transações });
+    await recordTransaction(ctx, targetUser, mensagem);
   } catch (error) {
-    console.error(error);
-    throw error;
+    console.error('[FUNCTIONS - TransactionUpdate]', error);
   }
 }
 
 async function UpdateMoneyWallet(ctx, user, AddOrSub, quantia, transação) {
   try {
-    if (!ctx || !user || !AddOrSub) {
+    if (!user || !AddOrSub) {
       const errorMessage = "[LOGS] - [DETAILS_NOT_PROVIDED] (UpdateMoneyWallet): Um ou mais parâmetros não foram definidos.";
-      console.warn();
-      if (ctx) return await sendError(ctx, "Ocorreu um erro ao atualizar o dinheiro da sua carteira.");
+      console.warn(errorMessage);
+      if (ctx && typeof sendError === 'function') await sendError(ctx, "Ocorreu um erro ao atualizar o dinheiro da sua carteira.");
       throw new Error(errorMessage);
     }
     if (user.bot) {
-      console.error("[FUNCTIONS] - [STOP FUNCTION] (UpdateMoneyWallet) - Bots não recebem dinheiro");
       return;
-    }
-
-    if (transação) {
-      await TransactionUpdate(ctx, transação, user);
     }
 
     const snapshot = await database.ref(`/economia/${user.id}/saldo`).once('value');
     const saldo = snapshot.val() || {};
     const { carteira = 0 } = saldo;
 
+    const numQuantia = Number(quantia) || 0;
     let newCarteira;
-    if (AddOrSub === '+') newCarteira = carteira + quantia;
-    else if (AddOrSub === '-') newCarteira = carteira - quantia;
+    if (AddOrSub === '+') newCarteira = carteira + numQuantia;
+    else if (AddOrSub === '-') newCarteira = Math.max(0, carteira - numQuantia);
     else throw new Error("[LOGS] - [DETAILS_NOT_PROVIDED] (UpdateMoneyWallet): O objeto 'AddOrSub' foi definido diferente de: '+' ou '-' ");
 
     await database.ref(`/economia/${user.id}/saldo`).update({ carteira: newCarteira });
+
+    if (transação) {
+      await recordTransaction(ctx, user, transação, numQuantia, AddOrSub);
+    }
   } catch (error) {
     console.error(error);
     throw error;
@@ -695,31 +691,31 @@ async function UpdateMoneyWallet(ctx, user, AddOrSub, quantia, transação) {
 
 async function UpdateMoneyBank(ctx, user, AddOrSub, quantia, transação) {
   try {
-    if (!ctx || !user || !AddOrSub) {
+    if (!user || !AddOrSub) {
       const errorMessage = "[LOGS] - [DETAILS_NOT_PROVIDED] (UpdateMoneyBank): Um ou mais parâmetros não foram definidos.";
       console.warn(errorMessage);
-      if (ctx) return await sendError(ctx, "Ocorreu um erro ao atualizar o dinheiro da sua carteira.");
+      if (ctx && typeof sendError === 'function') await sendError(ctx, "Ocorreu um erro ao atualizar o dinheiro do seu banco.");
       throw new Error(errorMessage);
     }
     if (user.bot) {
-      console.error("[FUNCTIONS] - [STOP FUNCTION] (UpdateMoneyBank) - Bots não recebem dinheiro");
       return;
-    }
-
-    if (transação) {
-      await TransactionUpdate(ctx, transação, user);
     }
 
     const snapshot = await database.ref(`/economia/${user.id}/saldo`).once('value');
     const saldo = snapshot.val() || {};
     const { banco = 0 } = saldo;
 
+    const numQuantia = Number(quantia) || 0;
     let newBank;
-    if (AddOrSub === '+') newBank = banco + quantia;
-    else if (AddOrSub === '-') newBank = banco - quantia;
+    if (AddOrSub === '+') newBank = banco + numQuantia;
+    else if (AddOrSub === '-') newBank = Math.max(0, banco - numQuantia);
     else throw new Error("[LOGS] - [DETAILS_NOT_PROVIDED] (UpdateMoneyBank): O objeto 'AddOrSub' foi definido diferente de: '+' ou '-' ");
 
     await database.ref(`/economia/${user.id}/saldo/`).update({ banco: newBank });
+
+    if (transação) {
+      await recordTransaction(ctx, user, transação, numQuantia, AddOrSub);
+    }
   } catch (error) {
     console.error(error);
     throw error;
@@ -968,6 +964,13 @@ async function getResolvedUserBadges(userDiscordObj, firebaseDb, member = null, 
   return resolvedBadges;
 }
 
+function isStaff(client, userId) {
+  if (!userId) return false;
+  const isCreator = client?.config?.cargos?.criador?.includes(userId);
+  const isDev = client?.config?.cargos?.developer?.includes(userId);
+  return Boolean(isCreator || isDev);
+}
+
 // ==========================================
 // EXPORTAÇÃO DOS MÓDULOS
 // ==========================================
@@ -998,5 +1001,10 @@ module.exports = {
   ReputationUpdate,
   eventLog,
   getUserGlobalRank,
-  getResolvedUserBadges
+  getResolvedUserBadges,
+  isStaff,
+  recordTransaction,
+  buildTransactionString,
+  resolveTransactionList,
+  TRANSACTION_TYPES
 };

@@ -167,9 +167,11 @@ function iniciarImpostoCasamento() {
                         carteira: novaCarteira
                     });
 
-                    await database.ref(`economia/${userId}/Transações`).push(
-                        `<:saida:931723236650123284> Imposto Matrimonial Semanal (Cartório) | -${totalDebitado}`
-                    );
+                    const { recordTransaction } = require('../utils/functions.js');
+                    await recordTransaction(null, userId, {
+                        type: 'imposto_casamento',
+                        amount: totalDebitado
+                    });
 
                     totalCobrados++;
                     totalArrecadado += totalDebitado;

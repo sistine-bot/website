@@ -77,8 +77,16 @@ module.exports =  {
 
             const MoneyInteraction = Math.floor(number * multiplier1);
             const MoneyUser = Math.floor(number * multiplier2);
-            await UpdateMoneyWallet(interaction, interaction.user, '+', MoneyInteraction, `{emoji.entrada} {mensagem.namoro} | ${MoneyInteraction} | ${user.id}`);
-            await UpdateMoneyWallet(interaction, user, '+', MoneyUser, `{emoji.entrada} {mensagem.namoro} | ${MoneyUser} | ${interaction.user.id}`);
+            await UpdateMoneyWallet(interaction, interaction.user, '+', MoneyInteraction, {
+              type: 'namoro',
+              amount: MoneyInteraction,
+              targetUser: user.id
+            });
+            await UpdateMoneyWallet(interaction, user, '+', MoneyUser, {
+              type: 'namoro',
+              amount: MoneyUser,
+              targetUser: interaction.user.id
+            });
             
             return msg.reply({ content: `💕 **|** ${interaction.user} e ${user} namoraram e receberam: **${Format(number)}** ${VIPemoji1 ? `(${VIPemoji1} ${interaction.user.username} ${multiplier1}x)` : ''} ${VIPemoji2 ? `(${VIPemoji2} ${user.username} ${multiplier2}x)` : ''}` });
           }

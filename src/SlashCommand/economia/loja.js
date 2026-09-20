@@ -100,8 +100,7 @@ module.exports = {
               : `${emoji.positivo} **|** <@${interaction.user.id}>, Você comprou: **{Item}** ${Money ? `por: **{dinheiro}**` : ''}`;
           }
           
-          if (Money) UpdateMoneyWallet(interaction, interaction.user, BuyOrSellSing, Money);
-          if (Transação) TransactionUpdate(interaction, Transação, interaction.user);
+          if (Money) await UpdateMoneyWallet(interaction, interaction.user, BuyOrSellSing, Money, Transação);
           
           return await interaction.followUp({ 
             content: MensagemReply.replace('{quantia}', Format(Amount, '')).replace('{Item}', ItemName).replace('{dinheiro}', Format(Money))

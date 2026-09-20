@@ -141,7 +141,10 @@ ${vipInfo.remainingDays > 0 ? `⏳ Tempo restante: **${vipInfo.remainingDays} di
               munição: (cur.munição || 0) + municaoBonus
             });
 
-            await UpdateMoneyWallet(interaction, interaction.user, '+', weeklyMoney, `{emoji.entrada} {mensagem.weekly} | ${weeklyMoney}`);
+            await UpdateMoneyWallet(interaction, interaction.user, '+', weeklyMoney, {
+              type: 'weekly',
+              amount: weeklyMoney
+            });
             await XpUpdate(interaction, interaction.user, isTier2 ? 500 : 300);
 
             const claimEmbed = new EmbedBuilder()

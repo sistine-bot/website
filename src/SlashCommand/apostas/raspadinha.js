@@ -99,8 +99,11 @@ module.exports = {
             new ButtonBuilder().setCustomId("cancelar").setStyle(ButtonStyle.Danger).setEmoji('❌').setLabel('Descartar').setDisabled(true),
           );
   
-          // Remove o dinheiro do custo da raspadinha
-          await UpdateMoneyWallet(interaction, interaction.user, '-', CUSTO_BILHETE);
+          // Remove o dinheiro do custo da raspadinha com registro
+          await UpdateMoneyWallet(interaction, interaction.user, '-', CUSTO_BILHETE, {
+            type: 'scratchcard_derrota',
+            amount: CUSTO_BILHETE
+          });
           
           const msg = await interaction.followUp({ 
             content: `💸 **|** Você comprou uma raspadinha no valor de **${Format(CUSTO_BILHETE)}**.\n> Caso tenha formado 3 emojis iguais na horizontal, vertical ou diagonal, clique em **Coletar Prêmio**. Cuidado, pois tentar coletar uma raspadinha sem prêmio fará você perder **${Format(300)}** por tentar burlar o sistema!\n\n||${fruit1}|| ||${fruit2}|| ||${fruit3}||\n||${fruit4}|| ||${fruit5}|| ||${fruit6}||\n||${fruit7}|| ||${fruit8}|| ||${fruit9}||`, 
@@ -109,7 +112,7 @@ module.exports = {
             
           // CORREÇÃO: Adicionado tempo limite de 2 minutos (120000ms) para evitar Memory Leak
           const coletor = msg.createMessageComponentCollector({ 
-            filter: i => i.user.id === interaction.user.id && i.message.id === msg.id,
+            filter: i => i.user.id === interaction.user.id && i.message.id === msg.id, 
             time: 120000 
           });
   
@@ -120,11 +123,17 @@ module.exports = {
               coletor.stop('coletado');
               
               if (prize < 1) {
-                await UpdateMoneyWallet(interaction, interaction.user, '-', 250);
+                await UpdateMoneyWallet(interaction, interaction.user, '-', 250, {
+                  type: 'scratchcard_derrota',
+                  amount: 250
+                });
                 return interaction.channel.send({ content: `😓 **|** <@${interaction.user.id}>, você tentou coletar uma raspadinha perdedora! Como punição, você **perdeu ${Format(250)}** da carteira.` });
               }
     
-              await UpdateMoneyWallet(interaction, interaction.user, '+', prize, `{emoji.entrada} {mensagem.scratchcard.vitoria} | ${(prize)}`);
+              await UpdateMoneyWallet(interaction, interaction.user, '+', prize, {
+                type: 'scratchcard_vitoria',
+                amount: prize
+              });
               return interaction.channel.send({ content: `💸 **|** Parabéns <@${interaction.user.id}>, você raspou corretamente e recebeu: **${Format(prize)}** de prêmio!` });
             }
             

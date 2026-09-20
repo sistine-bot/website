@@ -176,10 +176,18 @@ module.exports =  {
               await UpdateMoneyWallet(interaction, user, '-', number);
               await UpdateMoneyWallet(interaction, interaction.user, '-', number);
               
-              await TransactionUpdate(interaction, `{emoji.entrada} {mensagem.aposta.vitoria} | ${ganhoLiquido} | ${perdedorUser.id}`, ganhadorUser);
+              await TransactionUpdate(interaction, {
+                type: 'aposta_vitoria',
+                amount: ganhoLiquido,
+                targetUser: perdedorUser
+              }, ganhadorUser);
               await UpdateApostas(ganhadorUser, '+', ganhoLiquido, 0);
 
-              await TransactionUpdate(interaction, `{emoji.saida} {mensagem.aposta.derrota} | ${number} | ${ganhadorUser.id}`, perdedorUser);
+              await TransactionUpdate(interaction, {
+                type: 'aposta_derrota',
+                amount: number,
+                targetUser: ganhadorUser
+              }, perdedorUser);
               await UpdateApostas(perdedorUser, '-', 0, number);
 
               await UpdateMoneyWallet(interaction, ganhadorUser, '+', valorLiquido);

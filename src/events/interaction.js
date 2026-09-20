@@ -2,7 +2,7 @@ const client = require("../../index.js");
 const firebase = require("firebase");
 const database = firebase.database();
 const emoji = require("../../src/utils/emoji.js");
-const { CheckUserBlacklisted } = require('../../src/utils/functions.js');
+const { CheckUserBlacklisted, isStaff } = require('../../src/utils/functions.js');
 const { grantSlashCommandXp } = require('../../src/utils/experienceManager.js');
 
 client.on("interactionCreate", async (interaction) => { 
@@ -20,6 +20,25 @@ client.on("interactionCreate", async (interaction) => {
         }
       }
       return;
+    }
+
+    // 0.1 TRAVA GLOBAL DE MANUTENÇÃO: Bloqueia comandos quando a manutenção estiver ativa
+    if (interaction.isCommand()) {
+      const isStaffMember = isStaff(client, interaction.user.id);
+      const maintSnap = await database.ref('Administração/Manutencao').once('value');
+      const maintData = maintSnap.val();
+
+      if (maintData?.ativa && !isStaffMember) {
+        const msgManutencao = `🛠️ **| O bot Sistine está em manutenção técnica no momento!**\n> 📋 **Motivo:** *${maintData.motivo || 'Melhorias nos sistemas'}*\n> ⏳ **Previsão:** *${maintData.previsao || 'Em breve'}*`;
+        if (interaction.isRepliable()) {
+          if (interaction.deferred || interaction.replied) {
+            return await interaction.followUp({ content: msgManutencao, ephemeral: true }).catch(() => {});
+          } else {
+            return await interaction.reply({ content: msgManutencao, ephemeral: true }).catch(() => {});
+          }
+        }
+        return;
+      }
     }
 
     // Puxa os dados do servidor no Firebase de forma segura

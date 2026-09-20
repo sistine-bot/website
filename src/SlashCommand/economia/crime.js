@@ -64,7 +64,10 @@ module.exports =  {
           arma: { item: arma.item, nome: arma.nome, Xp: newArmaXP }
         });
 
-        await UpdateMoneyWallet(interaction, interaction.user, '-', PerdaMoney, `{emoji.saida} {mensagem.crime.derrota} | ${Format(PerdaMoney)}`);
+        await UpdateMoneyWallet(interaction, interaction.user, '-', PerdaMoney, {
+          type: 'crime_derrota',
+          amount: PerdaMoney
+        });
 
         const random_policia = [
           `💵 | Você foi pego em uma operação e perdeu: **${Format(PerdaMoney)}**`,
@@ -89,7 +92,10 @@ module.exports =  {
           arma: { item: arma.item, nome: arma.nome, Xp: newArmaXP }
         });
 
-        await UpdateMoneyWallet(interaction, interaction.user, '+', CrimeMoney, `{emoji.entrada} {mensagem.crime.vitoria} | ${Format(CrimeMoney)}`);
+        await UpdateMoneyWallet(interaction, interaction.user, '+', CrimeMoney, {
+          type: 'crime_vitoria',
+          amount: CrimeMoney
+        });
 
         const random_crime = [
           "💵 | Você furtou na orla da praia e ganhou:" + ` **${Format(CrimeMoney)}** ${Emote ? `(${Emote} ${multiplier}x)` : ''}`,

@@ -174,11 +174,22 @@ async function handleViewMarket(interaction, database, mode, emojiMap) {
               const updatedMarketList = freshItemsList.filter(i => i.id !== freshItemDb.id);
               await dbLayer.updateMarketItems(database, updatedMarketList);
 
+              const itemLabel = (selectedItem.tipo > 1) ? `${freshItemDb.quantia}x ${freshItemDb.nome[0]}` : freshItemDb.nome[0];
+              
               // Atualiza Finanças do Comprador
-              await UpdateMoneyWallet(interaction, interaction.user, '-', freshItemDb.preço, `{emoji.saida} {mensagem.market.buy} | ${selectedItem.preço} | ${(selectedItem.tipo > 1) ? `${freshItemDb.quantia} ${freshItemDb.nome[0]}'s` : `${freshItemDb.nome[0]}`}`);
+              await UpdateMoneyWallet(interaction, interaction.user, '-', freshItemDb.preço, {
+                type: 'market_buy',
+                amount: freshItemDb.preço,
+                item: itemLabel
+              });
 
               // Atualiza a finanças de quem vendeu o item
-              await UpdateMoneyWallet(interaction, client.users.cache.get(freshItemDb.dono), '+', freshItemDb.preço, `{emoji.saida} {mensagem.market.sell} | ${selectedItem.preço} | ${(selectedItem.tipo > 1) ? `${freshItemDb.quantia} ${freshItemDb.nome[0]}'s` : `${freshItemDb.nome[0]}`}`)
+              const sellerUser = client.users.cache.get(freshItemDb.dono) || { id: freshItemDb.dono };
+              await UpdateMoneyWallet(interaction, sellerUser, '+', freshItemDb.preço, {
+                type: 'market_sell',
+                amount: freshItemDb.preço,
+                item: itemLabel
+              });
 
               // Incrementa item no inventário do Comprador
               const currentInventoryCount = await dbLayer.getUserInventoryItem(database, interaction.user.id, selectedItem.db, itemInfo.db);
