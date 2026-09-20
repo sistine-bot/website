@@ -81,6 +81,10 @@ module.exports = {
       let pagina = 1;
       const itensPorPagina = 10;
       const totalPages = Math.ceil(transacoesFiltradas.length / itensPorPagina) || 1;
+      const argPage = Array.isArray(args) ? args.find(a => /^\d+$/.test(a) && Number(a) > 0) : null;
+      if (argPage) {
+        pagina = Math.min(Math.max(1, parseInt(argPage, 10)), totalPages);
+      }
       const tituloAutor = user.id === interaction.user.id ? 'Suas transações' : `Transações de: ${user.username}`;
 
       const gerarEmbed = (pag) => {

@@ -63,25 +63,59 @@ client.on("messageCreate", async (message) => {
       }).catch(() => {});
     }
 
+    const { findSlashCommand, executeSlashAsPrefix } = require('../../src/utils/commandBridge.js');
+
     const args = message.content.slice(prefixo.length).trim().split(/ +/g);
     let cmd = args.shift().toLowerCase();
+    if (!cmd || cmd === prefixo) return;
     
     let command = client.commands.get(cmd) || client.commands.get(client.aliases.get(cmd));
-    
-    if (command) {
+    const disabledSnap = await database.ref(`servers/${message.guild.id}/disabled_commands`).once('value');
+    const disabledCommands = disabledSnap.val() || [];
+
+    // 1. Se for um comando de administração tradicional (ex: !addbanco, !drop, !manutencao), executa diretamente
+    if (command && command.category === 'admin') {
       try {
-        // =============================================================
-        // VERIFICAÇÃO DE COMANDOS DESATIVADOS PELO DASHBOARD
-        // =============================================================
-        const disabledSnap = await database.ref(`servers/${message.guild.id}/disabled_commands`).once('value');
-        const disabledCommands = disabledSnap.val() || [];
-  
         if (disabledCommands.includes(command.name)) {
           return message.reply({ 
             content: `${emoji.negativo} **|** O comando \`${prefixo}${command.name}\` foi desativado pelos administradores no painel do servidor.` 
           });
         }
-        // =============================================================
+      
+        console.log(`${emoji.positivo} Comando Admin utilizado | ${message.author.username} (${message.author.id}) | ${message.channel.name} (${message.channel.id})\nComando:\n${command.name} ${args.slice(0).join(' ')}\n`);
+        
+        return command.run(client, message, args, prefixo, color, database, emoji);
+      } catch(error) {
+        console.error(error);
+        return message.reply({ content: `${emoji.negativo} **|** Ocorreu um erro inesperado na utilização deste comando.` });
+      }
+    }
+
+    // 2. Verifica se o comando digitado corresponde a um Slash Command (da pasta src/SlashCommand/)
+    const slashCommand = findSlashCommand(cmd, client);
+    if (slashCommand) {
+      try {
+        if (disabledCommands.includes(slashCommand.name)) {
+          return message.reply({ 
+            content: `${emoji.negativo} **|** O comando \`${prefixo}${slashCommand.name}\` foi desativado pelos administradores no painel do servidor.` 
+          });
+        }
+
+        return await executeSlashAsPrefix(client, message, slashCommand, args, prefixo, color, database, emoji);
+      } catch (error) {
+        console.error(`[messageCreate - Slash Command via Prefix] Error:`, error);
+        return message.reply({ content: `${emoji.negativo} **|** Ocorreu um erro inesperado na utilização deste comando.` });
+      }
+    }
+
+    // 3. Fallback: Se for qualquer outro comando de prefixo registrado legado
+    if (command) {
+      try {
+        if (disabledCommands.includes(command.name)) {
+          return message.reply({ 
+            content: `${emoji.negativo} **|** O comando \`${prefixo}${command.name}\` foi desativado pelos administradores no painel do servidor.` 
+          });
+        }
       
         console.log(`${emoji.positivo} Comando utilizado | ${message.author.username} (${message.author.id}) | ${message.channel.name} (${message.channel.id})\nComando:\n${command.name} ${args.slice(0).join(' ')}\n`);
         
@@ -90,11 +124,10 @@ client.on("messageCreate", async (message) => {
         console.error(error);
         return message.reply({ content: `${emoji.negativo} **|** Ocorreu um erro inesperado na utilização deste comando.` });
       }
-      
-    } else {
-      if (!cmd || cmd === prefixo) return;
-      return message.reply({ content: `${emoji.negativo} **|** Não encontrei este comando.` });
     }
+
+    // 4. Comando não encontrado
+    return message.reply({ content: `${emoji.negativo} **|** Não encontrei este comando.` });
 
   } catch(error) {
     console.error(error);

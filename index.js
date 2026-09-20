@@ -772,6 +772,9 @@ async function startFullStackApp() {
     }
     if (layoutFinal) ownedLayoutSet.add(layoutFinal);
 
+    const ownedBackgrounds = Array.from(ownedBgSet);
+    const ownedLayouts = Array.from(ownedLayoutSet);
+
     const isOwnerOrDev = ['1443828312936812554'].includes(String(userId)) || 
                          Boolean(client.config?.cargos?.criador?.includes(String(userId))) ||
                          Boolean(client.config?.cargos?.developer?.includes(String(userId)));

@@ -1,5 +1,12 @@
 const firebase = require('firebase');
-const database = firebase.database();
+
+function getDatabase() {
+  try {
+    return firebase.database();
+  } catch (e) {
+    return null;
+  }
+}
 
 /**
  * Catálogo modular central de todas as mensagens e tipos de transações financeiras do Sistine.
@@ -387,7 +394,13 @@ async function recordTransaction(ctx, user, transactionInput, fallbackAmount = 0
     const tempo3 = `<t:${~~(Date.now() / 1000)}:R>`;
     const finalFormattedEntry = `[${tempo1} ${tempo2}] | ${tempo3} ${transactionString}`;
 
-    const snap = await database.ref(`economia/${targetUserId}/Transações`).once('value');
+    const db = getDatabase();
+    if (!db) {
+      console.warn('[transactionManager] Banco de dados não conectado ou não inicializado.');
+      return;
+    }
+
+    const snap = await db.ref(`economia/${targetUserId}/Transações`).once('value');
     const rawVal = snap.val();
 
     let transacoesList = [];
@@ -430,7 +443,7 @@ async function recordTransaction(ctx, user, transactionInput, fallbackAmount = 0
     //   transacoesList = transacoesList.slice(0, 100);
     // }
 
-    await database.ref(`economia/${targetUserId}/Transações`).set({
+    await db.ref(`economia/${targetUserId}/Transações`).set({
       transações: transacoesList
     });
 
@@ -448,8 +461,9 @@ async function resolveTransactionList(rawList, client, configSnapshot = null) {
   // Puxa as configurações customizadas do Firebase se não fornecidas
   let configData = configSnapshot ? (configSnapshot.val?.() || configSnapshot) : null;
   if (!configData) {
-    const snap = await database.ref('config/transações').once('value');
-    configData = snap.val() || {};
+    const db = getDatabase();
+    const snap = db ? await db.ref('config/transações').once('value') : null;
+    configData = snap ? (snap.val() || {}) : {};
   }
 
   const msgConfig = configData.mensagens || {};
