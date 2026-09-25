@@ -23,17 +23,17 @@ client.on("messageCreate", async (message) => {
       embed: embedColor
     };
   
-    message.error = async function({ content, ephemeral, components }) {
-      return await message.reply({ content: `${emoji.negativo} **|** ${content ? content : `Nenhuma mensagem definida - *${this.Comando}*`}`, ephemeral, components }).catch(error => { 
+    message.error = async function({ content, components }) {
+      return await message.reply({ content: `${emoji.negativo} **|** ${content ? content : `Nenhuma mensagem definida - *${this.Comando}*`}`, components }).catch(error => { 
         console.error(`[FUNCTIONS - message.error] - ${error}`);
-        return message.reply({ content: `${emoji.negativo} **|** ${error}.`, ephemeral: false });
+        return message.reply({ content: `${emoji.negativo} **|** ${error}.` });
       });
     };
   
-    message.aviso = async function({ content, ephemeral, components }) {
-      return await message.reply({ content: `${emoji.aviso} **|** ${content ? content : `Nenhuma mensagem definida - *${this.Comando}*`}`, ephemeral, components }).catch(error => { 
+    message.aviso = async function({ content, components }) {
+      return await message.reply({ content: `${emoji.aviso} **|** ${content ? content : `Nenhuma mensagem definida - *${this.Comando}*`}`, components }).catch(error => { 
         console.error(`[FUNCTIONS - message.aviso] - ${error}`);
-        return message.reply({ content: `${emoji.negativo} **|** ${error}.`, ephemeral: false });
+        return message.reply({ content: `${emoji.negativo} **|** ${error}.` });
       });
     };
   

@@ -25,7 +25,7 @@ module.exports =  {
         .setDescription(`Olá, ${interaction.user}, eu sou a ${client.user.username}, um bot integrado que separa seu servidor dos outros!.
 
 **Problemas, dúvidas? entre no meu Discord:**
-> ${client.config.SUPPORT_LINK}
+> ${client.config?.SUPPORT_LINK || "https://discord.gg/sistine"}
 
 **Você pode ver informações detalhadas sobre um comando utilizando:**
 > \`/help comando:[NOME]\`

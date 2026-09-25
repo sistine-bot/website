@@ -1,4 +1,4 @@
-const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
+const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, MessageFlags } = require('discord.js');
 const { getUserMoney, Format, CheckUserBlacklisted} = require('../../utils/functions.js');
 
 module.exports =  {
@@ -20,20 +20,20 @@ module.exports =  {
       
       const user = interaction.options.getUser("usuário") || interaction.user;
       
-      const { blacklisted, blacklistedMensagem } = await CheckUserBlacklisted(user)
-      if (blacklisted) return interaction.followUp({ content: blacklistedMensagem, ephemeral: true })
+      const { blacklisted, blacklistedMensagem } = await CheckUserBlacklisted(user);
+      if (blacklisted) return await interaction.followUp({ content: blacklistedMensagem, flags: MessageFlags.Ephemeral });
       
-      const { carteira, banco } = await getUserMoney(user)
+      const { carteira, banco } = await getUserMoney(user);
       
       const embed = new EmbedBuilder()
       .setColor(color.embed)
-      .setDescription(`💸 **|** Carteira: ${Format(carteira)}\n🏦 **|** Banco: ${Format(banco)}`)
+      .setDescription(`💸 **|** Carteira: ${Format(carteira)}\n🏦 **|** Banco: ${Format(banco)}`);
       
-      return interaction.followUp({ content: `${user}`, embeds: [embed] });
+      return await interaction.followUp({ content: `${user}`, embeds: [embed] });
       
     } catch (error) {
-      console.error(error)
-      return interaction.error({ content: `Ocorreu um erro inesperado na utilização deste comando.` });
+      console.error(error);
+      return await interaction.error({ content: `Ocorreu um erro inesperado na utilização deste comando.` });
     }
   }
 }

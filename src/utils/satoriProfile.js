@@ -3,7 +3,6 @@ const { Resvg } = require('@resvg/resvg-js');
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment-timezone');
-const config = require('../config.js');
 const { getUserMoney, Format, getUserReps, getCasamento, CheckUserVip, getUserGlobalRank, getResolvedUserBadges } = require('./functions.js');
 const { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, LEGACY_BG_URL_MAP, getBackgroundById, getLayoutById, getLayoutConfig } = require('./shopCatalog.js');
 const { LEGACY_BADGE_URL_MAP } = require('./badgesMap.js');

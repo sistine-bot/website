@@ -3,11 +3,10 @@ const { PermissionsBitField } = require('discord.js');
 const { Routes } = require('discord-api-types/v9');
 const { REST } = require('@discordjs/rest');
 
-const { TOKEN, CLIENT_ID } = require('../src/config.js')
-
-const rest = new REST({ version: '9' }).setToken(TOKEN);
-
-module.exports = async (client) => {
+module.exports = async (client, token) => {
+	const TOKEN = token || client?.config?.TOKEN || process.env.DISCORD_TOKEN || process.env.TOKEN;
+	const CLIENT_ID = client?.config?.CLIENT_ID || process.env.CLIENT_ID;
+	const rest = new REST({ version: '9' }).setToken(TOKEN || '');
 	const slashCommands = [];
 
 	fs.readdirSync('./src/SlashCommand/').forEach(async dir => {

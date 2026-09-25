@@ -47,8 +47,8 @@ module.exports =  {
       
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setStyle(ButtonStyle.Link)
-        .setURL(client.config.SUPPORT_LINK).
-        setLabel('Servidor de suporte')
+        .setURL(client.config?.SUPPORT_LINK || 'https://discord.gg/sistine')
+        .setLabel('Servidor de suporte')
         .setEmoji('<:discord:926193044154351626>'),
         
         new ButtonBuilder()
@@ -58,6 +58,10 @@ module.exports =  {
         .setEmoji('<:verificado:926192842748080210>'),
       )
       
+      const criadoresList = client.config?.cargos?.criador?.length
+        ? client.config.cargos.criador.map(c => client.users.cache.get(c) ? `${client.users.cache.get(c)}` : `<@${c}>`).join(' | ')
+        : 'Não configurado';
+
       const embed = new EmbedBuilder()
       .setThumbnail(client.user.avatarURL({ dynamic: true }))
       .addFields(
@@ -66,7 +70,7 @@ module.exports =  {
         { name: `⏰・Tempo online`, value: `\`${uptime} \``, inline: true },
         { name: `💻・Servidores`, value: `\`${servers}\``, inline: true },
         { name: `❗・Prefixo`, value: `\`/ (slash)\``, inline: true },
-        { name: `👑・Criadores:`,  value: `${client.config.cargos.criador.map(c => `${client.users.cache.get(c)}`).join(' | ')}`, inline: false },
+        { name: `👑・Criadores:`,  value: criadoresList, inline: false },
         { name: `🗓️・Entrei aqui em:`, value: `<t:${~~(bot.joinedTimestamp/1000)}:D> (<t:${~~(bot.joinedTimestamp/1000)}:R>)`, inline: false},
         { name: `📆・Fui criada em:`, value: `<t:${~~(client.user.createdTimestamp/1000)}:D> (<t:${~~(client.user.createdTimestamp/1000)}:R>)`, inline: false },
       )

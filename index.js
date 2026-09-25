@@ -1,4 +1,15 @@
 // =========================================================
+// LOAD ENVIRONMENT VARIABLES
+// =========================================================
+try {
+  require('dotenv').config();
+} catch (e) {
+  if (typeof process.loadEnvFile === 'function') {
+    try { process.loadEnvFile('.env'); } catch (err) {}
+  }
+}
+
+// =========================================================
 // MAIN ENTRY & DISCORD CLIENT
 // =========================================================
 const { Client, Collection, GatewayIntentBits, PermissionsBitField } = require('discord.js');
@@ -38,12 +49,70 @@ process.on('uncaughtException', (err, origin) => {
   console.error('[AntiCrash] Uncaught Exception:', err, origin);
 });
 
-let configKeys = { TOKEN: "", CLIENT_ID: "" };
-try {
-  configKeys = require('./src/config.js');
-} catch (e) {
-  console.warn("Could not load config.js. Generating default in-memory configs.");
+// =========================================================
+// BOT CONFIGURATION (.env)
+// =========================================================
+function parseIdList(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.map(String).map(s => s.trim()).filter(Boolean);
+  return String(val)
+    .split(/[,;\s]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
 }
+
+function getBotConfig() {
+  const token = process.env.DISCORD_TOKEN || process.env.TOKEN || "";
+  const clientId = process.env.CLIENT_ID || "";
+  const clientSecret = process.env.CLIENT_SECRET || "";
+  const supportGuild = process.env.SUPPORT_GUILD || "";
+  const supportLink = process.env.SUPPORT_LINK || "https://discord.gg/...";
+  const prefix = process.env.PREFIX || "!";
+
+  const criador = parseIdList(process.env.CRIADOR_ID || process.env.CRIADOR_IDS);
+  const developer = parseIdList(process.env.DEVELOPER_ID || process.env.DEVELOPER_IDS);
+  const booster = parseIdList(process.env.BOOSTER_ID || process.env.BOOSTER_IDS);
+
+  return {
+    cargos: {
+      criador,
+      developer,
+      booster,
+    },
+    TOKEN: token,
+    CLIENT_ID: clientId,
+    CLIENT_SECRET: clientSecret,
+    SUPPORT_GUILD: supportGuild,
+    SUPPORT_LINK: supportLink,
+    PREFIX: prefix,
+  };
+}
+
+function updateEnvFile(updates) {
+  const envPath = path.resolve(process.cwd(), '.env');
+  let content = '';
+  if (fs.existsSync(envPath)) {
+    content = fs.readFileSync(envPath, 'utf8');
+  }
+
+  for (const [key, value] of Object.entries(updates)) {
+    if (value === undefined || value === null) continue;
+    const strVal = String(value);
+    process.env[key] = strVal;
+    const regex = new RegExp(`^${key}=.*$`, 'm');
+    const formattedValue = strVal.includes('\n') ? JSON.stringify(strVal) : strVal;
+    if (regex.test(content)) {
+      content = content.replace(regex, `${key}=${formattedValue}`);
+    } else {
+      content += (content.endsWith('\n') || content === '' ? '' : '\n') + `${key}=${formattedValue}\n`;
+    }
+  }
+
+  fs.writeFileSync(envPath, content, 'utf8');
+  client.config = getBotConfig();
+}
+
+let configKeys = getBotConfig();
 client.config = configKeys;
 
 // =========================================================
@@ -542,8 +611,8 @@ async function startFullStackApp() {
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const redirectUri = `${protocol}://${host}/auth/callback`;
 
-    const clientId = process.env.CLIENT_ID || "1515783670403956826";
-    const clientSecret = process.env.CLIENT_SECRET || "cF4wcN6_OV4bqeqyBw1ssQHXGFg-BWAM";
+    const clientId = client.config?.CLIENT_ID || process.env.CLIENT_ID;
+    const clientSecret = client.config?.CLIENT_SECRET || process.env.CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
       return res.send(`<html><body><p>Erro: CLIENT_ID ou CLIENT_SECRET não configurados.</p></body></html>`);
@@ -1672,9 +1741,7 @@ async function startFullStackApp() {
 
   app.get('/api/config', requireAdmin, (req, res) => {
     let databasesConfig = {};
-    let clientConfig = {};
     try { databasesConfig = require('./databases.json'); } catch (e) {}
-    try { clientConfig = require('./src/config.js'); } catch (e) {}
 
     const isBotCreator = client.config?.cargos?.criador?.includes(req.session.userId) || 
                           client.config?.cargos?.developer?.includes(req.session.userId);
@@ -1683,10 +1750,11 @@ async function startFullStackApp() {
     if (!isBotCreator && maskedDatabases.apiKey) maskedDatabases.apiKey = "••••••••••••••••••••••••••••••••";
 
     const maskedConfig = {
-      TOKEN: isBotCreator ? (process.env.TOKEN || "") : "••••••••••••••••••••••••••••••••",
-      CLIENT_ID: process.env.CLIENT_ID || "",
-      SUPPORT_GUILD: process.env.SUPPORT_GUILD || "",
-      SUPPORT_LINK: process.env.SUPPORT_LINK || ""
+      TOKEN: isBotCreator ? (client.config?.TOKEN || "") : "••••••••••••••••••••••••••••••••",
+      CLIENT_ID: client.config?.CLIENT_ID || "",
+      SUPPORT_GUILD: client.config?.SUPPORT_GUILD || "",
+      SUPPORT_LINK: client.config?.SUPPORT_LINK || "",
+      cargos: client.config?.cargos || { criador: [], developer: [], booster: [] }
     };
 
     res.json({ databases: maskedDatabases, config: maskedConfig });
@@ -1704,24 +1772,37 @@ async function startFullStackApp() {
     const { botConfig, firebaseConfig } = parsedBody.data;
     try {
       if (botConfig) {
-        const botConfigContent = `module.exports = {
-  "cargos": {
-    "criador": ${JSON.stringify(botConfig.cargos?.criador || [''])},
-    "developer": ${JSON.stringify(botConfig.cargos?.developer || [''])},
-    "booster": ${JSON.stringify(botConfig.cargos?.booster || [''])},
-  },
-  "TOKEN": ${JSON.stringify(botConfig.TOKEN || "")},
-  "CLIENT_ID": ${JSON.stringify(botConfig.CLIENT_ID || "")},
-  "SUPPORT_GUILD": ${JSON.stringify(botConfig.SUPPORT_GUILD || "")},
-  "SUPPORT_LINK": ${JSON.stringify(botConfig.SUPPORT_LINK || "https://discord.gg/...")}
-};`;
-        fs.writeFileSync('./src/config.js', botConfigContent);
+        const envUpdates = {};
+        if (botConfig.TOKEN !== undefined) {
+          envUpdates.DISCORD_TOKEN = botConfig.TOKEN;
+        }
+        if (botConfig.CLIENT_ID !== undefined) {
+          envUpdates.CLIENT_ID = botConfig.CLIENT_ID;
+        }
+        if (botConfig.SUPPORT_GUILD !== undefined) {
+          envUpdates.SUPPORT_GUILD = botConfig.SUPPORT_GUILD;
+        }
+        if (botConfig.SUPPORT_LINK !== undefined) {
+          envUpdates.SUPPORT_LINK = botConfig.SUPPORT_LINK;
+        }
+        if (botConfig.cargos?.criador) {
+          envUpdates.CRIADOR_ID = botConfig.cargos.criador.filter(Boolean).join(',');
+        }
+        if (botConfig.cargos?.developer) {
+          envUpdates.DEVELOPER_ID = botConfig.cargos.developer.filter(Boolean).join(',');
+        }
+        if (botConfig.cargos?.booster) {
+          envUpdates.BOOSTER_ID = botConfig.cargos.booster.filter(Boolean).join(',');
+        }
+
+        updateEnvFile(envUpdates);
       }
 
-      if (firebaseConfig) fs.writeFileSync('./databases.json', JSON.stringify(firebaseConfig, null, 2));
+      if (firebaseConfig) {
+        fs.writeFileSync('./databases.json', JSON.stringify(firebaseConfig, null, 2));
+        delete require.cache[require.resolve('./databases.json')];
+      }
 
-      delete require.cache[require.resolve('./src/config.js')];
-      delete require.cache[require.resolve('./databases.json')];
       res.json({ success: true, message: "Configurações salvas." });
     } catch (error) {
       res.status(500).json({ error: error.message });

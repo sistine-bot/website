@@ -15,8 +15,6 @@
 # Private configuration files & credentials
 config.js
 src/config.js
-!src/example.config.js
-!example.config.js
 
 # Firebase & Database credentials
 databases.json
