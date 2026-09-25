@@ -1,4 +1,36 @@
 // =========================================================
+// NODE COMPATIBILITY & EXPERIMENTAL WARNINGS
+// =========================================================
+if (typeof globalThis !== 'undefined') {
+  try {
+    const memoryStorage = new Map();
+    const storageShim = {
+      getItem: (key) => (memoryStorage.has(String(key)) ? memoryStorage.get(String(key)) : null),
+      setItem: (key, val) => memoryStorage.set(String(key), String(val)),
+      removeItem: (key) => memoryStorage.delete(String(key)),
+      clear: () => memoryStorage.clear(),
+      key: (i) => Array.from(memoryStorage.keys())[i] || null,
+      get length() { return memoryStorage.size; }
+    };
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: storageShim,
+      configurable: true,
+      enumerable: true,
+      writable: true
+    });
+  } catch (e) {}
+}
+
+const originalEmitWarning = process.emitWarning ? process.emitWarning.bind(process) : null;
+if (originalEmitWarning) {
+  process.emitWarning = (warning, ...args) => {
+    if (typeof warning === 'string' && warning.includes('localStorage is not available')) return;
+    if (typeof warning === 'object' && warning?.message?.includes('localStorage is not available')) return;
+    return originalEmitWarning(warning, ...args);
+  };
+}
+
+// =========================================================
 // LOAD ENVIRONMENT VARIABLES
 // =========================================================
 try {
@@ -137,42 +169,48 @@ try {
 
 // Load commands locally to list in dashboard and populate simulator
 try {
-  // Load message-based commands
-  fs.readdirSync('./src/commands/').forEach(dir => {
-    try {
-      const files = fs.readdirSync(`./src/commands/${dir}/`).filter(file => file.endsWith('.js'));
-      files.forEach((file) => {
-        try {
-          const command = require(`./src/commands/${dir}/${file}`);
-          if (command && command.name) {
-            command.category = dir;
-            client.commands.set(command.name, command);
-            if (command.aliases && Array.isArray(command.aliases)) {
-              command.aliases.forEach(alias => {
-                client.aliases.set(alias, command.name);
-              });
+  // Load message-based admin commands (from ./src/adminCommands/)
+  const adminCmdsPath = fs.existsSync('./src/adminCommands/') ? './src/adminCommands/' : null;
+  if (adminCmdsPath) {
+    fs.readdirSync(adminCmdsPath).forEach(dir => {
+      try {
+        const files = fs.readdirSync(`${adminCmdsPath}${dir}/`).filter(file => file.endsWith('.js'));
+        files.forEach((file) => {
+          try {
+            const command = require(`${adminCmdsPath}${dir}/${file}`);
+            if (command && command.name) {
+              command.category = dir;
+              client.commands.set(command.name, command);
+              if (command.aliases && Array.isArray(command.aliases)) {
+                command.aliases.forEach(alias => {
+                  client.aliases.set(alias, command.name);
+                });
+              }
             }
-          }
-        } catch (e) {}
-      });
-    } catch (e) {}
-  });
+          } catch (e) {}
+        });
+      } catch (e) {}
+    });
+  }
 
-  // Load Slash Commands
-  fs.readdirSync('./src/SlashCommand/').forEach(dir => {
-    try {
-      const files = fs.readdirSync(`./src/SlashCommand/${dir}/`).filter(file => file.endsWith('.js'));
-      files.forEach((file) => {
-        try {
-          const slashCommand = require(`./src/SlashCommand/${dir}/${file}`);
-          if (slashCommand && slashCommand.name) {
-            slashCommand.category = dir;
-            client.slashCommands.set(slashCommand.name, slashCommand);
-          }
-        } catch (e) {}
-      });
-    } catch (e) {}
-  });
+  // Load Slash Commands (from ./src/commands/ or legacy ./src/SlashCommand/)
+  const slashCmdsPath = fs.existsSync('./src/commands/') ? './src/commands/' : (fs.existsSync('./src/SlashCommand/') ? './src/SlashCommand/' : null);
+  if (slashCmdsPath) {
+    fs.readdirSync(slashCmdsPath).forEach(dir => {
+      try {
+        const files = fs.readdirSync(`${slashCmdsPath}${dir}/`).filter(file => file.endsWith('.js'));
+        files.forEach((file) => {
+          try {
+            const slashCommand = require(`${slashCmdsPath}${dir}/${file}`);
+            if (slashCommand && slashCommand.name) {
+              slashCommand.category = dir;
+              client.slashCommands.set(slashCommand.name, slashCommand);
+            }
+          } catch (e) {}
+        });
+      } catch (e) {}
+    });
+  }
 
   console.log(`[Sistine Bot] Loaded ${client.commands.size} Prefix Commands and ${client.slashCommands.size} Slash Commands.`);
 } catch (err) {

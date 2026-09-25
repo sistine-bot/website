@@ -9,12 +9,12 @@ module.exports = async (client, token) => {
 	const rest = new REST({ version: '9' }).setToken(TOKEN || '');
 	const slashCommands = [];
 
-	fs.readdirSync('./src/SlashCommand/').forEach(async dir => {
-		const files = fs.readdirSync(`./src/SlashCommand/${dir}/`).filter(file => file.endsWith('.js'));
+	fs.readdirSync('./src/commands/').forEach(async dir => {
+		const files = fs.readdirSync(`./src/commands/${dir}/`).filter(file => file.endsWith('.js'));
 
 		for (const file of files) {
 			try {
-				const slashCommand = require(`../src/SlashCommand/${dir}/${file}`);
+				const slashCommand = require(`../src/commands/${dir}/${file}`);
 				slashCommands.push({
 					name: slashCommand.name,
 					description: slashCommand.description,

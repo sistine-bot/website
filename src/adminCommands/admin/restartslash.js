@@ -22,7 +22,9 @@ module.exports = {
         });
       }
 
-      const slashRoot = path.join(process.cwd(), 'src', 'SlashCommand');
+      const slashRoot = fs.existsSync(path.join(process.cwd(), 'src', 'commands'))
+        ? path.join(process.cwd(), 'src', 'commands')
+        : path.join(process.cwd(), 'src', 'SlashCommand');
       let targetCategory = '';
       let targetCmd = '';
       let targetFilePath = '';

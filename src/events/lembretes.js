@@ -2,7 +2,7 @@ const client = require("../../index.js");
 const firebase = require("firebase");
 const database = firebase.database();
 
-client.on('ready', () => {
+client.on('clientReady', () => {
     console.log(`🤖 ${client.user.username} online! Iniciando sistema de lembretes...`);
 
     // 1. ISOLAMOS A FUNÇÃO DE CHECAGEM

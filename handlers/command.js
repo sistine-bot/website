@@ -1,15 +1,15 @@
 const fs = require('fs');
 
 module.exports = (client) => {
-	fs.readdirSync('./src/commands/').forEach(dir => {
-		const files = fs.readdirSync(`./src/commands/${dir}/`).filter(file => file.endsWith('.js'));
+	fs.readdirSync('./src/adminCommands/').forEach(dir => {
+		const files = fs.readdirSync(`./src/adminCommands/${dir}/`).filter(file => file.endsWith('.js'));
 		if (!files || files.length <= 0) {
 			console.log(`No commands found in directory ${dir}`);
 			return;
 		}
 		files.forEach((file) => {
 			try {
-				let command = require(`../src/commands/${dir}/${file}`);
+				let command = require(`../src/adminCommands/${dir}/${file}`);
 				if (command) {
 					client.commands.set(command.name, command);
 					if (command.aliases && Array.isArray(command.aliases)) {

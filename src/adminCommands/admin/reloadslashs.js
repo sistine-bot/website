@@ -18,7 +18,9 @@ module.exports = {
         content: `⏳ **|** Sincronizando todos os comandos slash com a API do Discord, aguarde alguns instantes...`
       });
 
-      const slashHandlerPath = `${process.cwd()}/handlers/slashCommand.js`;
+      const slashHandlerPath = fs.existsSync(`${process.cwd()}/handlers/slashCommands.js`)
+        ? `${process.cwd()}/handlers/slashCommands.js`
+        : `${process.cwd()}/handlers/slashCommand.js`;
       delete require.cache[require.resolve(slashHandlerPath)];
 
       await require(slashHandlerPath)(client);
