@@ -8,6 +8,7 @@ module.exports =  {
   "options": [
     {
       "name": "assaltos",
+      "aliases": ["assalto", "roubos", "roubo", "crime", "crimes", "ladroes", "ladrões"],
       "description": `⌊💸 Economia⌉ Veja o ranking dos usuários que mais assaltam.`,
       "type": ApplicationCommandType.ChatInput,
       "options": [
@@ -21,6 +22,7 @@ module.exports =  {
     },
     {
       "name": "dinheiro",
+      "aliases": ["money", "grana", "saldo", "coins", "banco", "ricos", "bal"],
       "description": `⌊💸 Economia⌉ Veja o ranking dos mais ricos em dinheiro.`,
       "type": ApplicationCommandType.ChatInput,
       "options": [
@@ -34,6 +36,7 @@ module.exports =  {
     },
     {
       "name": "reputações",
+      "aliases": ["reputacoes", "reps", "rep", "reputacao"],
       "description": `⌊💸 Economia⌉ Veja o ranking dos que mais tem reputações.`,
       "type": ApplicationCommandType.ChatInput,
       "options": [
@@ -68,7 +71,15 @@ module.exports =  {
       
       const page = interaction.options.getNumber('página')
       
-      const comando = interaction.options.getSubcommand();
+      let rawComando = interaction.options?.getSubcommand?.(false) || args?.[0] || 'dinheiro';
+      let comando = String(rawComando).toLowerCase();
+      if (['money', 'grana', 'saldo', 'coins', 'banco', 'ricos', 'bal', 'dinheiro'].includes(comando)) {
+        comando = 'dinheiro';
+      } else if (['assalto', 'assaltos', 'roubos', 'roubo', 'crime', 'crimes', 'ladroes', 'ladrões'].includes(comando)) {
+        comando = 'assaltos';
+      } else if (['reputações', 'reputacoes', 'reps', 'rep', 'reputacao'].includes(comando)) {
+        comando = 'reputações';
+      }
       const ArrayRanking = [];
 
       // Função utilitária interna para puxar e ordenar o Leaderboard do Firebase

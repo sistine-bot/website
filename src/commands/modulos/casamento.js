@@ -9,6 +9,7 @@ module.exports =  {
   "options": [
     {
       "name": "informações",
+      "aliases": ["info", "informacoes", "infos", "i", "detalhes", "status", "ver"],
       "description": "⌊⚙️ Modulos⌉ Veja as informações do casamento de um usuário.",
       "type": ApplicationCommandType.ChatInput,
       "options": [
@@ -22,6 +23,7 @@ module.exports =  {
     },
     {
       "name": "casar",
+      "aliases": ["propor", "pedir", "marry", "noivar"],
       "description": "⌊⚙️ Modulos⌉ Faça seu pedido de casamento a seu futuro pretendente.",
       "type": ApplicationCommandType.ChatInput,
       "options": [
@@ -41,7 +43,8 @@ module.exports =  {
     },
     {
       "name": "divorciar",
-      "description": "⌊⚙️ Modulos⌉ Faça seu pedido de casamento a seu futuro pretendente.",
+      "aliases": ["divorcio", "divórcio", "separar", "terminar", "divorce"],
+      "description": "⌊⚙️ Modulos⌉ Faça seu pedido de divórcio.",
       "type": ApplicationCommandType.ChatInput,
     },
   ],
@@ -50,7 +53,15 @@ module.exports =  {
     
     try {
       
-      const command = interaction.options.getSubcommand();
+      let rawCommand = interaction.options?.getSubcommand?.(false) || args?.[0] || 'informações';
+      let command = String(rawCommand).toLowerCase();
+      if (['casar', 'propor', 'pedir', 'marry', 'noivar'].includes(command)) {
+        command = 'casar';
+      } else if (['divorciar', 'divorcio', 'divórcio', 'separar', 'terminar', 'divorce'].includes(command)) {
+        command = 'divorciar';
+      } else {
+        command = 'informações';
+      }
   
       switch(command) {
   

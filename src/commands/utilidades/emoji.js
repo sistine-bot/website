@@ -1,247 +1,284 @@
-const { ApplicationCommandType, ApplicationCommandOptionType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+const { 
+  ApplicationCommandType, 
+  ApplicationCommandOptionType, 
+  ActionRowBuilder, 
+  ButtonBuilder, 
+  ButtonStyle, 
+  EmbedBuilder 
+} = require('discord.js');
 
-module.exports =  {
-  "name": "emoji",
-  "description": `⌊🛠️ Utilidades⌉ Veja informações de emojis.`,
-  "type": ApplicationCommandType.ChatInput,
-  "options": [
+module.exports = {
+  name: "emoji",
+  aliases: ["emojis", "emojilist"],
+  category: "utilidades",
+  description: `⌊🛠️ Utilidades⌉ Veja informações ou liste os emojis do servidor e da Sistine.`,
+  type: ApplicationCommandType.ChatInput,
+  options: [
     {
-      "name": "lista",
-      "description": "⌊🛠️ Utilidades⌉ Mostra uma lista de emojis.",
-      "type": ApplicationCommandType.ChatInput,
-      "options": [
+      name: "lista",
+      aliases: ["list", "listar", "ver", "todos", "all", "l"],
+      description: "⌊🛠️ Utilidades⌉ Mostra a lista de emojis.",
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
         {
-          "name": "escolha",
-          "type": ApplicationCommandOptionType.String,
-          "description": "Qual lista deseja ver",
-          "required": true,
-          "choices": [
-            {
-              "name": "servidor",
-              "value": "servidor"
-            },
-            {
-              "name": "todos",
-              "value": "todos"
-            },
+          name: "escolha",
+          type: ApplicationCommandOptionType.String,
+          description: "Qual lista de emojis deseja visualizar",
+          required: false,
+          choices: [
+            { name: "Servidor Atual", value: "servidor" },
+            { name: "Todos (Sistine)", value: "todos" }
           ]
-        },
-      ],
+        }
+      ]
     },
     {
-      "name": "informações",
-      "description": "🛠️ Utilidades - Veja informações sobre um emoji.",
-      "type": ApplicationCommandType.ChatInput,
-      "options": [
+      name: "informações",
+      aliases: ["info", "informacoes", "infos", "i", "detalhes"],
+      description: "⌊🛠️ Utilidades⌉ Veja informações detalhadas sobre um emoji.",
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
         {
-          "name": "emoji",
-          "type": ApplicationCommandOptionType.String,
-          "description": "Qual emoji você deseja ver as informações?",
-          "required": true,
+          name: "emoji",
+          type: ApplicationCommandOptionType.String,
+          description: "Mencione, cole ou digite o nome/ID do emoji.",
+          required: true
         }
-      ],
-    },
+      ]
+    }
   ],
-  
+
   run: async (client, interaction, args, color, database, emoji) => {
-    
     try {
-      
-      const subCommand = interaction.options && interaction.options['_subcommand'];
+      const embedColor = color?.embed || '#831396';
+      const rawSub = interaction.options?.getSubcommand?.(false) || args?.[0] || 'lista';
+      let subCommand = rawSub.toLowerCase();
+      if (['info', 'informacoes', 'informações', 'infos', 'i', 'detalhes'].includes(subCommand)) {
+        subCommand = 'informações';
+      } else if (['lista', 'list', 'listar', 'ver', 'todos', 'all', 'l'].includes(subCommand)) {
+        subCommand = 'lista';
+      }
 
       switch (subCommand) {
-
         case 'lista': {
+          const escolha = interaction.options?.getString?.('escolha') || 'servidor';
+          const isGuildOnly = escolha === 'servidor';
 
-          const MensagemFinal = 'Está meio vazio por aqui.';
-          
-          const escolha = interaction.options.getString('escolha')
-          
-          const servers = (escolha == 'servidor') ? interaction.guild : client,
-                nome = (escolha == 'servidor') ? interaction.guild.name : 'Todos os meus',
-                imagem = (escolha == 'servidor') ? interaction.guild.iconURL({ format: 'png', dynamic: true, size: 1024 })  : client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 })
-          let num = 0;
+          const targetEntity = isGuildOnly ? interaction.guild : client;
+          const nomeOrigem = isGuildOnly ? interaction.guild.name : 'Todos os emojis da Sistine';
+          const iconImg = isGuildOnly 
+            ? interaction.guild.iconURL({ dynamic: true, size: 512 }) 
+            : client.user.displayAvatarURL({ dynamic: true, size: 512 });
+
+          const allEmojis = Array.from(targetEntity.emojis.cache.values());
+
+          if (allEmojis.length === 0) {
+            return interaction.followUp({
+              embeds: [
+                new EmbedBuilder()
+                  .setColor(embedColor)
+                  .setTitle(`😀 Emojis — ${nomeOrigem}`)
+                  .setDescription('Nenhum emoji personalizado foi encontrado neste escopo.')
+              ]
+            });
+          }
+
+          const pageSize = 30;
           let pagina = 1;
-          let totalPages = parseInt(servers.emojis.cache.size/30+1);
-    
-          let embed = new EmbedBuilder()
-          .setAuthor({ name: `${client.user.username}`, iconURL: imagem })
-          .setTitle(`${nome} emojis: ${servers.emojis.cache.size}`)
-          .setDescription(`${servers.emojis.cache.map(e => e).slice(0,30).join(' | ')}`)
-          .setFooter({ text: `Página ${pagina} de ${totalPages}` })
-          .setColor(color.embed)
-    
-          const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("voltarT").setStyle(ButtonStyle.Secondary).setEmoji('⏪').setDisabled(false),
-    
-            new ButtonBuilder().setCustomId("esquerda").setStyle(ButtonStyle.Secondary).setEmoji('⬅️').setDisabled(false),
-    
-            new ButtonBuilder().setCustomId("direita").setStyle(ButtonStyle.Secondary).setEmoji('➡️').setDisabled(false),
-    
-            new ButtonBuilder().setCustomId("passarT").setStyle(ButtonStyle.Secondary).setEmoji('⏩').setDisabled(false),
-          )
-    
-          let msg = await interaction.followUp({ embeds: [embed], components: [row], fetchReply: true, ephemeral: false  })
-    
-          const coletor = msg.createMessageComponentCollector({ filter: x => x.user.id === interaction.user.id });
-    
-          coletor.on('collect', async(i) => {
-            i.deferUpdate()
-            // if (totalPages < 2) return;
+          const totalPages = Math.ceil(allEmojis.length / pageSize) || 1;
 
+          function renderPage(page) {
+            const start = (page - 1) * pageSize;
+            const end = start + pageSize;
+            const pageEmojis = allEmojis.slice(start, end);
+            const emojisContent = pageEmojis.map(e => `${e}`).join(' ') || 'Nenhum emoji nesta página.';
+
+            return new EmbedBuilder()
+              .setColor(embedColor)
+              .setAuthor({ name: `${nomeOrigem} (${allEmojis.length} emojis)`, iconURL: iconImg || client.user.displayAvatarURL() })
+              .setDescription(emojisContent)
+              .setFooter({ text: `Página ${page} de ${totalPages} • Total: ${allEmojis.length} emojis` })
+              .setTimestamp();
+          }
+
+          function getButtonsRow(page) {
+            return new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setCustomId("primeira")
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('⏪')
+                .setDisabled(page <= 1),
+
+              new ButtonBuilder()
+                .setCustomId("anterior")
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('⬅️')
+                .setDisabled(page <= 1),
+
+              new ButtonBuilder()
+                .setCustomId("proxima")
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('➡️')
+                .setDisabled(page >= totalPages),
+
+              new ButtonBuilder()
+                .setCustomId("ultima")
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('⏩')
+                .setDisabled(page >= totalPages)
+            );
+          }
+
+          const initialEmbed = renderPage(pagina);
+          const initialRow = getButtonsRow(pagina);
+
+          const msg = await interaction.followUp({
+            embeds: [initialEmbed],
+            components: totalPages > 1 ? [initialRow] : [],
+            fetchReply: true
+          });
+
+          if (totalPages <= 1 || !msg || !msg.createMessageComponentCollector) return;
+
+          const collector = msg.createMessageComponentCollector({
+            filter: x => x.user.id === interaction.user.id,
+            time: 120000
+          });
+
+          collector.on('collect', async (i) => {
             try {
+              await i.deferUpdate().catch(() => {});
 
               switch (i.customId) {
-      
-                case 'esquerda': {
-      
-                  if(pagina !== 1) {
-                    num = num-30
-                    num = num.toString().length > 1 ? num-parseInt(num.toString().slice(num.toString().length-1)) : 0
-                    pagina -= 1
-      
-                    const embedPageUm = new EmbedBuilder()
-                    .setAuthor({ name: `${nome}`, iconURL: imagem })
-                    .setTitle(`${nome} emojis: ${servers.emojis.cache.size}`)
-                    .setDescription(`${servers.emojis.cache.map(e => e).slice(pagina*30-30,pagina*30).join(' | ') ? servers.emojis.cache.map(e => e).slice(pagina*30-30,pagina*30).join(' | ') : MensagemFinal}`)
-                    .setFooter({ text: `Página ${pagina} de ${totalPages}`, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 })})
-                    .setColor(color.embed)
-      
-                    msg.edit({ embeds: [embedPageUm] });
-      
-                  } else {
-                    pagina = totalPages
-                    num = totalPages*30-40
-      
-                    const embedPageDois = new EmbedBuilder()
-                    .setAuthor({ name: `${nome}`, imagem })
-                    .setTitle(`${nome} emojis: ${servers.emojis.cache.size}`)
-                    .setDescription(`${servers.emojis.cache.map(e => e).slice(totalPages*30-30,pagina*30).join(' | ') ? servers.emojis.cache.map(e => e).slice(totalPages*30-30,pagina*30).join(' | ') : MensagemFinal}`)
-                    .setFooter({ text: `Página ${pagina} de ${totalPages}`, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) })
-                    .setColor(color.embed)
-      
-                    msg.edit({ embeds: [embedPageDois] })
-      
-                  }
-                }
-                  break;
-      
-                case 'direita': {
-      
-                  if(pagina !== totalPages) {
-                    num = num.toString().length > 1 ? num-parseInt(num.toString().slice(num.toString().length-1)) : 0
-                    num = num+30
-                    pagina += 1
-                    
-                    const embedPageDois = new EmbedBuilder()
-                    .setAuthor({ name: `${nome}`, iconURL:  imagem })
-                    .setTitle(`${nome} emojis: ${servers.emojis.cache.size}`)
-                    .setDescription(`${servers.emojis.cache.map(e => e).slice(pagina*30-30,pagina*30).join(' | ') ? servers.emojis.cache.map(e => e).slice(pagina*30-30,pagina*30).join(' | ') : MensagemFinal} `)
-                    .setFooter({ text: `Página ${pagina} de ${totalPages}`, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 })})
-                    .setColor(color.embed)
-      
-                    return msg.edit({ embeds: [embedPageDois ] })
-                  } else {
-                    pagina = 1
-                    num = 0
-                    
-                    const embedPageDois = new EmbedBuilder()
-                    .setAuthor({ name: `${nome}`, iconURL: imagem })
-                    .setTitle(`${nome} emojis: ${servers.emojis.cache.size}`)
-                    .setDescription(`${servers.emojis.cache.map(e => e).slice(0,pagina*30).join(' | ') ? servers.emojis.cache.map(e => e).slice(0,pagina*30).join(' | ') : MensagemFinal}`)
-                    .setFooter({ text: `Página ${pagina} de ${totalPages}`, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) })
-                    .setColor(color.embed)
-      
-                    msg.edit({ embeds: [embedPageDois] })
-                  }
-                }
-                  break;
-      
-                case 'voltarT': {
-                  num = 0;
+                case 'primeira':
                   pagina = 1;
-      
-                  const embedPageDois = new EmbedBuilder()
-                  .setAuthor({ name: `${nome}`, iconURL: imagem })
-                  .setTitle(`${nome} emojis: ${servers.emojis.cache.size}`)
-                  .setDescription(`${servers.emojis.cache.map(e => e).slice(pagina*30-30,pagina*30).join(' | ') ? servers.emojis.cache.map(e => e).slice(pagina*30-30,pagina*30).join(' | ') : MensagemFinal}`)
-                  .setFooter({ text: `Página ${pagina} de ${totalPages}`, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) })
-                  .setColor(color.embed)
-      
-                  msg.edit({ embeds: [embedPageDois] });
-                }
                   break;
-      
-                case 'passarT': {
-                  pagina = totalPages
-                  num = totalPages*10-10
-      
-                  const embedPageDois = new EmbedBuilder()
-                  .setAuthor({ name: `${nome}`, iconURL: imagem })
-                  .setTitle(`${nome} emojis: ${servers.emojis.cache.size}`)
-                  .setDescription(`${servers.emojis.cache.map(e => e).slice(pagina*30-30,pagina*30).join(' | ') ? servers.emojis.cache.map(e => e).slice(pagina*30-30,pagina*30).join(' | ') : MensagemFinal}`)
-                  .setFooter({ text: `Página ${pagina} de ${totalPages}`, iconURL: client.user.displayAvatarURL({ format: 'png', dynamic: true, size: 1024 }) })
-                  .setColor(color.embed)
-      
-                  msg.edit({ embeds: [embedPageDois] });
-      
-                }
+                case 'anterior':
+                  if (pagina > 1) pagina--;
                   break;
-      
+                case 'proxima':
+                  if (pagina < totalPages) pagina++;
+                  break;
+                case 'ultima':
+                  pagina = totalPages;
+                  break;
               }
 
-            } catch (error) {
-              console.log('ocorreu um erro ao carregar a lista de emojis', error) 
-              return interaction.error({ content: `Ocorreu um erro inesperado na utilização deste comando.` });
+              await msg.edit({
+                embeds: [renderPage(pagina)],
+                components: [getButtonsRow(pagina)]
+              }).catch(() => {});
+
+            } catch (err) {
+              console.error('[emoji lista pagination error]', err);
             }
           });
-          
+
+          collector.on('end', async () => {
+            try {
+              const disabledRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId("p1").setStyle(ButtonStyle.Secondary).setEmoji('⏪').setDisabled(true),
+                new ButtonBuilder().setCustomId("p2").setStyle(ButtonStyle.Secondary).setEmoji('⬅️').setDisabled(true),
+                new ButtonBuilder().setCustomId("p3").setStyle(ButtonStyle.Secondary).setEmoji('➡️').setDisabled(true),
+                new ButtonBuilder().setCustomId("p4").setStyle(ButtonStyle.Secondary).setEmoji('⏩').setDisabled(true)
+              );
+              await msg.edit({ components: [disabledRow] }).catch(() => {});
+            } catch (_) {}
+          });
+
+          break;
         }
-        break;
 
         case 'informações': {
-          
-          const emote = interaction.options.getString('emoji');
-          const regex = emote.replace(/^<a?:\w+:(\d+)>$/, '$1');
-          
-          let emoji = client.emojis.cache.find(emoji => `<:${emoji.name}:${emoji.id}>` === regex) ||
-              client.emojis.cache.find(emoji => emoji.name === regex) || 
-              client.emojis.cache.get(regex);
-          
-          if (!emoji) return interaction.error({ content: `<@${interaction.user.id}>, Eu não consegui procurar nenhum emoji: \`${emote}\`. ` })
-          
-          const link = emoji.url;
-          const row = new ActionRowBuilder().addComponents([
-            new ButtonBuilder().setStyle(ButtonStyle.Link)
-            .setURL(link)
-            .setLabel('Abrir imagem no navegador'),
-          ]);
-  
-          const embed = new EmbedBuilder()
-          .setAuthor({ name: ` • Informações do emoji: ${emoji.name}`, url: emoji.url })
-          .setColor(color.embed)
-          .setThumbnail(`${emoji.url}`)
-          .addFields(
-          { name: `👤・Menção`, value:  `\`${emoji.animated ? `<a:${emoji.name}:${emoji.id}>` : `<:${emoji.name}:${emoji.id}>`}\` `, inline: true },
-          { name: `👥・Id:`, value: `\`${emoji.id}\``, inline: true },
-          { name: `🖥️・Servidor:`, value: emoji.guild.name, inline: true },
-          { name: `💃・Animado:`, value: `${emoji.animated ? 'Sim' : 'Não'}`, inline: true},
-          { name: `🗓️・Criado em:`, value: `<t:${~~(emoji.createdTimestamp/1000)}:D> (<t:${~~(emoji.createdTimestamp/1000)}:R>)`, inline: true },
-          )
-          // .addField(`📍・Link:`, `[Clique aqui para abrir](${})`, inline: false)
-          // .setFooter({ name: `${interaction.user.username}`, url: interaction.user.avatarURL({ dynamic: true })})
-  
-          return interaction.followUp({ embeds: [embed], components: [row] });
-  
-        }
-        break;
+          let emoteInput = interaction.options?.getString?.('emoji');
+          if (!emoteInput && args && args.length > 0) {
+            emoteInput = args[args[0] === 'informações' || args[0] === 'info' ? 1 : 0];
+          }
 
+          if (!emoteInput) {
+            return interaction.error({ content: 'Você precisa informar o emoji que deseja consultar!' });
+          }
+
+          // Extrai o ID do emoji caso esteja no formato padrão <a:nome:id> ou <:nome:id>
+          const customEmojiMatch = emoteInput.match(/^<a?:([a-zA-Z0-9_]+):([a-zA-Z0-9_]+)>$/);
+          const rawIdMatch = emoteInput.match(/^(\d{17,20})$/);
+
+          let foundEmoji = null;
+
+          if (customEmojiMatch) {
+            const emojiId = customEmojiMatch[2];
+            const emojiName = customEmojiMatch[1].toLowerCase();
+            const guildEmojis = Array.from(interaction.guild?.emojis?.cache?.values() || []);
+            const clientEmojis = Array.from(client.emojis?.cache?.values() || []);
+            foundEmoji = interaction.guild?.emojis?.cache?.get(emojiId) || client.emojis?.cache?.get(emojiId) ||
+                         guildEmojis.find(e => e.name?.toLowerCase() === emojiName) ||
+                         clientEmojis.find(e => e.name?.toLowerCase() === emojiName);
+          } else if (rawIdMatch) {
+            foundEmoji = interaction.guild?.emojis?.cache?.get(rawIdMatch[1]) || client.emojis?.cache?.get(rawIdMatch[1]);
+          } else {
+            // Tenta buscar por nome exato no servidor ou no bot
+            const cleanName = emoteInput.replace(/[<>:]/g, '').toLowerCase();
+            const guildEmojis = Array.from(interaction.guild?.emojis?.cache?.values() || []);
+            const clientEmojis = Array.from(client.emojis?.cache?.values() || []);
+            foundEmoji = guildEmojis.find(e => e.name?.toLowerCase() === cleanName) ||
+                         clientEmojis.find(e => e.name?.toLowerCase() === cleanName);
+          }
+
+          // Se for um emoji customizado encontrado
+          if (foundEmoji) {
+            const link = foundEmoji.url;
+            const createdTs = Math.floor(foundEmoji.createdTimestamp / 1000);
+
+            const row = new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setStyle(ButtonStyle.Link)
+                .setURL(link)
+                .setLabel('Abrir Imagem Original')
+                .setEmoji('🔗')
+            );
+
+            const embed = new EmbedBuilder()
+              .setColor(embedColor)
+              .setTitle(`🔎 Informações do Emoji: :${foundEmoji.name}:`)
+              .setThumbnail(link)
+              .addFields(
+                { name: '😀・Visualização:', value: `${foundEmoji}`, inline: true },
+                { name: '🏷️・Nome:', value: `\`${foundEmoji.name}\``, inline: true },
+                { name: '👥・ID:', value: `\`${foundEmoji.id}\``, inline: true },
+                { name: '💃・Animado:', value: foundEmoji.animated ? '`Sim`' : '`Não`', inline: true },
+                { name: '🖥️・Servidor:', value: `\`${foundEmoji.guild?.name || 'Externo / Sistine'}\``, inline: true },
+                { name: '🗓️・Criado em:', value: `<t:${createdTs}:D> (<t:${createdTs}:R>)`, inline: true }
+              )
+              .setFooter({ text: `Consultado por ${interaction.user.username}` })
+              .setTimestamp();
+
+            return interaction.followUp({ embeds: [embed], components: [row] });
+          }
+
+          // Se for emoji nativo Unicode do Discord (ex: 🔥, 👑, ⭐)
+          const codePoints = Array.from(emoteInput).map(c => `U+${c.codePointAt(0).toString(16).toUpperCase()}`).join(' ');
+
+          const unicodeEmbed = new EmbedBuilder()
+            .setColor(embedColor)
+            .setTitle(`🔎 Emoji Unicode Nativo`)
+            .setDescription(`O emoji **${emoteInput}** é um emoji padrão Unicode (não pertence a um servidor específico).`)
+            .addFields(
+              { name: '😀・Aparência:', value: `${emoteInput}`, inline: true },
+              { name: '🔢・CodePoints:', value: `\`${codePoints}\``, inline: true }
+            )
+            .setFooter({ text: `Consultado por ${interaction.user.username}` })
+            .setTimestamp();
+
+          return interaction.followUp({ embeds: [unicodeEmbed] });
+        }
+
+        default:
+          return interaction.error({ content: 'Subcomando inválido. Utilize `lista` ou `informações`.' });
       }
-      
+
     } catch (error) {
-      console.error(error)
-      return interaction.error({ content: `Ocorreu um erro inesperado na utilização deste comando.` });
+      console.error('[emoji command error]', error);
+      return interaction.error({ content: 'Ocorreu um erro inesperado ao executar o comando de emoji.' });
     }
-  
   }
-}
+};

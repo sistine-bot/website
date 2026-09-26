@@ -19,16 +19,19 @@ module.exports = {
   "options": [
     {
       "name": "local",
+      "aliases": ["server", "servidor", "guild"],
       "description": "⌊💸 Economia⌉ Veja itens a venda no servidor.",
       "type": ApplicationCommandType.ChatInput,
     },
     {
       "name": "global",
+      "aliases": ["mundo", "todos", "all", "geral"],
       "description": "⌊💸 Economia⌉ Veja todos os itens a venda.",
       "type": ApplicationCommandType.ChatInput,
     },
     {
       "name": "vender",
+      "aliases": ["sell", "anunciar", "anuncio", "anúncio", "listar"],
       "description": "⌊💸 Economia⌉ Venda itens que você possui no inventário.",
       "type": ApplicationCommandType.ChatInput,
       "options": [
@@ -55,6 +58,7 @@ module.exports = {
     },
     {
       "name": "inventário",
+      "aliases": ["inventario", "inv", "meus", "meusitens", "minhasvendas"],
       "description": "⌊💸 Economia⌉ Veja os itens que você possui a venda.",
       "type": ApplicationCommandType.ChatInput,
     },
@@ -62,7 +66,17 @@ module.exports = {
 
   run: async (client, interaction, args, color, database, emoji) => {
     try {
-      const subcommand = interaction.options.getSubcommand();
+      let rawSub = interaction.options?.getSubcommand?.(false) || args?.[0] || 'local';
+      let subcommand = String(rawSub).toLowerCase();
+      if (['global', 'mundo', 'todos', 'all', 'geral'].includes(subcommand)) {
+        subcommand = 'global';
+      } else if (['local', 'server', 'servidor', 'guild'].includes(subcommand)) {
+        subcommand = 'local';
+      } else if (['inventário', 'inventario', 'inv', 'meus', 'meusitens', 'minhasvendas'].includes(subcommand)) {
+        subcommand = 'inventário';
+      } else if (['vender', 'sell', 'anunciar', 'anuncio', 'anúncio', 'listar'].includes(subcommand)) {
+        subcommand = 'vender';
+      }
 
       switch (subcommand) {
         case 'global':

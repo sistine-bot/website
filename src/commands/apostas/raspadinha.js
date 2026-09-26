@@ -8,11 +8,13 @@ module.exports = {
   "options": [
     {
       "name": "informações",
+      "aliases": ["info", "informacoes", "infos", "i", "detalhes", "regras", "premios", "prêmios"],
       "description": "⌊🎰 Apostas⌉ Veja todas as informações sobre a raspadinha.",
       "type": ApplicationCommandType.ChatInput,
     },
     {
       "name": "comprar",
+      "aliases": ["buy", "jogar", "play", "raspar", "adquirir"],
       "description": "⌊🎰 Apostas⌉ Compre uma raspadinha no valor de 500.",
       "type": ApplicationCommandType.ChatInput,
     },
@@ -35,8 +37,14 @@ module.exports = {
         "<:ovelha:947544319106117673>", 
       ];
       
-      // CORREÇÃO: Obtendo o subcomando utilizando o método nativo e seguro da API
-      const command = interaction.options.getSubcommand();
+      // Obtendo o subcomando considerando aliases e chamadas por prefixo
+      let rawCommand = interaction.options?.getSubcommand?.(false) || args?.[0] || 'comprar';
+      let command = String(rawCommand).toLowerCase();
+      if (['info', 'informacoes', 'informações', 'infos', 'i', 'detalhes', 'regras', 'premios', 'prêmios'].includes(command)) {
+        command = 'informações';
+      } else {
+        command = 'comprar';
+      }
 
       switch (command) {
         case 'informações': {

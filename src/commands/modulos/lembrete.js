@@ -20,6 +20,7 @@ module.exports = {
   "options": [
     {
       "name": "criar",
+      "aliases": ["add", "novo", "set", "create", "lembrar"],
       "description": "⌊⚙️ Módulos⌉ Crie um lembrete.",
       "type": ApplicationCommandOptionType.Subcommand, // CORREÇÃO: Tipo correto para subcomando
       "options": [
@@ -39,6 +40,7 @@ module.exports = {
     },
     {
       "name": "lista",
+      "aliases": ["list", "ver", "listar", "meus", "todos"],
       "description": "⌊⚙️ Módulos⌉ Veja seus lembretes criados.",
       "type": ApplicationCommandOptionType.Subcommand, // CORREÇÃO: Tipo correto para subcomando
     },
@@ -46,7 +48,13 @@ module.exports = {
   
   run: async (client, interaction, args, color, database, emoji) => {
     try { 
-      const command = interaction.options.getSubcommand();
+      let rawCommand = interaction.options?.getSubcommand?.(false) || args?.[0] || 'lista';
+      let command = String(rawCommand).toLowerCase();
+      if (['criar', 'add', 'novo', 'set', 'create', 'lembrar'].includes(command)) {
+        command = 'criar';
+      } else {
+        command = 'lista';
+      }
       const DB_PATH = `servidores/${interaction.user.id}/Lembretes`; // CORREÇÃO: Padronizado minúsculo para evitar bypass de limites
 
       switch (command) {

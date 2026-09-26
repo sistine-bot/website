@@ -3,6 +3,18 @@ const { PermissionsBitField } = require('discord.js');
 const { Routes } = require('discord-api-types/v9');
 const { REST } = require('@discordjs/rest');
 
+function sanitizeOptionsForDiscord(options) {
+	if (!options || !Array.isArray(options)) return options;
+	return options.map(opt => {
+		const cleanOpt = { ...opt };
+		delete cleanOpt.aliases;
+		if (cleanOpt.options && Array.isArray(cleanOpt.options)) {
+			cleanOpt.options = sanitizeOptionsForDiscord(cleanOpt.options);
+		}
+		return cleanOpt;
+	});
+}
+
 module.exports = async (client, token) => {
 	const TOKEN = token || client?.config?.TOKEN || process.env.DISCORD_TOKEN || process.env.TOKEN;
 	const CLIENT_ID = client?.config?.CLIENT_ID || process.env.CLIENT_ID;
@@ -19,12 +31,13 @@ module.exports = async (client, token) => {
 					name: slashCommand.name,
 					description: slashCommand.description,
 					type: slashCommand.type,
-					options: slashCommand.options ? slashCommand.options : null,
+					options: slashCommand.options ? sanitizeOptionsForDiscord(slashCommand.options) : null,
 					default_permission: slashCommand.default_permission ? slashCommand.default_permission : null,
 					default_member_permissions: slashCommand.default_member_permissions ? PermissionsBitField.resolve(slashCommand.default_member_permissions).toString() : null
 				});
         
 				if (slashCommand.name) {
+					slashCommand.category = slashCommand.category || dir;
 					client.slashCommands.set(slashCommand.name, slashCommand);
 					console.log(`[ ✅ Command loaded ] - ${slashCommand.name}`);
 				} else {

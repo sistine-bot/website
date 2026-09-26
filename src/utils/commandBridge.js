@@ -111,12 +111,94 @@ const SLASH_ALIASES = {
   // --- Utilidades ---
   'ajuda': 'help',
   'comandos': 'help',
+  'h': 'help',
+  'menu': 'help',
   'info': 'botinfo',
   'bot': 'botinfo',
+  'sobre': 'botinfo',
+  'binfo': 'botinfo',
   'server': 'servidor',
+  'servidor': 'servidor',
+  'serverinfo': 'servidor',
+  'sinfo': 'servidor',
   'user': 'usuário',
   'usuario': 'usuário',
+  'userinfo': 'usuário',
+  'uinfo': 'usuário',
   'emojis': 'emoji',
+  'emoji': 'emoji',
+  'cargo': 'servidor',
+  'cargos': 'servidor',
+  'role': 'servidor',
+  'roles': 'servidor',
+  'roleinfo': 'servidor',
+  'cargoinfo': 'servidor',
+  'rinfo': 'servidor',
+};
+
+/**
+ * Mapa de aliases para subcomandos quando chamados via prefixo
+ */
+const SUBCOMMAND_ALIASES = {
+  _common: {
+    'informações': ['info', 'informacoes', 'infos', 'i', 'detalhes', 'sobre'],
+    'lista': ['list', 'listar', 'ver', 'todos', 'all', 'l'],
+    'criar': ['add', 'novo', 'create', 'nova', 'set', 'lembrar'],
+    'enviar': ['send', 'dar', 'doar', 'give', 'mandar'],
+    'comprar': ['buy', 'adquirir', 'jogar', 'play', 'raspar'],
+    'imagem': ['foto', 'avatar', 'banner', 'pic', 'fotos', 'img', 'icone', 'ícone', 'splash'],
+    'vender': ['sell', 'anunciar', 'anuncio', 'anúncio'],
+    'inventário': ['inventario', 'inv', 'meus', 'meusitens', 'minhasvendas'],
+    'casar': ['marry', 'propor', 'pedir', 'noivar'],
+    'divorciar': ['divorce', 'divorcio', 'divórcio', 'separar', 'terminar'],
+    'dinheiro': ['money', 'grana', 'saldo', 'coins', 'banco', 'ricos', 'bal'],
+    'assaltos': ['assalto', 'roubos', 'roubo', 'crime', 'crimes', 'ladroes', 'ladrões'],
+    'reputações': ['reputacoes', 'reps', 'rep', 'reputacao', 'reputação'],
+    'cargo': ['cargos', 'role', 'roles'],
+    'canal': ['canais', 'channel', 'channels']
+  },
+  'emoji': {
+    'informações': ['info', 'informacoes', 'infos', 'i', 'detalhes'],
+    'lista': ['list', 'listar', 'ver', 'todos', 'all', 'l']
+  },
+  'usuário': {
+    'informações': ['info', 'informacoes', 'infos', 'i', 'detalhes', 'perfil', 'userinfo', 'uinfo'],
+    'imagem': ['foto', 'pic', 'avatar', 'banner', 'fotos', 'img']
+  },
+  'servidor': {
+    'informações': ['info', 'informacoes', 'infos', 'i', 'detalhes', 'serverinfo', 'sinfo', 'geral', 'sobre'],
+    'imagem': ['foto', 'icone', 'ícone', 'banner', 'splash', 'fotos', 'img'],
+    'cargo': ['cargos', 'role', 'roles', 'roleinfo', 'cargoinfo', 'rinfo'],
+    'canal': ['canais', 'channel', 'channels']
+  },
+  'raspadinha': {
+    'informações': ['info', 'informacoes', 'infos', 'i', 'detalhes', 'regras', 'premios', 'prêmios'],
+    'comprar': ['buy', 'jogar', 'play', 'raspar', 'adquirir']
+  },
+  'market': {
+    'local': ['server', 'servidor', 'guild'],
+    'global': ['mundo', 'todos', 'all', 'geral'],
+    'vender': ['sell', 'anunciar', 'anuncio', 'anúncio', 'listar'],
+    'inventário': ['inventario', 'inv', 'meus', 'meusitens', 'minhasvendas']
+  },
+  'top': {
+    'dinheiro': ['money', 'grana', 'saldo', 'coins', 'banco', 'ricos', 'bal'],
+    'assaltos': ['assalto', 'roubos', 'roubo', 'crime', 'crimes', 'ladroes', 'ladrões'],
+    'reputações': ['reputacoes', 'reps', 'rep', 'reputacao', 'reputação']
+  },
+  'casamento': {
+    'informações': ['info', 'informacoes', 'infos', 'i', 'detalhes', 'status', 'ver'],
+    'casar': ['propor', 'pedir', 'marry', 'noivar'],
+    'divorciar': ['divorcio', 'divórcio', 'separar', 'terminar', 'divorce']
+  },
+  'lembrete': {
+    'criar': ['add', 'novo', 'set', 'create', 'lembrar'],
+    'lista': ['list', 'ver', 'listar', 'meus', 'todos']
+  },
+  'reputação': {
+    'lista': ['list', 'ver', 'historico', 'histórico', 'rank', 'ranking'],
+    'enviar': ['dar', 'send', 'add', 'doar', 'give']
+  }
 };
 
 /**
@@ -124,13 +206,22 @@ const SLASH_ALIASES = {
  * Permite que qualquer comando slash execute via prefixo sem alterar sua lógica interna.
  */
 class MessageInteractionShim {
-  constructor(message, slashCommand, rawArgs, client, emoji, color) {
+  constructor(message, slashCommand, rawArgs, client, emoji, color, prefixo = '!') {
     this.message = message;
     this.slashCommand = slashCommand;
     this.rawArgs = [...rawArgs];
+
+    // Se o comando foi invocado como !cargo ou !role (alias de subcomando de servidor)
+    const invokedAs = (message.content.slice(prefixo.length).trim().split(/\s+/)[0] || '').toLowerCase();
+    if (slashCommand.name === 'servidor' && ['cargo', 'cargos', 'role', 'roles', 'roleinfo', 'cargoinfo', 'rinfo'].includes(invokedAs)) {
+      this.rawArgs.unshift('cargo');
+    }
+
     this.client = client;
     this.emoji = emoji || {};
     this.color = color || { embed: '#831396' };
+    this.prefix = prefixo;
+    this.prefixo = prefixo;
 
     this.id = message.id;
     this.guild = message.guild;
@@ -309,6 +400,7 @@ class MessageInteractionShim {
     const subcmdDefs = optionsDefs.filter(opt => 
       opt.type === 1 || // ApplicationCommandOptionType.Subcommand
       opt.type === 'SUB_COMMAND' ||
+      opt.type === 2 || // SubcommandGroup
       (opt.options && Array.isArray(opt.options))
     );
 
@@ -318,20 +410,82 @@ class MessageInteractionShim {
       const firstToken = tokens[0] ? tokens[0].toLowerCase() : null;
       const normalizedFirst = firstToken ? normalize(firstToken) : null;
 
-      const matchedSub = subcmdDefs.find(sub => 
-        sub.name.toLowerCase() === firstToken || 
-        normalize(sub.name) === normalizedFirst
-      );
+      const matchSub = (defList, token, normToken, commandName) => {
+        if (!token) return null;
+        // 1. Nome exato ou normalizado
+        let match = defList.find(sub => sub.name.toLowerCase() === token || normalize(sub.name) === normToken);
+        if (match) return match;
+
+        // 2. Aliases explícitos no objeto da opção
+        match = defList.find(sub => Array.isArray(sub.aliases) && sub.aliases.some(a => a.toLowerCase() === token || normalize(a) === normToken));
+        if (match) return match;
+
+        // 3. Aliases específicos do comando no mapa
+        const cmdMap = SUBCOMMAND_ALIASES[commandName] || SUBCOMMAND_ALIASES[normalize(commandName)];
+        if (cmdMap) {
+          for (const [canonicalName, aliases] of Object.entries(cmdMap)) {
+            if (aliases.some(a => a.toLowerCase() === token || normalize(a) === normToken)) {
+              match = defList.find(sub => sub.name.toLowerCase() === canonicalName.toLowerCase() || normalize(sub.name) === normalize(canonicalName));
+              if (match) return match;
+            }
+          }
+        }
+
+        // 4. Aliases comuns globais
+        if (SUBCOMMAND_ALIASES._common) {
+          for (const [canonicalName, aliases] of Object.entries(SUBCOMMAND_ALIASES._common)) {
+            if (aliases.some(a => a.toLowerCase() === token || normalize(a) === normToken)) {
+              match = defList.find(sub => sub.name.toLowerCase() === canonicalName.toLowerCase() || normalize(sub.name) === normalize(canonicalName));
+              if (match) return match;
+            }
+          }
+        }
+
+        return null;
+      };
+
+      const matchedSub = matchSub(subcmdDefs, firstToken, normalizedFirst, this.slashCommand.name);
 
       if (matchedSub) {
-        this.options._subcommand = matchedSub.name;
-        tokens.shift(); // Consome o token do subcomando
-        activeOptions = matchedSub.options || [];
+        tokens.shift(); // Consome o token do subcomando/grupo
+
+        // Se for um grupo de subcomandos (ou contiver subcomandos aninhados)
+        const nestedSubs = matchedSub.options?.filter(o => o.type === 1 || o.type === 'SUB_COMMAND');
+        if (nestedSubs && nestedSubs.length > 0) {
+          this.options._group = matchedSub.name;
+          const secondToken = tokens[0] ? tokens[0].toLowerCase() : null;
+          const normalizedSecond = secondToken ? normalize(secondToken) : null;
+          const matchedNested = matchSub(nestedSubs, secondToken, normalizedSecond, this.slashCommand.name);
+          if (matchedNested) {
+            tokens.shift();
+            this.options._subcommand = matchedNested.name;
+            activeOptions = matchedNested.options || [];
+          } else {
+            this.options._subcommand = nestedSubs[0].name;
+            activeOptions = nestedSubs[0].options || [];
+          }
+        } else {
+          this.options._subcommand = matchedSub.name;
+          activeOptions = matchedSub.options || [];
+        }
       } else {
-        // Se o usuário não forneceu o subcomando explicitamente mas chamou o comando principal,
-        // assume o primeiro subcomando padrão (ex: 'lista', 'global', 'ver')
-        this.options._subcommand = subcmdDefs[0].name;
-        activeOptions = subcmdDefs[0].options || [];
+        // Se o usuário não forneceu o subcomando explicitamente:
+        // Se não passou argumentos nenhum, deixa _subcommand como null para o comando poder exibir o menu/painel de comandos!
+        if (this.rawArgs.length === 0) {
+          this.options._subcommand = null;
+          activeOptions = [];
+        } else {
+          const firstDef = subcmdDefs[0];
+          const nestedSubs = firstDef.options?.filter(o => o.type === 1 || o.type === 'SUB_COMMAND');
+          if (nestedSubs && nestedSubs.length > 0) {
+            this.options._group = firstDef.name;
+            this.options._subcommand = nestedSubs[0].name;
+            activeOptions = nestedSubs[0].options || [];
+          } else {
+            this.options._subcommand = firstDef.name;
+            activeOptions = firstDef.options || [];
+          }
+        }
       }
     }
 
@@ -412,7 +566,7 @@ class MessageInteractionShim {
 
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-        const match = token.match(/^<@&(\d+)>$/) || token.match(/^(\d{17,20})$/);
+        const match = token.match(/^<@&(\d+)>$/) || token.match(/^(\d{16,21})$/);
         if (match) {
           const r = this.guild?.roles.cache.get(match[1]);
           if (r) {
@@ -423,8 +577,44 @@ class MessageInteractionShim {
         }
       }
 
+      if (!roleFound && this.message?.mentions?.roles?.size > 0) {
+        roleFound = this.message.mentions.roles.first();
+      }
+
+      // Se ainda não encontrou e há tokens restantes, busca por nome do cargo no servidor
+      if (!roleFound && this.guild?.roles?.cache && tokens.length > 0) {
+        const rolesList = Array.from(this.guild.roles.cache.values());
+        const fullQuery = tokens.join(' ');
+        const fullNorm = normalize(fullQuery);
+
+        let foundByName = rolesList.find(r => normalize(r.name) === fullNorm)
+          || rolesList.find(r => normalize(r.name).startsWith(fullNorm))
+          || rolesList.find(r => normalize(r.name).includes(fullNorm));
+
+        if (foundByName) {
+          roleFound = foundByName;
+          tokens.length = 0;
+        } else {
+          for (let i = 0; i < tokens.length; i++) {
+            const tNorm = normalize(tokens[i]);
+            if (!tNorm) continue;
+            const matchR = rolesList.find(r => normalize(r.name) === tNorm)
+              || rolesList.find(r => normalize(r.name).startsWith(tNorm))
+              || rolesList.find(r => normalize(r.name).includes(tNorm));
+            if (matchR) {
+              roleFound = matchR;
+              tokens.splice(i, 1);
+              break;
+            }
+          }
+        }
+      }
+
       if (roleFound) {
         parsedValues[opt.name.toLowerCase()] = roleFound;
+        if (opt.name.toLowerCase() === 'informações') {
+          parsedValues['cargo'] = roleFound;
+        }
         if (tokenIndexFound !== -1) tokens.splice(tokenIndexFound, 1);
       }
     }
@@ -530,7 +720,7 @@ function findSlashCommand(cmdName, client) {
 async function executeSlashAsPrefix(client, message, slashCommand, args, prefixo, color, database, emoji) {
   try {
     // Cria o adaptador shim
-    const shim = new MessageInteractionShim(message, slashCommand, args, client, emoji, color);
+    const shim = new MessageInteractionShim(message, slashCommand, args, client, emoji, color, prefixo);
     await shim.initializeOptions();
 
     // Verifica se o comando principal ou o subcomando específico foi desativado no servidor
@@ -572,6 +762,7 @@ async function executeSlashAsPrefix(client, message, slashCommand, args, prefixo
 
 module.exports = {
   SLASH_ALIASES,
+  SUBCOMMAND_ALIASES,
   normalize,
   findSlashCommand,
   executeSlashAsPrefix,

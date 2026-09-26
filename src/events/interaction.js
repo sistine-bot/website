@@ -114,6 +114,8 @@ client.on("interactionCreate", async (interaction) => {
     };
   
     if (interaction.isCommand()) {
+      interaction.prefix = prefix;
+      interaction.prefixo = prefix;
   
       const args = [];
       

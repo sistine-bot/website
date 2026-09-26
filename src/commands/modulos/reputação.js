@@ -8,6 +8,7 @@ module.exports = {
   "options": [
     {
       "name": "lista",
+      "aliases": ["list", "ver", "historico", "histórico", "rank", "ranking"],
       "description": "⌊⚙️ Módulos⌉ Veja a lista de reputações enviadas ou recebidas.",
       "type": ApplicationCommandOptionType.Subcommand, // CORREÇÃO: Tipo correto para subcomando
       "options": [
@@ -32,6 +33,7 @@ module.exports = {
     },
     {
       "name": "enviar",
+      "aliases": ["dar", "send", "add", "doar", "give"],
       "description": "⌊⚙️ Módulos⌉ Envie uma reputação para um amigo.",
       "type": ApplicationCommandOptionType.Subcommand, // CORREÇÃO: Tipo correto para subcomando
       "options": [
@@ -53,7 +55,13 @@ module.exports = {
 
   run: async (client, interaction, args, color, database, emoji) => {
     try {
-      const subcommand = interaction.options.getSubcommand();
+      let rawSub = interaction.options?.getSubcommand?.(false) || args?.[0] || 'lista';
+      let subcommand = String(rawSub).toLowerCase();
+      if (['enviar', 'dar', 'send', 'add', 'doar', 'give'].includes(subcommand)) {
+        subcommand = 'enviar';
+      } else {
+        subcommand = 'lista';
+      }
 
       switch (subcommand) {
         case 'lista': {
