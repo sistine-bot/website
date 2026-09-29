@@ -160,6 +160,12 @@ try {
     firebaseApp.initializeApp(dbCreds);
     db = firebaseApp.database();
     console.log("[Firebase] Banco de dados conectado com sucesso.");
+    try {
+      const { initBadgeManager } = require("./src/utils/badgeManager.js");
+      initBadgeManager(db);
+    } catch (e) {
+      console.warn("[BadgeManager] Falha ao iniciar:", e.message);
+    }
   } else {
     console.warn("[Firebase] AVISO: Banco de dados não configurado (databases.json vazio ou sem apiKey). O Dashboard não poderá salvar dados.");
   }
@@ -839,7 +845,7 @@ async function startFullStackApp() {
   });
 
   // Helper para estruturar os dados completos do usuário para o Dashboard e Lojas
-  function buildUserDbResponse(userId, userEcoData, flagsArray = []) {
+  function buildUserDbResponse(userId, userEcoData, flagsArray = [], extraRankData = {}) {
     const perfil = userEcoData.Perfil || {};
     const info = perfil.Informações || perfil.Informacoes || {};
     const equipados = perfil.Equipados || {};
@@ -954,6 +960,9 @@ async function startFullStackApp() {
         Backgrounds: backgroundsObj
       },
       saldo: userEcoData.saldo || { carteira: 0, banco: 0 },
+      rankBanco: extraRankData.rankBanco !== undefined ? extraRankData.rankBanco : (userEcoData.rankBanco ?? "N/A"),
+      rankBancoTotal: extraRankData.rankBancoTotal !== undefined ? extraRankData.rankBancoTotal : (userEcoData.rankBancoTotal ?? 0),
+      rank: extraRankData.rankBanco !== undefined ? extraRankData.rankBanco : (userEcoData.rankBanco ?? "N/A"),
       vip: userEcoData.vip || { vip: 0, tempo: 0, data: null },
       inventario: {
         ...inventario,
@@ -978,7 +987,15 @@ async function startFullStackApp() {
       },
       catalog: {
         backgrounds: BACKGROUNDS_CATALOG,
-        layouts: LAYOUTS_CATALOG
+        layouts: LAYOUTS_CATALOG,
+        badges: (() => {
+          try {
+            const { getCachedBadges } = require('./src/utils/badgeManager.js');
+            return getCachedBadges(true);
+          } catch (e) {
+            return {};
+          }
+        })()
       }
     };
   }
@@ -1004,14 +1021,26 @@ async function startFullStackApp() {
       } catch (e) {}
     }
 
+    let rankData = { rankBanco: "N/A", rankBancoTotal: 0 };
+    if (db) {
+      try {
+        const { getUserGlobalRank } = require('./src/utils/functions.js');
+        const rankObj = await getUserGlobalRank(db, userId, 'saldo/banco');
+        if (rankObj) {
+          rankData.rankBanco = rankObj.rank;
+          rankData.rankBancoTotal = rankObj.total;
+        }
+      } catch (e) {}
+    }
+
     if (!db) {
-      return res.json(buildUserDbResponse(userId, {}, flagsArray));
+      return res.json(buildUserDbResponse(userId, {}, flagsArray, rankData));
     }
 
     try {
       const snap = await db.ref(`economia/${userId}`).once('value');
       const userEcoData = snap.val() || {};
-      res.json(buildUserDbResponse(userId, userEcoData, flagsArray));
+      res.json(buildUserDbResponse(userId, userEcoData, flagsArray, rankData));
     } catch (e) {
       console.error("Erro ao ler banco de dados do usuário:", e);
       res.status(500).json({ error: "Erro ao buscar dados do usuário na base de dados." });
@@ -1317,9 +1346,19 @@ async function startFullStackApp() {
       const snap = await db.ref(`economia/${userId}`).once('value');
       const updatedData = snap.val() || {};
 
+      let rankData = { rankBanco: "N/A", rankBancoTotal: 0 };
+      try {
+        const { getUserGlobalRank } = require('./src/utils/functions.js');
+        const rankObj = await getUserGlobalRank(db, userId, 'saldo/banco');
+        if (rankObj) {
+          rankData.rankBanco = rankObj.rank;
+          rankData.rankBancoTotal = rankObj.total;
+        }
+      } catch (e) {}
+
       res.json({
         success: true,
-        userDb: buildUserDbResponse(userId, updatedData)
+        userDb: buildUserDbResponse(userId, updatedData, [], rankData)
       });
     } catch (e) {
       console.error("Erro ao atualizar dados do usuário:", e);

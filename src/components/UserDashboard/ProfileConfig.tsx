@@ -352,7 +352,7 @@ export default function ProfileConfig({
                     className={`relative aspect-video rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 ${
                       isSelected
                         ? 'ring-[3px] ring-white border-none shadow-xl shadow-white/10 scale-105 z-10'
-                        : 'border-2 border-zinc-800 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'
+                        : 'border-2 border-zinc-800 opacity-60 hover:opacity-100 grayscale-60 hover:grayscale-0'
                     }`}
                   >
                     <OptimizedShopImage
@@ -392,7 +392,7 @@ export default function ProfileConfig({
                     className={`relative aspect-video rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 ${
                       isSelected
                         ? 'ring-[3px] ring-white border-none scale-105 z-10 shadow-xl shadow-white/10'
-                        : 'border-2 border-zinc-800 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'
+                        : 'border-2 border-zinc-800 opacity-60 hover:opacity-100 grayscale-60 hover:grayscale-0'
                     }`}
                   >
                     <OptimizedShopImage

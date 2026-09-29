@@ -6,7 +6,6 @@ const cron = require('node-cron');
 
 // Variáveis persistentes fora da função para lembrar o último status exibido de verdade
 let previousRandomMensagem = '';
-let previousRandomActivity = '';
 
 client.on('clientReady', async () => {
   iniciarRotinaDeLimpeza();
@@ -32,44 +31,106 @@ async function updateStatus() {
   const snapshot = await database.ref(`Administração/Status/`).once('value');
   const statusData = snapshot.val() || {};
 
-  // Fallbacks locais caso não esteja configurado no Firebase
-  const statusList = statusData.RandomStatus || [
-    `${client.guilds.cache.size} servidores`,
-    `${client.guilds.cache.reduce((a, b) => a + b.memberCount, 0)} usuários`,
-    'Me convide para o seu servidor!',
+  const totalServidores = client.guilds.cache.size;
+  const totalUsuarios = client.guilds.cache.reduce((a, b) => a + (b.memberCount || 0), 0);
+
+  // Lista padrão de mensagens simples, alinhadas à vibe do bot e novidades recentes
+  const defaultActivities = [
+    // 🌾 Novidades Recentes (Fazenda & Plantação)
+    { name: '🌾 Cuidando da fazenda | /fazenda', type: ActivityType.Custom },
+    { name: '🥕 Colhendo a plantação | /plantacao', type: ActivityType.Custom },
+    { name: '🌱 Regando as mudas na /plantacao', type: ActivityType.Custom },
+    { name: '🐔 Alimentando os animais na /fazenda', type: ActivityType.Custom },
+
+    // 📈 Novidades Recentes (Níveis, XP & Recuperar)
+    { name: '📈 Subindo de nível | /nivel', type: ActivityType.Custom },
+    { name: '⭐ Ganhando XP nas conversas | /nivel', type: ActivityType.Custom },
+    { name: '🛡️ Protegendo contas | /recuperar', type: ActivityType.Custom },
+
+    // 💼 Economia & Trabalho
+    { name: '💼 Trabalhando duro | /trabalhar', type: ActivityType.Custom },
+    { name: '💰 Resgatando recompensas no /daily', type: ActivityType.Custom },
+    { name: '🏪 Negociando itens no /market', type: ActivityType.Custom },
+    { name: '🎒 Organizando a mochila | /inventario', type: ActivityType.Custom },
+    { name: '🎣 Pescando e caçando | /pescar', type: ActivityType.Custom },
+
+    // 🎰 Jogos, Cassino & Apostas
+    { name: '🎰 Apostando fichas | /apostar', type: ActivityType.Custom },
+    { name: '🎟️ Raspando a sorte | /raspadinha', type: ActivityType.Custom },
+    { name: 'Blackjack no cassino', type: ActivityType.Playing },
+    { name: 'corrida de cavalos | /corrida', type: ActivityType.Competing },
+
+    // 💍 Social, Casamento & Relacionamentos
+    { name: '💍 Celebrando casamentos | /casamento', type: ActivityType.Custom },
+    { name: '💖 Namorando no servidor | /namorar', type: ActivityType.Custom },
+    { name: '⭐ Enviando reputações | /reputacao', type: ActivityType.Custom },
+    { name: '🎨 Personalizando perfil com /perfil', type: ActivityType.Custom },
+
+    // 📌 Ajuda & Comandos
+    { name: '✨ Use /help para ver meus comandos', type: ActivityType.Custom },
+    { name: '/help para ver meus comandos', type: ActivityType.Listening },
+    { name: 'suas mensagens e comandos', type: ActivityType.Listening },
+    { name: 'Sistine Bot | /help', type: ActivityType.Playing },
+
+    // 📊 Estatísticas
+    { name: `${totalServidores.toLocaleString('pt-BR')} servidores incríveis`, type: ActivityType.Watching },
+    { name: `${totalUsuarios.toLocaleString('pt-BR')} usuários pelo Discord`, type: ActivityType.Watching },
+    { name: 'o ranking global no /top', type: ActivityType.Watching },
+    { name: 'pelo topo do /top', type: ActivityType.Competing },
   ];
 
-  const typeList = statusData.Type || [ActivityType.Watching, ActivityType.Streaming, ActivityType.Playing];
+  // Caso haja lista personalizada no Firebase, utiliza e substitui variáveis dinâmicas
+  let activityList = [];
+  if (Array.isArray(statusData.RandomStatus) && statusData.RandomStatus.length > 0) {
+    activityList = statusData.RandomStatus.map(item => {
+      if (typeof item === 'string') {
+        const text = item
+          .replace(/{servers}/g, totalServidores.toLocaleString('pt-BR'))
+          .replace(/{users}/g, totalUsuarios.toLocaleString('pt-BR'));
+        return { name: text };
+      }
+      return item;
+    });
+  } else {
+    activityList = defaultActivities;
+  }
+
+  // Garante que a atividade mude e não se repita consecutivamente
+  let selected = null;
+  if (activityList.length > 1) {
+    do {
+      selected = activityList[Math.floor(Math.random() * activityList.length)];
+    } while (selected.name === previousRandomMensagem);
+  } else {
+    selected = activityList[0] || { name: '/help', type: ActivityType.Playing };
+  }
+  previousRandomMensagem = selected.name;
+
+  // Determina o tipo de atividade
+  let chosenType = selected.type;
+  if (chosenType === undefined) {
+    const typeList = statusData.Type || [ActivityType.Watching, ActivityType.Playing, ActivityType.Custom];
+    chosenType = typeList[Math.floor(Math.random() * typeList.length)] ?? ActivityType.Custom;
+  }
+
+  const activityPayload = {
+    name: selected.name,
+    type: chosenType,
+  };
+
+  if (chosenType === ActivityType.Custom) {
+    activityPayload.state = selected.name;
+  } else if (chosenType === ActivityType.Streaming) {
+    activityPayload.url = selected.url || statusData.StreamUrl || 'https://www.twitch.tv/discord';
+  }
+
+  // Seleciona o status de presença (online, dnd, idle)
   const presenceList = statusData.Status || ['online', 'dnd', 'idle'];
-
-  let chosenMensagem = '';
-  let chosenActivity = '';
-
-  // Garante que o status mude e não se repita (se houver mais de 1 item na lista)
-  if (statusList.length > 1) {
-    do {
-      chosenMensagem = statusList[Math.floor(Math.random() * statusList.length)];
-    } while (chosenMensagem === previousRandomMensagem);
-  } else {
-    chosenMensagem = statusList[0] || '/help';
-  }
-  previousRandomMensagem = chosenMensagem;
-
-  if (typeList.length > 1) {
-    do {
-      chosenActivity = typeList[Math.floor(Math.random() * typeList.length)];
-    } while (chosenActivity === previousRandomActivity);
-  } else {
-    chosenActivity = typeList[0] || ActivityType.Custom;
-  }
-  previousRandomActivity = chosenActivity;
-
-  // Seleciona um status de presença (online, dnd, idle) aleatório
   const chosenPresence = presenceList[Math.floor(Math.random() * presenceList.length)] || 'online';
 
-  // CORREÇÃO: Aplica a atividade e o status de presença de forma correta e dinâmica
+  // Aplica a atividade e o status de presença de forma correta e dinâmica
   client.user.setPresence({
-    activities: [{ name: chosenMensagem, type: chosenActivity }],
+    activities: [activityPayload],
     status: chosenPresence
   });
 }

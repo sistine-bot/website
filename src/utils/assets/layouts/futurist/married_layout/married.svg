@@ -1,0 +1,19 @@
+<svg width="1200" height="670" viewBox="0 0 1200 670" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="marriedGrad" x1="880" y1="468" x2="1200" y2="468" gradientUnits="userSpaceOnUse">
+      <stop offset="0.0" stop-color="#005DC7" stop-opacity="0"/>
+      <stop offset="0.25" stop-color="#005DC7" stop-opacity="0.12"/>
+      <stop offset="0.65" stop-color="#005DC7" stop-opacity="0.32"/>
+      <stop offset="1.0" stop-color="#005DC7" stop-opacity="0.38"/>
+    </linearGradient>
+  </defs>
+  <rect x="880" y="427" width="320" height="82" fill="url(#marriedGrad)"/>
+  <g transform="translate(1142, 442) scale(1.4)">
+    <path fill="#9AAAB4" d="M18 12c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm0 20c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z"/>
+    <path fill="#0094FF" d="M29 5l-4-5H11L7 5l11 9z"/>
+    <path fill="#00D1FF" d="M29 5l-4-5H11L7 5h11z"/>
+    <path fill="#0094FF" d="M29 5l-4-5h-7v5h1z"/>
+    <path fill="#00D1FF" d="M18 5h11l-11 9z"/>
+    <path fill="#9AAAB4" d="M25 13c0 1.657-1.343 3-3 3h-8c-1.657 0-3-1.343-3-3s1.343-3 3-3h8c1.657 0 3 1.343 3 3z"/>
+  </g>
+</svg>

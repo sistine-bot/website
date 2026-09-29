@@ -1,3 +1,12 @@
+import {
+  buildCompleteLayoutsCatalog,
+  LAYOUT_COLOR_PALETTES,
+  getLayoutSvgDataUri,
+  getMarriedSvgDataUri,
+  buildLayoutSvgString,
+  buildMarriedSvgString
+} from './layoutSvgEngine.js';
+
 export const BACKGROUNDS_CATALOG = [
   {
     id: 'default_bg',
@@ -226,11 +235,11 @@ export const BACKGROUNDS_CATALOG = [
   },
   {
     id: 'bg_minecraft_05',
-    name: 'Lhama na neve',
-    description: 'Uma bela paiságem de uma lhama na neve.',
+    name: 'Vila',
+    description: 'Uma vista da vila.',
     category: 'Jogos',
     price: 18000,
-    url: '/src/utils/assets/backgrounds/bg_minecraft_04_lhama.png',
+    url: 'src/utils/assets/backgrounds/bg_minecraft_05_vila.png',
     isDefault: false,
     vipOnly: false
   },
@@ -585,191 +594,17 @@ export const LAYOUT_BASE_TEMPLATES = {
 
 // ==========================================
 // 3. CATÁLOGO DE LAYOUTS (MOLDURAS & TEMAS)
+// Gerado dinamicamente a partir dos layouts base SVG e paletas de cores
 // ==========================================
-export const LAYOUTS_CATALOG = [
-  // Layouts Clássicos (Simple)
-  {
-    id: 'classic_azul',
-    name: 'Clássico Azul Safira',
-    description: 'Layout clássico padrão com card superior de informações e detalhes em azul.',
-    category: 'Clássico',
-    price: 0,
-    themeColor: '#3b82f6',
-    themeMode: 'dark',
-    textColor: '#ffffff',
-    previewUrl: '/src/utils/assets/layouts/futurist/azul.png',
-    overlay: '/src/utils/assets/layouts/futurist/azul.png',
-    overlayMarried: '/src/utils/assets/layouts/futurist/married_layout/mariedlayout_azul.png',
-    overlayBadge: false,
-    templateType: 'classic',
-    isDefault: true,
-    vipOnly: false
-  },
-  {
-    id: 'classic_roxo',
-    name: 'Clássico Roxo Imperial',
-    description: 'Moldura clássica estilizada com tons vibrantes de ametista e violeta neon.',
-    category: 'Clássico',
-    price: 4000,
-    themeColor: '#a855f7',
-    themeMode: 'dark',
-    textColor: '#ffffff',
-    previewUrl: '/src/utils/assets/layouts/futurist/roxo.png',
-    overlay: '/src/utils/assets/layouts/futurist/roxo.png',
-    overlayMarried: '/src/utils/assets/layouts/futurist/married_layout/marriedlayout_roxo.png',
-    templateType: 'classic',
-    isDefault: false,
-    vipOnly: false
-  },
-  {
-    id: 'classic_branco',
-    name: 'Clássico Branco Puro',
-    description: 'Design limpo e moderno em tons brancos translúcidos de alto contraste.',
-    category: 'Clássico',
-    price: 5000,
-    themeColor: '#f8fafc',
-    themeMode: 'dark',
-    textColor: '#000000',
-    previewUrl: '/src/utils/assets/layouts/futurist/branco.png',
-    overlay: '/src/utils/assets/layouts/futurist/branco.png',
-    overlayMarried: '/src/utils/assets/layouts/futurist/married_layout/marriedlayout_branco.png',
-    templateType: 'classic',
-    isDefault: false,
-    vipOnly: false
-  },
-  {
-    id: 'classic_preto',
-    name: 'Clássico Dark Obsidian',
-    description: 'Visual dark minimalista com bordas escuras sofisticadas.',
-    category: 'Clássico',
-    price: 6000,
-    themeColor: '#18181b',
-    themeMode: 'dark',
-    textColor: '#ffffff',
-    previewUrl: '/src/utils/assets/layouts/futurist/preto.png',
-    overlay: '/src/utils/assets/layouts/futurist/preto.png',
-    overlayMarried: '/src/utils/assets/layouts/futurist/married_layout/marriedlayout_preto.png',
-    templateType: 'classic',
-    isDefault: false,
-    vipOnly: false
-  },
-  {
-    id: 'classic_vermelho',
-    name: 'Clássico Rubro Carmesim',
-    description: 'Tema ardente e imponente com destaques avermelhados de alto impacto.',
-    category: 'Clássico',
-    price: 7500,
-    themeColor: '#ef4444',
-    themeMode: 'dark',
-    textColor: '#ffffff',
-    previewUrl: '/src/utils/assets/layouts/futurist/vermelho.png',
-    overlay: '/src/utils/assets/layouts/futurist/vermelho.png',
-    overlayMarried: '/src/utils/assets/layouts/futurist/married_layout/marriedlayout_vermelho.png',
-    templateType: 'classic',
-    isDefault: false,
-    vipOnly: false
-  },
-  {
-    id: 'classic_verde',
-    name: 'Clássico Verde Esmeralda',
-    description: 'Harmonia e elegância natural com detalhes esmeralda brilhantes.',
-    category: 'Clássico',
-    price: 7500,
-    themeColor: '#10b981',
-    themeMode: 'dark',
-    textColor: '#ffffff',
-    previewUrl: '/src/utils/assets/layouts/futurist/verde.png',
-    overlay: '/src/utils/assets/layouts/futurist/verde.png',
-    overlayMarried: '/src/utils/assets/layouts/futurist/married_layout/marriedlayout_verde.png',
-    templateType: 'classic',
-    isDefault: false,
-    vipOnly: false
-  },
-  {
-    id: 'classic_laranja',
-    name: 'Clássico Âmbar Sunset',
-    description: 'Calor e energia vibrante em tons dourados e alaranjados.',
-    category: 'Clássico',
-    price: 7500,
-    themeColor: '#f97316',
-    themeMode: 'dark',
-    textColor: '#ffffff',
-    previewUrl: '/src/utils/assets/layouts/futurist/laranja.png',
-    overlay: '/src/utils/assets/layouts/futurist/laranja.png',
-    overlayMarried: '/src/utils/assets/layouts/futurist/married_layout/marriedlayout_laranja.png',
-    templateType: 'classic',
-    isDefault: false,
-    vipOnly: false
-  },
+export const LAYOUTS_CATALOG = buildCompleteLayoutsCatalog();
 
-  // Layouts Modernos Inferiores
-  {
-    id: 'embaixo_azul',
-    name: 'Moderno Inferior Azul',
-    description: 'Layout moderno com informações posicionadas na base, detalhes em azul e texto escuro.',
-    category: 'Moderno',
-    price: 18000,
-    themeColor: '#0ea5e9',
-    themeMode: 'light',
-    textColor: '#000000',
-    textShadow: 'none',
-    previewUrl: '/src/utils/assets/layouts/simple/azul.png',
-    overlay: '/src/utils/assets/layouts/simple/azul.png',
-    templateType: 'modern',
-    isDefault: false,
-    vipOnly: false
-  },
-  {
-    id: 'embaixo_preto',
-    name: 'Clean inferior preto',
-    description: 'Layout moderno com informações posicionadas na base, detalhes em preto e texto claro.',
-    category: 'Moderno',
-    price: 25000,
-    themeColor: '#000000',
-    themeMode: 'dark',
-    textColor: '#ffffff',
-    textShadow: '0 1px 3px rgba(0,0,0,0.8)',
-    previewUrl: '/src/utils/assets/layouts/simple/preto.png',
-    overlay: '/src/utils/assets/layouts/simple/preto.png',
-    templateType: 'modern',
-    isDefault: false,
-    vipOnly: false
-  },
-
-  // Novos Layouts de Prestígio e Endgame
-  {
-    id: 'cyberpunk_neon',
-    name: 'Cyberpunk Holográfico',
-    description: 'Design futurista com circuitos luminescentes em neon ciano e magenta.',
-    category: 'Cyberpunk',
-    price: 50000,
-    themeColor: '#06b6d4',
-    themeMode: 'dark',
-    textColor: '#ffffff',
-    textShadow: '0 0 8px rgba(6,182,212,0.8)',
-    previewUrl: '/src/utils/assets/layouts/futurist/azul.png',
-    overlay: '/src/utils/assets/layouts/futurist/azul.png',
-    templateType: 'classic',
-    isDefault: false,
-    vipOnly: false
-  },
-  {
-    id: 'vip_gold_frame',
-    name: 'Imperial Gold Prestige',
-    description: 'Moldura nobre banhada a ouro para os magnatas da Sistine.',
-    category: 'VIP',
-    price: 75000,
-    themeColor: '#eab308',
-    themeMode: 'dark',
-    textColor: '#fef08a',
-    textShadow: '0 0 10px rgba(234,179,8,0.7)',
-    previewUrl: '/src/utils/assets/layouts/futurist/laranja.png',
-    overlay: '/src/utils/assets/layouts/futurist/laranja.png',
-    templateType: 'classic',
-    isDefault: false,
-    vipOnly: false
-  }
-];
+export {
+  LAYOUT_COLOR_PALETTES,
+  getLayoutSvgDataUri,
+  getMarriedSvgDataUri,
+  buildLayoutSvgString,
+  buildMarriedSvgString
+};
 
 // ==========================================
 // 4. FUNÇÕES DE BUSCA E RESOLUÇÃO
@@ -806,7 +641,24 @@ export function getBackgroundById(idOrUrl) {
 
 export function getLayoutById(id) {
   if (!id) return LAYOUTS_CATALOG[0];
-  return LAYOUTS_CATALOG.find(l => l.id === id) || LAYOUTS_CATALOG[0];
+
+  const foundDirect = LAYOUTS_CATALOG.find(l => l.id === id);
+  if (foundDirect) return foundDirect;
+
+  // Fallback caso venha apenas o nome da cor (ex: 'azul', 'roxo', etc.)
+  const foundByColor = LAYOUTS_CATALOG.find(l => l.id === `classic_${id}` || l.id === `embaixo_${id}`);
+  if (foundByColor) return foundByColor;
+
+  // Fallback caso venha um caminho de arquivo legado (.png)
+  const cleanId = String(id)
+    .replace(/^.*\/layouts\/(futurist\/|simple\/)?/, '')
+    .replace(/\.png$/, '')
+    .toLowerCase();
+
+  const foundByPath = LAYOUTS_CATALOG.find(l => l.id === cleanId || l.id === `classic_${cleanId}` || l.id === `embaixo_${cleanId}`);
+  if (foundByPath) return foundByPath;
+
+  return LAYOUTS_CATALOG[0];
 }
 
 export function getLayoutConfig(id) {

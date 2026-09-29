@@ -763,8 +763,7 @@ async function ReputationUpdate(ctx, user, mensagem, Dadas, Recebidas) {
 }
 
 const { DISCORD_FLAGS_MAP, HYPESQUAD_HOUSES, BADGE_LEVELS_CONFIG, BOT_CUSTOM_BADGES_MAP } = require('./badgesMap.js');
-
-const OWNER_IDS = ['1443828312936812554'];
+const { getAllBadges } = require('./badgeManager.js');
 
 function parseFirebaseList(rawData) {
   if (!rawData) return [];
@@ -780,7 +779,16 @@ function parseFirebaseList(rawData) {
 
 async function getResolvedUserBadges(userDiscordObj, firebaseDb, member = null, preloadedData = null) {
   const userId = String(userDiscordObj.id);
-  const isOwnerOrDev = OWNER_IDS.includes(userId);
+
+  // Obtém referência do cliente Discord para checagem de cargos oficiais (criador/developer)
+  let clientInstance = userDiscordObj.client || global.client;
+  if (!clientInstance) {
+    try {
+      clientInstance = require('../../index.js');
+    } catch (e) {}
+  }
+  const isCreatorRole = Boolean(clientInstance?.config?.cargos?.criador?.includes(userId));
+  const isDevRole = Boolean(clientInstance?.config?.cargos?.developer?.includes(userId));
 
   let userBadgesData = {};
   let vipData = {};
@@ -818,6 +826,9 @@ async function getResolvedUserBadges(userDiscordObj, firebaseDb, member = null, 
     return true;
   }
 
+  // 1. Obtém catálogo global com overrides e badges customizadas criadas no banco de dados
+  const allBadgesCatalog = await getAllBadges(firebaseDb, true).catch(() => ({}));
+
   const resolvedBadges = [];
 
   // 2. Extrai as Flags nativas do Discord
@@ -833,10 +844,16 @@ async function getResolvedUserBadges(userDiscordObj, firebaseDb, member = null, 
 
   // 3. FLAGS ESTÁTICAS NATIVAS DO DISCORD
   Object.values(DISCORD_FLAGS_MAP).forEach((badgeInfo) => {
-    const isUnlocked = userFlagsArray.includes(badgeInfo.id) || isOwnerOrDev || customUnlocked.includes(badgeInfo.id);
+    const dbConfig = allBadgesCatalog[badgeInfo.id] || {};
+    if (dbConfig.enabled === false) return; // Desativada globalmente no DB
+
+    const isUnlocked = userFlagsArray.includes(badgeInfo.id) || customUnlocked.includes(badgeInfo.id);
     if (isUnlocked) {
       resolvedBadges.push({
         ...badgeInfo,
+        name: dbConfig.name || badgeInfo.name,
+        description: dbConfig.description || badgeInfo.description,
+        icon: dbConfig.icon || badgeInfo.icon,
         unlocked: true,
         active: isBadgeActive(badgeInfo.id)
       });
@@ -845,121 +862,196 @@ async function getResolvedUserBadges(userDiscordObj, firebaseDb, member = null, 
 
   // 4. HYPESQUAD DINÂMICO
   let userHouseId = userFlagsArray.find(f => HYPESQUAD_HOUSES[f]);
-  if (!userHouseId && isOwnerOrDev && selectedHypeSquad && HYPESQUAD_HOUSES[selectedHypeSquad]) {
+  if (!userHouseId && selectedHypeSquad && HYPESQUAD_HOUSES[selectedHypeSquad] && customUnlocked.some(k => HYPESQUAD_HOUSES[k])) {
     userHouseId = selectedHypeSquad;
   }
   if (userHouseId && HYPESQUAD_HOUSES[userHouseId]) {
     const houseInfo = HYPESQUAD_HOUSES[userHouseId];
-    resolvedBadges.push({
-      ...houseInfo,
-      type: 'discord',
-      unlocked: true,
-      active: isBadgeActive(houseInfo.id, userHouseId)
-    });
+    const dbConfig = allBadgesCatalog[userHouseId] || allBadgesCatalog.hypesquad || {};
+    if (dbConfig.enabled !== false) {
+      resolvedBadges.push({
+        ...houseInfo,
+        name: dbConfig.name || houseInfo.name,
+        description: dbConfig.description || houseInfo.description,
+        icon: dbConfig.icon || houseInfo.icon,
+        type: 'discord',
+        unlocked: true,
+        active: isBadgeActive(houseInfo.id, userHouseId)
+      });
+    }
   }
 
   // 5. BADGES COM NÍVEIS
   // A) Bug Hunter
-  const hasBug2 = userFlagsArray.includes('BugHunterLevel2') || customUnlocked.includes('bug_hunter_2') || isOwnerOrDev;
-  const hasBug1 = userFlagsArray.includes('BugHunterLevel1') || customUnlocked.includes('bug_hunter_1') || hasBug2;
-  const bugMaxLevel = hasBug2 ? 2 : (hasBug1 ? 1 : 0);
+  const bugConfig = allBadgesCatalog.bug_hunter || BADGE_LEVELS_CONFIG.bug_hunter;
+  if (bugConfig.enabled !== false) {
+    const hasBug2 = userFlagsArray.includes('BugHunterLevel2') || customUnlocked.includes('bug_hunter_2') || customUnlocked.includes('BugHunterLevel2');
+    const hasBug1 = userFlagsArray.includes('BugHunterLevel1') || customUnlocked.includes('bug_hunter_1') || customUnlocked.includes('BugHunterLevel1') || hasBug2;
+    const bugMaxLevel = hasBug2 ? 2 : (hasBug1 ? 1 : 0);
 
-  if (bugMaxLevel > 0) {
-    const chosenLevelNum = Number(selectedLevels.bug_hunter) || bugMaxLevel;
-    const finalLevel = Math.min(chosenLevelNum, bugMaxLevel);
-    const levelInfo = BADGE_LEVELS_CONFIG.bug_hunter.levels.find(l => l.level === finalLevel) || BADGE_LEVELS_CONFIG.bug_hunter.levels[0];
+    if (bugMaxLevel > 0) {
+      const chosenLevelNum = Number(selectedLevels.bug_hunter) || bugMaxLevel;
+      const finalLevel = Math.min(chosenLevelNum, bugMaxLevel);
+      const levelsArray = bugConfig.levels || BADGE_LEVELS_CONFIG.bug_hunter.levels;
+      const levelInfo = levelsArray.find(l => l.level === finalLevel) || levelsArray[0];
 
-    resolvedBadges.push({
-      id: BADGE_LEVELS_CONFIG.bug_hunter.id,
-      name: levelInfo.name,
-      description: levelInfo.description,
-      icon: levelInfo.icon,
-      type: 'discord',
-      unlocked: true,
-      active: isBadgeActive(BADGE_LEVELS_CONFIG.bug_hunter.id)
-    });
+      resolvedBadges.push({
+        id: BADGE_LEVELS_CONFIG.bug_hunter.id,
+        name: levelInfo.name,
+        description: levelInfo.description,
+        icon: levelInfo.icon,
+        type: 'discord',
+        unlocked: true,
+        active: isBadgeActive(BADGE_LEVELS_CONFIG.bug_hunter.id)
+      });
+    }
   }
 
-  // B) Booster (Detecta automaticamente do servidor se for membro, ou do Firebase, ou Dev)
-  const isMemberBooster = Boolean(member && member.premiumSince);
-  let calculatedBoosterLvl = Number(userBadgesData.boosterLevel) || 0;
+  // B) Booster (Detecta automaticamente do servidor se for membro, ou do Firebase, ou customUnlocked)
+  const boosterConfig = allBadgesCatalog.booster || BADGE_LEVELS_CONFIG.booster;
+  if (boosterConfig.enabled !== false) {
+    const isMemberBooster = Boolean(member && member.premiumSince);
+    let calculatedBoosterLvl = Number(userBadgesData.boosterLevel) || 0;
 
-  if (isMemberBooster && member.premiumSince) {
-    const boostMonths = Math.max(1, Math.floor((Date.now() - new Date(member.premiumSince).getTime()) / (1000 * 60 * 60 * 24 * 30)));
-    // Calcula o nível de boost (1 a 9) com base nos meses
-    if (boostMonths >= 24) calculatedBoosterLvl = 9;
-    else if (boostMonths >= 18) calculatedBoosterLvl = 8;
-    else if (boostMonths >= 15) calculatedBoosterLvl = 7;
-    else if (boostMonths >= 12) calculatedBoosterLvl = 6;
-    else if (boostMonths >= 9) calculatedBoosterLvl = 5;
-    else if (boostMonths >= 6) calculatedBoosterLvl = 4;
-    else if (boostMonths >= 3) calculatedBoosterLvl = 3;
-    else if (boostMonths >= 2) calculatedBoosterLvl = 2;
-    else calculatedBoosterLvl = 1;
-  }
+    if (isMemberBooster && member.premiumSince) {
+      const boostMonths = Math.max(1, Math.floor((Date.now() - new Date(member.premiumSince).getTime()) / (1000 * 60 * 60 * 24 * 30)));
+      if (boostMonths >= 24) calculatedBoosterLvl = 9;
+      else if (boostMonths >= 18) calculatedBoosterLvl = 8;
+      else if (boostMonths >= 15) calculatedBoosterLvl = 7;
+      else if (boostMonths >= 12) calculatedBoosterLvl = 6;
+      else if (boostMonths >= 9) calculatedBoosterLvl = 5;
+      else if (boostMonths >= 6) calculatedBoosterLvl = 4;
+      else if (boostMonths >= 3) calculatedBoosterLvl = 3;
+      else if (boostMonths >= 2) calculatedBoosterLvl = 2;
+      else calculatedBoosterLvl = 1;
+    }
 
-  const hasBoosterUnlocked = isMemberBooster || customUnlocked.includes('booster') || customUnlocked.includes('server_booster') || isOwnerOrDev;
-  const boosterMaxLevel = isOwnerOrDev ? 9 : (hasBoosterUnlocked ? Math.max(calculatedBoosterLvl, 1) : 0);
+    const hasBoosterUnlocked = isMemberBooster || customUnlocked.includes('booster') || customUnlocked.includes('server_booster');
+    const boosterMaxLevel = hasBoosterUnlocked ? Math.max(calculatedBoosterLvl, 1) : 0;
 
-  if (boosterMaxLevel > 0) {
-    const chosenLevelNum = Number(selectedLevels.booster) || boosterMaxLevel;
-    const finalLevel = Math.min(chosenLevelNum, boosterMaxLevel);
-    const levelInfo = BADGE_LEVELS_CONFIG.booster.levels.find(l => l.level === finalLevel) || BADGE_LEVELS_CONFIG.booster.levels[0];
+    if (boosterMaxLevel > 0) {
+      const chosenLevelNum = Number(selectedLevels.booster) || boosterMaxLevel;
+      const finalLevel = Math.min(chosenLevelNum, boosterMaxLevel);
+      const levelsArray = boosterConfig.levels || BADGE_LEVELS_CONFIG.booster.levels;
+      const levelInfo = levelsArray.find(l => l.level === finalLevel) || levelsArray[0];
 
-    resolvedBadges.push({
-      id: BADGE_LEVELS_CONFIG.booster.id,
-      name: levelInfo.name,
-      description: levelInfo.description,
-      icon: levelInfo.icon,
-      type: 'bot',
-      unlocked: true,
-      active: isBadgeActive(BADGE_LEVELS_CONFIG.booster.id)
-    });
+      resolvedBadges.push({
+        id: BADGE_LEVELS_CONFIG.booster.id,
+        name: levelInfo.name,
+        description: levelInfo.description,
+        icon: levelInfo.icon,
+        type: 'bot',
+        unlocked: true,
+        active: isBadgeActive(BADGE_LEVELS_CONFIG.booster.id)
+      });
+    }
   }
 
   // C) VIP
-  const isVipOuro = vipData.vip === 'ouro' || vipData.vip === 2 || customUnlocked.includes('vip_ouro') || isOwnerOrDev;
-  const isVipPrata = vipData.vip === 'prata' || vipData.vip === 1 || customUnlocked.includes('vip_prata') || isVipOuro;
-  const vipMaxLevel = isVipOuro ? 2 : (isVipPrata ? 1 : 0);
+  const vipConfig = allBadgesCatalog.vip || BADGE_LEVELS_CONFIG.vip;
+  if (vipConfig.enabled !== false) {
+    const isVipOuro = vipData.vip === 'ouro' || vipData.vip === 2 || customUnlocked.includes('vip_ouro');
+    const isVipPrata = vipData.vip === 'prata' || vipData.vip === 1 || customUnlocked.includes('vip_prata') || isVipOuro;
+    const vipMaxLevel = isVipOuro ? 2 : (isVipPrata ? 1 : 0);
 
-  if (vipMaxLevel > 0) {
-    const chosenLevelNum = Number(selectedLevels.vip) || vipMaxLevel;
-    const finalLevel = Math.min(chosenLevelNum, vipMaxLevel);
-    const levelInfo = BADGE_LEVELS_CONFIG.vip.levels.find(l => l.level === finalLevel) || BADGE_LEVELS_CONFIG.vip.levels[0];
+    if (vipMaxLevel > 0) {
+      const chosenLevelNum = Number(selectedLevels.vip) || vipMaxLevel;
+      const finalLevel = Math.min(chosenLevelNum, vipMaxLevel);
+      const levelsArray = vipConfig.levels || BADGE_LEVELS_CONFIG.vip.levels;
+      const levelInfo = levelsArray.find(l => l.level === finalLevel) || levelsArray[0];
 
-    resolvedBadges.push({
-      id: BADGE_LEVELS_CONFIG.vip.id,
-      name: levelInfo.name,
-      description: levelInfo.description,
-      icon: levelInfo.icon,
-      type: 'bot',
-      unlocked: true,
-      active: isBadgeActive(BADGE_LEVELS_CONFIG.vip.id)
-    });
+      resolvedBadges.push({
+        id: BADGE_LEVELS_CONFIG.vip.id,
+        name: levelInfo.name,
+        description: levelInfo.description,
+        icon: levelInfo.icon,
+        type: 'bot',
+        unlocked: true,
+        active: isBadgeActive(BADGE_LEVELS_CONFIG.vip.id)
+      });
+    }
   }
 
-  // 6. BADGES CUSTOMIZADAS (Slash Commands, Quests, AutoMod, Nitro, etc.)
-  for (const [badgeId, badgeInfo] of Object.entries(BOT_CUSTOM_BADGES_MAP)) {
-    let isUnlocked = isOwnerOrDev || customUnlocked.includes(badgeId);
+  // Obtém o rank de economia (saldo/banco) do usuário para validação de badges como Magnata
+  let userBankRank = preloadedData?.rankBanco;
+  if (userBankRank === undefined && firebaseDb) {
+    const rankRes = await getUserGlobalRank(firebaseDb, userId, 'saldo/banco').catch(() => ({ rank: "N/A" }));
+    userBankRank = rankRes?.rank;
+  }
+  const numericBankRank = Number(userBankRank);
+  const isTop5Rich = !isNaN(numericBankRank) && numericBankRank >= 1 && numericBankRank <= 5;
 
-    // Se o alvo for um bot, ativa automaticamente a badge de Slash Commands se ele for bot
-    if (badgeId === 'supports_commands' && userDiscordObj.bot) {
+  // 6. BADGES CUSTOMIZADAS DO BOT & NOVAS BADGES DO BANCO DE DADOS
+  const processedBadgeIds = new Set(resolvedBadges.map(b => b.id));
+  processedBadgeIds.add('hypesquad_house');
+  processedBadgeIds.add('HypeSquadOnlineHouse1');
+  processedBadgeIds.add('HypeSquadOnlineHouse2');
+  processedBadgeIds.add('HypeSquadOnlineHouse3');
+
+  // Itera sobre todas as badges do catálogo global (inclui BOT_CUSTOM_BADGES_MAP e novas badges do DB)
+  for (const [badgeId, badgeInfo] of Object.entries(allBadgesCatalog)) {
+    if (processedBadgeIds.has(badgeId)) continue;
+    if (badgeInfo.enabled === false) continue; // Desativada globalmente no DB
+    if (badgeInfo.isTiered && ['bug_hunter', 'booster', 'vip'].includes(badgeId)) continue;
+
+    let isUnlocked = customUnlocked.includes(badgeId);
+
+    // Regras automáticas específicas
+    if (badgeId === 'owner') {
+      isUnlocked = isCreatorRole || customUnlocked.includes('owner');
+    } else if (badgeId === 'dev') {
+      isUnlocked = isDevRole || customUnlocked.includes('dev');
+    } else if (badgeId === 'married') {
+      const isMarried = Boolean(preloadedData?.casamento?.casado || customUnlocked.includes('married'));
+      isUnlocked = isMarried;
+    } else if (badgeId === 'topmoney_badge') {
+      isUnlocked = isTop5Rich || customUnlocked.includes('topmoney_badge');
+    } else if (badgeId === 'supports_commands' && userDiscordObj.bot) {
       isUnlocked = true;
-    }
-
-    // Se o bot estiver configurado com AutoMod ou regras no servidor
-    if (badgeId === 'automod' && (userDiscordObj.bot || isOwnerOrDev || customUnlocked.includes('automod'))) {
+    } else if (badgeId === 'automod' && userDiscordObj.bot) {
       isUnlocked = true;
     }
 
     if (isUnlocked) {
       resolvedBadges.push({
         ...badgeInfo,
+        id: badgeId,
         unlocked: true,
         active: isBadgeActive(badgeId)
       });
+      processedBadgeIds.add(badgeId);
     }
   }
+
+  // Ordena para que as insígnias do BOT fiquem sempre no topo (primeiros slots) antes das do Discord
+  const botBadgeIds = new Set([
+    'owner',
+    'dev',
+    'vip',
+    'booster',
+    'married',
+    'topmoney_badge',
+    'diamond_badge'
+  ]);
+  const botPriorityOrder = ['owner', 'dev', 'vip', 'booster', 'married', 'topmoney_badge', 'diamond_badge'];
+
+  resolvedBadges.sort((a, b) => {
+    const isBotA = a.type === 'bot' || botBadgeIds.has(a.id);
+    const isBotB = b.type === 'bot' || botBadgeIds.has(b.id);
+
+    if (isBotA && !isBotB) return -1;
+    if (!isBotA && isBotB) return 1;
+
+    if (isBotA && isBotB) {
+      const idxA = botPriorityOrder.indexOf(a.id);
+      const idxB = botPriorityOrder.indexOf(b.id);
+      const orderA = idxA === -1 ? (a.priority !== undefined ? a.priority : 99) : idxA;
+      const orderB = idxB === -1 ? (b.priority !== undefined ? b.priority : 99) : idxB;
+      return orderA - orderB;
+    }
+
+    return (a.priority || 50) - (b.priority || 50);
+  });
 
   return resolvedBadges;
 }
@@ -1002,6 +1094,7 @@ module.exports = {
   eventLog,
   getUserGlobalRank,
   getResolvedUserBadges,
+  badgeManager: require('./badgeManager.js'),
   isStaff,
   recordTransaction,
   buildTransactionString,

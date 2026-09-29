@@ -41,6 +41,13 @@ module.exports = {
               `> \`${prefixo}limparmoc [@user]\` - Esvazia a mochila inteira.`
           },
           {
+            name: '🎨 Customizações & Perfil',
+            value:
+              `> \`${prefixo}adminbadge <dar|remover|ativar|desativar|criar|editar|list>\` - Gerencia badges via DB.\n` +
+              `> \`${prefixo}allcustoms <@user> <liberar|remover> [tipo]\` - Libera ou remove todos wallpapers/layouts.\n` +
+              `> \`${prefixo}customitem <@user> <add|remover> <nome|id>\` - Adiciona ou remove wallpaper/layout individual.`
+          },
+          {
             name: '⚙️ Benefícios & Vínculos',
             value:
               `> \`${prefixo}editarvip <tempo|0> <ouro|diamante> <@user>\` - Gerencia o VIP.\n` +

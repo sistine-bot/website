@@ -22,7 +22,10 @@ module.exports = {
         });
       }
 
-      const commandsRoot = path.join(process.cwd(), 'src', 'commands');
+      const searchRoots = [
+        path.join(process.cwd(), 'src', 'adminCommands'),
+        path.join(process.cwd(), 'src', 'commands')
+      ];
       let targetCategory = '';
       let targetCmd = '';
       let targetFilePath = '';
@@ -31,28 +34,35 @@ module.exports = {
         // Formato: !rc <categoria> <comando>
         targetCategory = args[0].toLowerCase();
         targetCmd = args[1].toLowerCase();
-        const candidate = path.join(commandsRoot, targetCategory, `${targetCmd}.js`);
-        if (fs.existsSync(candidate)) {
-          targetFilePath = candidate;
+        for (const root of searchRoots) {
+          const candidate = path.join(root, targetCategory, `${targetCmd}.js`);
+          if (fs.existsSync(candidate)) {
+            targetFilePath = candidate;
+            break;
+          }
         }
       } else {
         // Formato inteligente: !rc <comando> (busca automaticamente em todas as subpastas)
         targetCmd = args[0].toLowerCase();
-        const dirs = fs.readdirSync(commandsRoot).filter(f => fs.statSync(path.join(commandsRoot, f)).isDirectory());
+        for (const root of searchRoots) {
+          if (!fs.existsSync(root)) continue;
+          const dirs = fs.readdirSync(root).filter(f => fs.statSync(path.join(root, f)).isDirectory());
 
-        for (const dir of dirs) {
-          const candidate = path.join(commandsRoot, dir, `${targetCmd}.js`);
-          if (fs.existsSync(candidate)) {
-            targetFilePath = candidate;
-            targetCategory = dir;
-            break;
+          for (const dir of dirs) {
+            const candidate = path.join(root, dir, `${targetCmd}.js`);
+            if (fs.existsSync(candidate)) {
+              targetFilePath = candidate;
+              targetCategory = dir;
+              break;
+            }
           }
+          if (targetFilePath) break;
         }
       }
 
       if (!targetFilePath || !fs.existsSync(targetFilePath)) {
         return message.reply({
-          content: `${emoji.negativo || '❌'} **|** O arquivo do comando \`${args.join(' ')}\` não foi encontrado na pasta \`src/commands/\`.`
+          content: `${emoji.negativo || '❌'} **|** O arquivo do comando \`${args.join(' ')}\` não foi encontrado nas pastas administrativas de comandos.`
         });
       }
 

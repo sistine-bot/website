@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const moment = require('moment-timezone');
 const { getUserMoney, Format, getUserReps, getCasamento, CheckUserVip, getUserGlobalRank, getResolvedUserBadges } = require('./functions.js');
-const { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, LEGACY_BG_URL_MAP, getBackgroundById, getLayoutById, getLayoutConfig } = require('./shopCatalog.js');
+const { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, LEGACY_BG_URL_MAP, getBackgroundById, getLayoutById, getLayoutConfig, getLayoutSvgDataUri, getMarriedSvgDataUri } = require('./shopCatalog.js');
 const { LEGACY_BADGE_URL_MAP } = require('./badgesMap.js');
 
 const Canvas = require('@napi-rs/canvas');
@@ -168,6 +168,22 @@ async function resolveAssetDataUri(source, fallbackType = 'default') {
 
   if (source.startsWith('data:')) return source;
 
+  // Intercepta caminhos de layouts antigos (.png) agora gerados dinamicamente via SVG
+  if (source.includes('layout')) {
+    const marriedMatch = source.match(/mari(?:ed)?layout_([a-z0-9_]+)\.png/i);
+    if (marriedMatch && marriedMatch[1]) {
+      return getMarriedSvgDataUri(marriedMatch[1].toLowerCase());
+    }
+    const futuristMatch = source.match(/futurist\/([a-z0-9_]+)\.png/i);
+    if (futuristMatch && futuristMatch[1]) {
+      return getLayoutSvgDataUri('classic', futuristMatch[1].toLowerCase());
+    }
+    const simpleMatch = source.match(/simple\/([a-z0-9_]+)\.png/i);
+    if (simpleMatch && simpleMatch[1]) {
+      return getLayoutSvgDataUri('modern', simpleMatch[1].toLowerCase());
+    }
+  }
+
   // 1. Mapeamento de links legados para arquivos locais
   if (LEGACY_BG_URL_MAP && LEGACY_BG_URL_MAP[source]) {
     const bgItem = BACKGROUNDS_CATALOG.find(b => b.id === LEGACY_BG_URL_MAP[source]);
@@ -232,9 +248,9 @@ async function resolveAssetDataUri(source, fallbackType = 'default') {
       await loadLocalFileAsDataUri(b.url);
     }
     for (const l of LAYOUTS_CATALOG) {
-      if (l.overlay) await loadLocalFileAsDataUri(l.overlay);
-      if (l.overlayBadge) await loadLocalFileAsDataUri(l.overlayBadge);
-      if (l.overlayMarried) await loadLocalFileAsDataUri(l.overlayMarried);
+      if (l.overlay && !l.overlay.startsWith('data:')) await loadLocalFileAsDataUri(l.overlay);
+      if (l.overlayBadge && !l.overlayBadge.startsWith('data:')) await loadLocalFileAsDataUri(l.overlayBadge);
+      if (l.overlayMarried && !l.overlayMarried.startsWith('data:')) await loadLocalFileAsDataUri(l.overlayMarried);
     }
   } catch(e) {}
 })();
@@ -287,8 +303,9 @@ async function fetchUserProfileData(targetUser, executorId, client, database) {
   }
 
   let rankBancoStr = "1 / 1";
+  let rankBancoObj = { rank: "N/A", total: 0 };
   if (database && getUserGlobalRank) {
-    const rankBancoObj = await getUserGlobalRank(database, targetUser.id, 'saldo/banco').catch(() => ({ rank: "N/A", total: 0 }));
+    rankBancoObj = await getUserGlobalRank(database, targetUser.id, 'saldo/banco').catch(() => ({ rank: "N/A", total: 0 }));
     rankBancoStr = `${rankBancoObj.rank} / ${rankBancoObj.total}`;
   }
 
@@ -318,7 +335,11 @@ async function fetchUserProfileData(targetUser, executorId, client, database) {
   }
   
   const allUserBadges = getResolvedUserBadges 
-    ? await getResolvedUserBadges(fullDiscordUser, database, guildMember, { badges: badgesConfig, vip: userEcoData.vip || {} }).catch(() => []) 
+    ? await getResolvedUserBadges(fullDiscordUser, database, guildMember, { 
+        badges: badgesConfig, 
+        vip: userEcoData.vip || {},
+        rankBanco: rankBancoObj?.rank 
+      }).catch(() => []) 
     : [];
   
   const disabledBadges = badgesConfig.disabled || [];
@@ -573,4 +594,4 @@ async function generateUserProfileImage(targetUser, authorId, client, database) 
   return { buffer, data: profileData };
 }
 
-module.exports = { generateUserProfileImage };
+module.exports = { generateUserProfileImage, renderProfileSatori };

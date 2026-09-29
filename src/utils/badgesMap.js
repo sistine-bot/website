@@ -168,8 +168,8 @@ export const BADGE_LEVELS_CONFIG = {
     groupName: 'Assinante VIP',
     type: 'bot',
     levels: [
-      { level: 1, id: 'vip_prata', name: 'VIP Prata', description: 'Apoiador com plano Prata ativo no bot.', icon: '/src/utils/assets/badges/vip_prata.png' },
-      { level: 2, id: 'vip_ouro', name: 'VIP Ouro', description: 'Apoiador com plano Ouro ativo no bot.', icon: '/src/utils/assets/badges/vip_ouro_badge.png' }
+      { level: 1, id: 'vip_prata', name: 'VIP Prata', description: 'Apoiador com plano Prata ativo no bot.', icon: 'src/utils/assets/badges/medal_2nd.svg' },
+      { level: 2, id: 'vip_ouro', name: 'VIP Ouro', description: 'Apoiador com plano Ouro ativo no bot.', icon: 'src/utils/assets/badges/medal_1st.svg' }
     ]
   },
   gifting: {
@@ -230,34 +230,6 @@ export const BOT_CUSTOM_BADGES_MAP = {
     icon: '/src/utils/assets/badges/dev.png',
     type: 'bot'
   },
-  discord_nitro: {
-    id: 'discord_nitro',
-    name: 'Discord Nitro',
-    description: 'Assinante ativo do Discord Nitro.',
-    icon: '/src/utils/assets/badges/discord/discord-nitro.svg',
-    type: 'bot'
-  },
-  quests: {
-    id: 'quests',
-    name: 'Completou Missões',
-    description: 'Usuário que completou uma Discord Quest com sucesso.',
-    icon: '/src/utils/assets/badges/discord/quest.png',
-    type: 'bot'
-  },
-  automod: {
-    id: 'automod',
-    name: 'AutoMod',
-    description: 'Comunidade/Usuário protegido pelo AutoMod do Discord.',
-    icon: '/src/utils/assets/badges/discord/automod.svg',
-    type: 'bot'
-  },
-  supports_commands: {
-    id: 'supports_commands',
-    name: 'Slash Commands',
-    description: 'Suporta e utiliza comandos Slash do Discord.',
-    icon: '/src/utils/assets/badges/discord/supports-commands.svg',
-    type: 'bot'
-  },
   married: {
     id: 'married',
     name: 'Casado(a)',
@@ -268,7 +240,7 @@ export const BOT_CUSTOM_BADGES_MAP = {
   topmoney_badge: {
     id: 'topmoney_badge',
     name: 'Magnata da Economia',
-    description: 'Um dos usuários mais ricos do ecossistema Sistine.',
+    description: 'Faça parte do top 5 mais ricos da Sistine.',
     icon: '/src/utils/assets/badges/topmoney_badge.png',
     type: 'bot'
   },
@@ -279,22 +251,35 @@ export const BOT_CUSTOM_BADGES_MAP = {
     icon: '/src/utils/assets/badges/diamond_badge.png',
     type: 'bot'
   },
+  discord_nitro: {
+    id: 'discord_nitro',
+    name: 'Discord Nitro',
+    description: 'Assinante ativo do Discord Nitro.',
+    icon: '/src/utils/assets/badges/discord/discord-nitro.svg',
+    type: 'discord'
+  },
+  //quests: {
+  //  id: 'quests',
+  //  name: 'Completou Missões',
+  //  description: 'Usuário que completou uma Discord Quest com sucesso.',
+  //  icon: '/src/utils/assets/badges/discord/quest.png',
+  //  type: 'discord'
+  //},
+  supports_commands: {
+    id: 'supports_commands',
+    name: 'Slash Commands',
+    description: 'Suporta e utiliza comandos Slash do Discord.',
+    icon: '/src/utils/assets/badges/discord/supports-commands.svg',
+    type: 'discord'
+  },
 
-  // Novas Insígnias Especiais do Discord
-  special_lootbox: {
-    id: 'special_lootbox',
-    name: 'Discord Lootbox',
-    description: 'Desbloqueou a caixa especial de recompensas do Discord.',
-    icon: '/src/utils/assets/badges/special/discord-lootbox.svg',
-    type: 'discord'
-  },
-  special_beta: {
-    id: 'special_beta',
-    name: 'Beta Tester',
-    description: 'Testador oficial das novidades beta do Discord.',
-    icon: '/src/utils/assets/badges/special/beta.svg',
-    type: 'discord'
-  },
+  //special_beta: {
+  //  id: 'special_beta',
+  //  name: 'Beta Tester',
+  //  description: 'Testador oficial das novidades beta do Discord.',
+  //  icon: '/src/utils/assets/badges/special/beta.svg',
+  //  type: 'discord'
+  // },
   // special_dark_ai: {
   //   id: 'special_dark_ai',
   //   name: 'Inteligência Artificial Dark',
@@ -360,20 +345,6 @@ export const BOT_CUSTOM_BADGES_MAP = {
     icon: '/src/utils/assets/badges/server/crown.svg',
     type: 'discord'
   },
-  server_partnered: {
-    id: 'server_partnered',
-    name: 'Servidor Parceiro',
-    description: 'Comunidade parceira oficial do Discord.',
-    icon: '/src/utils/assets/badges/server/partnered.svg',
-    type: 'discord'
-  },
-  server_verified: {
-    id: 'server_verified',
-    name: 'Servidor Verificado',
-    description: 'Comunidade verificada com autenticidade comprovada.',
-    icon: '/src/utils/assets/badges/server/verified.svg',
-    type: 'discord'
-  },
   golden_hypesquad: {
     id: 'golden_hypesquad',
     name: 'Golden HypeSquad',
@@ -388,27 +359,20 @@ export const BOT_CUSTOM_BADGES_MAP = {
     icon: '/src/utils/assets/badges/koth-hype-squad-balance.svg',
     type: 'discord'
   },
-  last_meadow: {
-    id: 'last_meadow',
-    name: 'Last Meadow',
-    description: 'Insígnia memorial especial Last Meadow.',
-    icon: '/src/utils/assets/badges/last-meadow.png',
-    type: 'discord'
-  },
-  orb: {
-    id: 'orb',
-    name: 'Orbe Celestial',
-    description: 'Orbe mística misteriosa do ecossistema Discord.',
-    icon: '/src/utils/assets/badges/orb.svg',
-    type: 'discord'
-  },
-  username_badge: {
-    id: 'username_badge',
-    name: 'Novo Username',
-    description: 'Pioneiro na migração do novo sistema de usernames do Discord.',
-    icon: '/src/utils/assets/badges/username.png',
-    type: 'discord'
-  },
+  //last_meadow: {
+  //  id: 'last_meadow',
+  //  name: 'Last Meadow',
+  //  description: 'Insígnia memorial especial Last Meadow.',
+  //  icon: '/src/utils/assets/badges/last-meadow.png',
+  //  type: 'discord'
+  // },
+  // username_badge: {
+  //  id: 'username_badge',
+  //  name: 'Novo Username',
+  //  description: 'Pioneiro na migração do novo sistema de usernames do Discord.',
+  //  icon: '/src/utils/assets/badges/username.png',
+  //  type: 'discord'
+  // },
   old_discord_mod: {
     id: 'old_discord_mod',
     name: 'Antigo Moderador Discord',
