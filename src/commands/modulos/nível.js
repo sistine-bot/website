@@ -17,7 +17,7 @@ module.exports =  {
     
     try {
 
-      const { getXpForNextLevel, isLevelUpAlertEnabled, setLevelUpAlert, LEVEL_UNLOCKS, checkUserStarted } = require('../../utils/experienceManager.js');
+      const { getXpForNextLevel, isLevelUpAlertEnabled, setLevelUpAlert, LEVEL_UNLOCKS, checkUserStarted } = require('../../utils/managers/experienceManager.js');
 
       const user = interaction.options.getUser("usuário") || interaction.user;
       const isSelf = user.id === interaction.user.id;

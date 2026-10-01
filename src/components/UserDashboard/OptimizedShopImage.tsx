@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { isImagePreloaded } from '../../utils/imagePreloader';
+import { isImagePreloaded } from '../../utils/rendering/imagePreloader';
 
 interface OptimizedShopImageProps {
   src: string;

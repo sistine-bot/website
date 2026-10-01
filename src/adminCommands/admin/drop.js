@@ -5,7 +5,7 @@ const {
   EmbedBuilder
 } = require('discord.js');
 
-const { CheckUserBlacklisted, Format, getUserInventory, UpdateMoneyWallet, isStaff, NumberConvert } = require('../../utils/functions.js');
+const { CheckUserBlacklisted, Format, getUserInventory, UpdateMoneyWallet, isStaff, NumberConvert } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: "drop",

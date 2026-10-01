@@ -1,5 +1,5 @@
 const { ButtonStyle, ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, ButtonBuilder, ActionRowBuilder } = require('discord.js');
-const { CheckUserBlacklisted, getUserInventory } = require('../../utils/functions.js');
+const { CheckUserBlacklisted, getUserInventory } = require('../../utils/functions/index.js');
 const moment = require("moment");
 
 module.exports =  {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Coins, ShoppingBag, CheckCircle2, Crown, Eye, RotateCcw } from 'lucide-react';
-import { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, WallpaperItem, LayoutItem, getBackgroundById, getLayoutById, getDailyShopItems } from '../../utils/shopCatalog';
+import { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, WallpaperItem, LayoutItem, getBackgroundById, getLayoutById, getDailyShopItems } from '../../utils/shop/shopCatalog';
 import OptimizedShopImage from './OptimizedShopImage';
-import { preloadImagesInBatches } from '../../utils/imagePreloader';
+import { preloadImagesInBatches } from '../../utils/rendering/imagePreloader';
 
 // Limite configurável de itens que aparecem diariamente na loja (padrão de testes: 99)
 const DAILY_SHOP_LIMIT = 12;

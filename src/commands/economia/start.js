@@ -1,7 +1,7 @@
 const { ApplicationCommandType, EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const { UpdateMoneyBank, Format } = require('../../utils/functions.js');
-const { generateStarterKitImage } = require('../../utils/satoriItemTemplates.js');
-const { markUserStarted } = require('../../utils/experienceManager.js');
+const { UpdateMoneyBank, Format } = require('../../utils/functions/index.js');
+const { generateStarterKitImage } = require('../../utils/rendering/satoriItemTemplates.js');
+const { markUserStarted } = require('../../utils/managers/experienceManager.js');
 
 module.exports = {
   name: 'start',

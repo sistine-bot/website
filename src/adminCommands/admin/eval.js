@@ -1,6 +1,6 @@
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const util = require('util');
-const { isStaff } = require('../../utils/functions.js');
+const { isStaff } = require('../../utils/functions/index.js');
 
 function clean(text, token = '') {
   if (typeof text !== 'string') text = util.inspect(text, { depth: 1 });

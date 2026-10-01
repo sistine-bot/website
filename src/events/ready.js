@@ -228,7 +228,7 @@ function iniciarImpostoCasamento() {
                         carteira: novaCarteira
                     });
 
-                    const { recordTransaction } = require('../utils/functions.js');
+                    const { recordTransaction } = require('../utils/functions/index.js');
                     await recordTransaction(null, userId, {
                         type: 'imposto_casamento',
                         amount: totalDebitado

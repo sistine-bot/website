@@ -3,13 +3,13 @@ const { Resvg } = require('@resvg/resvg-js');
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment-timezone');
-const { getUserMoney, Format, getUserReps, getCasamento, CheckUserVip, getUserGlobalRank, getResolvedUserBadges } = require('./functions.js');
-const { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, LEGACY_BG_URL_MAP, getBackgroundById, getLayoutById, getLayoutConfig, getLayoutSvgDataUri, getMarriedSvgDataUri } = require('./shopCatalog.js');
-const { LEGACY_BADGE_URL_MAP } = require('./badgesMap.js');
+const { getUserMoney, Format, getUserReps, getCasamento, CheckUserVip, getUserGlobalRank, getResolvedUserBadges } = require('../functions/index.js');
+const { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, LEGACY_BG_URL_MAP, getBackgroundById, getLayoutById, getLayoutConfig, getLayoutSvgDataUri, getMarriedSvgDataUri } = require('../shop/shopCatalog.js');
+const { LEGACY_BADGE_URL_MAP } = require('../shop/badgesMap.js');
 
 const Canvas = require('@napi-rs/canvas');
 
-const ASSETS_ROOT = path.join(__dirname, 'assets');
+const ASSETS_ROOT = path.join(__dirname, '../assets');
 const DEFAULT_BG_URL = '/src/utils/assets/backgrounds/wallhaven-1kp5jv.png';
 
 // ==========================================
@@ -18,7 +18,7 @@ let loadedFonts = [];
 function initFonts() {
   if (loadedFonts.length > 0) return loadedFonts;
   try {
-    const fontsDir = path.join(__dirname, 'assets/fonts');
+    const fontsDir = path.join(ASSETS_ROOT, 'fonts');
     const fontRegular = fs.readFileSync(path.join(fontsDir, 'Inter-Regular.woff'));
     const fontBold = fs.readFileSync(path.join(fontsDir, 'Inter-Bold.woff'));
 

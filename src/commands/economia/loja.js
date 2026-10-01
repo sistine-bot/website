@@ -1,6 +1,6 @@
 const { StringSelectMenuBuilder, ApplicationCommandType, ButtonStyle, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ApplicationCommandOptionType } = require('discord.js');
-const { getUserMoney, UpdateMoneyWallet, TransactionUpdate, Format } = require(`../../../src/utils/functions.js`); //[cite: 2]
-const itensAPI = require(`../../utils/itens.json`); //[cite: 2]
+const { getUserMoney, UpdateMoneyWallet, TransactionUpdate, Format } = require('../../utils/functions/index.js');
+const itensAPI = require('../../utils/data/itens.json');
 const ms = require('ms'); //[cite: 2]
 
 const TimeToClose = 70 * 1e3; //[cite: 2]

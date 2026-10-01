@@ -52,7 +52,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, getBackgroundById, getLayoutById } = require('./src/utils/shopCatalog.js');
+const { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, getBackgroundById, getLayoutById } = require('./src/utils/shop/shopCatalog.js');
 
 let client = new Client({
   partials: [],
@@ -161,7 +161,7 @@ try {
     db = firebaseApp.database();
     console.log("[Firebase] Banco de dados conectado com sucesso.");
     try {
-      const { initBadgeManager } = require("./src/utils/badgeManager.js");
+      const { initBadgeManager } = require("./src/utils/managers/badgeManager.js");
       initBadgeManager(db);
     } catch (e) {
       console.warn("[BadgeManager] Falha ao iniciar:", e.message);
@@ -380,7 +380,7 @@ async function startFullStackApp() {
 
     // Trava de Blacklist Global: Usuários banidos não podem interagir com a dashboard
     try {
-      const { CheckUserBlacklisted } = require('./src/utils/functions.js');
+      const { CheckUserBlacklisted } = require('./src/utils/functions/index.js');
       const blCheck = await CheckUserBlacklisted(session.userId);
       if (blCheck?.blacklisted) {
         return res.status(403).json({ 
@@ -424,7 +424,7 @@ async function startFullStackApp() {
 
     // Trava de Blacklist Global: Usuários banidos não podem administrar servidores
     try {
-      const { CheckUserBlacklisted } = require('./src/utils/functions.js');
+      const { CheckUserBlacklisted } = require('./src/utils/functions/index.js');
       const blCheck = await CheckUserBlacklisted(session.userId);
       if (blCheck?.blacklisted) {
         return res.status(403).json({ 
@@ -804,7 +804,7 @@ async function startFullStackApp() {
     let isBlacklisted = false;
     let blacklistInfo = null;
     try {
-      const { CheckUserBlacklisted } = require('./src/utils/functions.js');
+      const { CheckUserBlacklisted } = require('./src/utils/functions/index.js');
       const bl = await CheckUserBlacklisted(session.userId);
       if (bl?.blacklisted) {
         isBlacklisted = true;
@@ -990,7 +990,7 @@ async function startFullStackApp() {
         layouts: LAYOUTS_CATALOG,
         badges: (() => {
           try {
-            const { getCachedBadges } = require('./src/utils/badgeManager.js');
+            const { getCachedBadges } = require('./src/utils/managers/badgeManager.js');
             return getCachedBadges(true);
           } catch (e) {
             return {};
@@ -1024,7 +1024,7 @@ async function startFullStackApp() {
     let rankData = { rankBanco: "N/A", rankBancoTotal: 0 };
     if (db) {
       try {
-        const { getUserGlobalRank } = require('./src/utils/functions.js');
+        const { getUserGlobalRank } = require('./src/utils/functions/index.js');
         const rankObj = await getUserGlobalRank(db, userId, 'saldo/banco');
         if (rankObj) {
           rankData.rankBanco = rankObj.rank;
@@ -1348,7 +1348,7 @@ async function startFullStackApp() {
 
       let rankData = { rankBanco: "N/A", rankBancoTotal: 0 };
       try {
-        const { getUserGlobalRank } = require('./src/utils/functions.js');
+        const { getUserGlobalRank } = require('./src/utils/functions/index.js');
         const rankObj = await getUserGlobalRank(db, userId, 'saldo/banco');
         if (rankObj) {
           rankData.rankBanco = rankObj.rank;
@@ -1381,7 +1381,7 @@ async function startFullStackApp() {
 
     // Trava de Blacklist Global: Usuários banidos não podem carregar servidores
     try {
-      const { CheckUserBlacklisted } = require('./src/utils/functions.js');
+      const { CheckUserBlacklisted } = require('./src/utils/functions/index.js');
       const blCheck = await CheckUserBlacklisted(session.userId);
       if (blCheck?.blacklisted) {
         return res.status(403).json({ error: "Sua conta está suspensa de todos os sistemas da Sistine.", isBlacklisted: true });
@@ -1653,7 +1653,7 @@ async function startFullStackApp() {
 
   // Rota para Aplicar Punições e Registrar Logs
   app.post('/api/execute-punishment', requireAdmin, async (req, res) => {
-    const applyPunishment = require('./src/utils/punishmentHandler.js');
+    const applyPunishment = require('./src/utils/managers/punishmentHandler.js');
     
     const { targetId, type, reason, duration } = req.body;
     

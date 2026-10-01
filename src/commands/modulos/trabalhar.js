@@ -7,7 +7,7 @@ const {
   AttachmentBuilder
 } = require('discord.js');
 
-const { Format, XpUpdate, CheckUserCooldowns } = require('../../utils/functions.js');
+const { Format, XpUpdate, CheckUserCooldowns } = require('../../utils/functions/index.js');
 const {
   getActiveShift,
   startShift,
@@ -19,14 +19,14 @@ const {
   OCORRENCIA_COOLDOWN_MS,
   MAX_OCORRENCIAS_PER_SHIFT,
   SHIFT_COOLDOWN_MS
-} = require('../../utils/shiftEngine.js');
+} = require('../../utils/managers/shiftEngine.js');
 
 const {
   generateRouteMinigame,
   generateReceiptMinigame,
   generateMechanicMinigame,
   generateTrashMinigame
-} = require('../../utils/satoriMinigames.js');
+} = require('../../utils/rendering/satoriMinigames.js');
 
 function formatDuration(ms) {
   const totalSeconds = Math.floor(ms / 1000);

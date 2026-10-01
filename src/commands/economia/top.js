@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { Format } = require('../../utils/functions.js');
+const { Format } = require('../../utils/functions/index.js');
 
 module.exports =  {
   "name": "top",

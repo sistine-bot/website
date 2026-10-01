@@ -1,4 +1,4 @@
-const { UpdateMoneyWallet, XpUpdate, Format } = require('./functions.js');
+const { UpdateMoneyWallet, XpUpdate, Format } = require('../functions/index.js');
 
 /**
  * ============================================================================

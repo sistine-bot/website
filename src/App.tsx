@@ -23,7 +23,7 @@ import ServerSelectionTab from './components/UserDashboard/ServerSelectionTab';
 import VipShop from './components/UserDashboard/VipShop';
 import CoinShop from './components/UserDashboard/CoinShop';
 import BlockedAccountTab from './components/UserDashboard/BlockedAccountTab';
-import { preloadShopCatalog } from './utils/imagePreloader';
+import { preloadShopCatalog } from './utils/rendering/imagePreloader';
 
 // Componentes da Landing Page / Rotas
 import { Header } from './components/Header';

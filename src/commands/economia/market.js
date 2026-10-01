@@ -9,8 +9,8 @@ const { createMarketNavigationButtons, createConfirmationRow } = require('../../
 const { generateMarketCanvas } = require('../../../src/utils/market/canvas');
 const dbLayer = require('../../../src/utils/market/database');
 
-const { Format, getUserMoney, getUserInventory, NumberConvert, UpdateMoneyWallet } = require('../../../src/utils/functions.js');
-const itemsApi = require('../../utils/itens.json');
+const { Format, getUserMoney, getUserInventory, NumberConvert, UpdateMoneyWallet } = require('../../../src/utils/functions/index.js');
+const itemsApi = require('../../utils/data/itens.json');
 
 module.exports = {
   "name": "market",

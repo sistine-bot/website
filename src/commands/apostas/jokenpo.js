@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType } = require('discord.js');
-const { getUserMoney, UpdateMoneyWallet, NumberConvert, Format, TransactionUpdate } = require('../../utils/functions.js');
+const { getUserMoney, UpdateMoneyWallet, NumberConvert, Format, TransactionUpdate } = require('../../utils/functions/index.js');
 
 module.exports =  {
   "name": "jokenpo",
@@ -76,7 +76,7 @@ module.exports =  {
         })
       }
 
-      const { CheckUserCooldowns } = require('../../utils/functions.js');
+      const { CheckUserCooldowns } = require('../../utils/functions/index.js');
       const { status } = await CheckUserCooldowns(interaction.user, 20000, 'cassino');
       if (status) {
         return interaction.followUp({ 

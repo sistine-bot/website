@@ -1,5 +1,5 @@
 const { EmbedBuilder, ApplicationCommandType, ApplicationCommandOptionType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { Format, UpdateMoneyWallet, CheckUserVip, CheckUserCooldowns, XpUpdate } = require('../../utils/functions.js');
+const { Format, UpdateMoneyWallet, CheckUserVip, CheckUserCooldowns, XpUpdate } = require('../../utils/functions/index.js');
 const moment = require('moment');
 moment.locale('pt-br');
 

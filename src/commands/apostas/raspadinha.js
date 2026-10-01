@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
-const { getUserMoney, UpdateMoneyWallet, Format } = require('../../utils/functions.js');
+const { getUserMoney, UpdateMoneyWallet, Format } = require('../../utils/functions/index.js');
 
 module.exports = {
   "name": "raspadinha",
@@ -52,7 +52,7 @@ module.exports = {
         }
 
         case 'comprar': {
-          const { CheckUserCooldowns } = require('../../utils/functions.js');
+          const { CheckUserCooldowns } = require('../../utils/functions/index.js');
           const { status } = await CheckUserCooldowns(interaction.user, 20000, 'cassino');
           if (status) {
             return interaction.followUp({ 

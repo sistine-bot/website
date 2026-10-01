@@ -7,8 +7,8 @@ const {
   ButtonBuilder,
   ButtonStyle
 } = require('discord.js');
-const { UpdateMoneyWallet, Format } = require('../../utils/functions.js');
-const itensAPI = require('../../utils/itens.json');
+const { UpdateMoneyWallet, Format } = require('../../utils/functions/index.js');
+const itensAPI = require('../../utils/data/itens.json');
 
 // ============================================================================
 // HELPER: COTAÇÃO E METADADOS DOS ITENS

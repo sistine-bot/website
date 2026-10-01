@@ -1,5 +1,5 @@
 const { PermissionsBitField } = require('discord.js');
-const { isStaff } = require('./functions.js');
+const { isStaff } = require('../functions/index.js');
 const { grantSlashCommandXp } = require('./experienceManager.js');
 
 /**

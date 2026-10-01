@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { CheckUserCooldowns, ReputationUpdate, XpUpdate } = require('../../utils/functions.js');
+const { CheckUserCooldowns, ReputationUpdate, XpUpdate } = require('../../utils/functions/index.js');
 
 module.exports = {
   "name": "reputação",

@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { isStaff } = require('../../utils/functions.js');
+const { isStaff } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: "adminhelp",

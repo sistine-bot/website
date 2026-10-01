@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { XpUpdate, CheckUserCooldowns, getUserInventory, CheckUserVip } = require('../../utils/functions.js');
+const { XpUpdate, CheckUserCooldowns, getUserInventory, CheckUserVip } = require('../../utils/functions/index.js');
 
 module.exports =  {
   "name": "pescar",

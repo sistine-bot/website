@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { getUser, isStaff } = require('../../utils/functions.js');
+const { getUser, isStaff } = require('../../utils/functions/index.js');
 const { 
   getAllBadges, 
   findBadge, 
@@ -11,7 +11,7 @@ const {
   removeUserBadge, 
   removeAllBadgesFromUser, 
   setUserBadgeActive 
-} = require('../../utils/badgeManager.js');
+} = require('../../utils/managers/badgeManager.js');
 
 module.exports = {
   name: "badge",

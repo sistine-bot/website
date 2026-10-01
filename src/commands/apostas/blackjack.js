@@ -5,7 +5,7 @@ const Deck = require("../../../src/arquivos/blackjack/deck.js");
 const Hand = require("../../../src/arquivos/blackjack/hand.js");
 const ImgBlackjack = "https://cdn.glitch.com/caa6cada-63a6-4f75-bbeb-f622da3a8604%2Fblackjack-badge.png?v=1609304997428";
 
-const { getUserMoney, TransactionUpdate, UpdateMoneyWallet, NumberConvert, Format } = require('../../utils/functions.js');
+const { getUserMoney, TransactionUpdate, UpdateMoneyWallet, NumberConvert, Format } = require('../../utils/functions/index.js');
 
 // FUNÇÕES AUXILIARES NATIVAS: Calculam os pontos diretamente pela Array de cartas para evitar falhas de escopo/protótipo
 function calcularScore(handInst) {
@@ -59,7 +59,7 @@ module.exports = {
 
   run: async (client, interaction, args, color, database, emoji) => {
     try {
-      const { CheckUserCooldowns } = require('../../utils/functions.js');
+      const { CheckUserCooldowns } = require('../../utils/functions/index.js');
       const { status } = await CheckUserCooldowns(interaction.user, 30000, 'cassino');
       if (status) {
         return interaction.followUp({ 

@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
-const { getUserInventory, CheckUserCooldowns, CheckUserVip, Format, UpdateMoneyWallet } = require('../../utils/functions.js');
+const { getUserInventory, CheckUserCooldowns, CheckUserVip, Format, UpdateMoneyWallet } = require('../../utils/functions/index.js');
 
 module.exports =  {
   "name": "crime",

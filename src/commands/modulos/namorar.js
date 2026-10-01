@@ -1,5 +1,5 @@
 const { ApplicationCommandType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { getCasamento, CheckUserCooldowns, CheckUserVip, UpdateMoneyWallet, Format } = require('../../utils/functions.js');
+const { getCasamento, CheckUserCooldowns, CheckUserVip, UpdateMoneyWallet, Format } = require('../../utils/functions/index.js');
 
 module.exports =  {
   "name": "namorar",

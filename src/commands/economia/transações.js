@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { resolveTransactionList } = require('../../utils/functions.js');
+const { resolveTransactionList } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: "transações",

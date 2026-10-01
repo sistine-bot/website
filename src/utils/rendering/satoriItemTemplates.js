@@ -12,7 +12,7 @@ function loadSatoriFonts() {
   if (cachedFonts && cachedFonts.length > 0) return cachedFonts;
 
   const fonts = [];
-  const fontsDir = path.join(__dirname, 'assets/fonts');
+  const fontsDir = path.join(__dirname, '../assets/fonts');
 
   try {
     const interRegular = path.join(fontsDir, 'Inter-Regular.woff');
@@ -95,7 +95,7 @@ const BULB_ICON_DATA_URI = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.or
 async function generateStarterKitImage({ username = 'Aventureiro', coins = 1000 } = {}) {
   const fonts = loadSatoriFonts();
 
-  const baseDir = path.join(__dirname, 'assets/inventory/itens');
+  const baseDir = path.join(__dirname, '../assets/inventory/itens');
   const moedasUri = toDataUri(path.join(baseDir, 'consumiveis/moedas.png'));
   const varaUri = toDataUri(path.join(baseDir, 'ferramentas/vara_bambu.png'));
   const iscaUri = toDataUri(path.join(baseDir, 'consumiveis/isca.png'));

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Layout, ImageIcon, RotateCcw, Sparkles, Link as LinkIcon, Crown, Rocket, ShieldCheck } from 'lucide-react';
-import { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, WallpaperItem, LayoutItem, getBackgroundById, getLayoutById, getLayoutConfig } from '../../utils/shopCatalog';
+import { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, WallpaperItem, LayoutItem, getBackgroundById, getLayoutById, getLayoutConfig } from '../../utils/shop/shopCatalog';
 import OptimizedShopImage from './OptimizedShopImage';
-import { preloadImagesInBatches } from '../../utils/imagePreloader';
+import { preloadImagesInBatches } from '../../utils/rendering/imagePreloader';
 
 interface ProfileConfigProps {
   user: any;

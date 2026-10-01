@@ -1,6 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const firebase = require("firebase");
-const database = firebase.database();
+const { database } = require('../functions/database.js');
 
 /**
  * Função Global para Aplicar Punições e Registrar Logs

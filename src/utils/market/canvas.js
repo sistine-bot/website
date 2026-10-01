@@ -4,9 +4,9 @@ const { Resvg } = require('@resvg/resvg-js');
 const fs = require('fs');
 const path = require('path');
 const { AttachmentBuilder } = require('discord.js');
-const { Format } = require('../../../src/utils/functions.js');
+const { Format } = require('../../../src/utils/functions/index.js');
 const { CANVAS } = require('./constants');
-const itemsApi = require('../../utils/itens.json');
+const itemsApi = require('../../utils/data/itens.json');
 
 // ==========================================
 // FONTS INITIALIZATION (À PROVA DE FALHAS)

@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const firebase = require("firebase");
-const emojiConfig = require("./emoji.js");
+const emojiConfig = require("../core/emoji.js");
 
 // Fallback do banco caso o Firebase ainda não esteja conectado
 const fallbackDb = {
@@ -324,7 +324,7 @@ async function grantXpCore(context, user, rawXp, options = {}) {
 
   // Trava de Blacklist: Usuários banidos não recebem XP em nenhum módulo
   try {
-    const { CheckUserBlacklisted } = require('./functions.js');
+    const { CheckUserBlacklisted } = require('../functions/index.js');
     const blStatus = await CheckUserBlacklisted(user);
     if (blStatus?.blacklisted) {
       return { success: false, skipped: true, reason: 'blacklisted' };
@@ -335,7 +335,7 @@ async function grantXpCore(context, user, rawXp, options = {}) {
     // 1. Aplica bônus de VIP caso ativo
     let multiplier = 1;
     try {
-      const { CheckUserVip } = require('./functions.js');
+      const { CheckUserVip } = require('../functions/index.js');
       const vipInfo = await CheckUserVip(user);
       if (vipInfo?.isVip) {
         multiplier = (vipInfo.level >= 2) ? 3 : 2;

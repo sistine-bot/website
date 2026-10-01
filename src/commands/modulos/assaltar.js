@@ -8,7 +8,7 @@ const {
   getUserMoney,
   CheckUserAntiRoubo,
   XpUpdate
-} = require('../../utils/functions.js');
+} = require('../../utils/functions/index.js');
 
 const JOB_NAMES = {
   1: 'Taxista',

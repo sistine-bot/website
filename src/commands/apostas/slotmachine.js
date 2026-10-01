@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
-const { getUserMoney, UpdateMoneyWallet, NumberConvert, Format, CheckUserCooldowns, TransactionUpdate } = require('../../utils/functions.js');
+const { getUserMoney, UpdateMoneyWallet, NumberConvert, Format, CheckUserCooldowns, TransactionUpdate } = require('../../utils/functions/index.js');
 
 module.exports =  {
   "name": "slotmachine",

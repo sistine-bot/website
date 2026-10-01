@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { NumberConvert, UpdateMoneyBank, Format, getUser, isStaff } = require('../../utils/functions.js');
+const { NumberConvert, UpdateMoneyBank, Format, getUser, isStaff } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: "addbanco",

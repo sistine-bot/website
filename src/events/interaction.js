@@ -1,9 +1,9 @@
 const client = require("../../index.js");
 const firebase = require("firebase");
 const database = firebase.database();
-const emoji = require("../../src/utils/emoji.js");
-const { CheckUserBlacklisted, isStaff } = require('../../src/utils/functions.js');
-const { grantSlashCommandXp } = require('../../src/utils/experienceManager.js');
+const emoji = require("../../src/utils/core/emoji.js");
+const { CheckUserBlacklisted, isStaff } = require('../../src/utils/functions/index.js');
+const { grantSlashCommandXp } = require('../../src/utils/managers/experienceManager.js');
 const { MessageFlags } = require('discord.js');
 
 function normalizeInteractionOptions(options) {

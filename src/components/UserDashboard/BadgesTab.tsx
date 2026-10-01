@@ -6,7 +6,7 @@ import {
   HYPESQUAD_HOUSES, 
   BADGE_LEVELS_CONFIG, 
   BOT_CUSTOM_BADGES_MAP 
-} from '../../utils/badgesMap';
+} from '../../utils/shop/badgesMap';
 
 // Conjunto definitivo de insígnias que pertencem à categoria do Bot
 const BOT_BADGE_IDS = new Set([

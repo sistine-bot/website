@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { CheckUserBlacklisted, setUserBlacklist, removeUserBlacklist, getUser, ParseDuration } = require('../../utils/functions.js');
+const { CheckUserBlacklisted, setUserBlacklist, removeUserBlacklist, getUser, ParseDuration } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: "blacklist",

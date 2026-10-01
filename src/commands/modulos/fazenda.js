@@ -1,8 +1,8 @@
 const { ApplicationCommandType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const ms = require('ms');
 const parseMs = require('parse-ms');
-const { getUserInventory, XpUpdate, getUserMoney, UpdateMoneyWallet, TransactionUpdate, Format, CheckUserVip } = require('../../utils/functions.js');
-const itensAPI = require('../../utils/itens.json');
+const { getUserInventory, XpUpdate, getUserMoney, UpdateMoneyWallet, TransactionUpdate, Format, CheckUserVip } = require('../../utils/functions/index.js');
+const itensAPI = require('../../utils/data/itens.json');
 
 const PRECOS_ESPACOS = {
   1: 0,

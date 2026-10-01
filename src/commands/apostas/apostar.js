@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { CheckUserBlacklisted, getUserMoney, CheckUserVip, TransactionUpdate, UpdateMoneyWallet, NumberConvert, Format } = require('../../utils/functions.js');
+const { CheckUserBlacklisted, getUserMoney, CheckUserVip, TransactionUpdate, UpdateMoneyWallet, NumberConvert, Format } = require('../../utils/functions/index.js');
 
 module.exports =  {
   "name": "apostar",

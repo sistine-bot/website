@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
-const itens = require(`${process.cwd()}/src/utils/itens.json`);
-const { getUser, isStaff } = require('../../utils/functions.js');
+const itens = require('../../utils/data/itens.json');
+const { getUser, isStaff } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: "fullmoc",

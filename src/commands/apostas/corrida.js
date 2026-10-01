@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { getUserMoney, CheckUserVip, UpdateMoneyWallet, NumberConvert, Format } = require('../../utils/functions.js');
+const { getUserMoney, CheckUserVip, UpdateMoneyWallet, NumberConvert, Format } = require('../../utils/functions/index.js');
 
 const timer = 60;
 const rifa = new Set();

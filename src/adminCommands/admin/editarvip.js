@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { getUser, ParseDuration, isStaff, FormatDuration } = require('../../utils/functions.js');
+const { getUser, ParseDuration, isStaff, FormatDuration } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: 'editarvip',

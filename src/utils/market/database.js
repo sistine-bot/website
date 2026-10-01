@@ -1,5 +1,5 @@
 // market/database.js
-const { getUserMoney, getUserInventory } = require('../../../src/utils/functions.js');
+const { getUserMoney, getUserInventory } = require('../../../src/utils/functions/index.js');
  
 async function getMarketItems(database) {
   const snapshot = await database.ref('/economia/Market').once('value');

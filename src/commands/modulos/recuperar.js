@@ -14,7 +14,7 @@ const {
   getUserInventory,
   getUserMoney,
   CheckUserVip
-} = require('../../utils/functions.js');
+} = require('../../utils/functions/index.js');
 
 function getProgressBar(current, max = 100, length = 10) {
   const percentage = Math.max(0, Math.min(1, current / max));

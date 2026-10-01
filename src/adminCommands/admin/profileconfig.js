@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
-const { getUser, isStaff } = require('../../utils/functions.js');
-const { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, getBackgroundById, getLayoutById } = require('../../utils/shopCatalog.js');
+const { getUser, isStaff } = require('../../utils/functions/index.js');
+const { BACKGROUNDS_CATALOG, LAYOUTS_CATALOG, getBackgroundById, getLayoutById } = require('../../utils/shop/shopCatalog.js');
 
 /**
  * Função de busca inteligente de itens nos catálogos de Wallpapers e Layouts

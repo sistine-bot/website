@@ -1,9 +1,9 @@
 const client = require("../../index.js");
 const firebase = require("firebase");
 const database = firebase.database();
-const emoji = require("../../src/utils/emoji.js");
-const { CheckUserBlacklisted, isStaff } = require('../../src/utils/functions.js');
-const { grantChatXp } = require('../../src/utils/experienceManager.js');
+const emoji = require("../../src/utils/core/emoji.js");
+const { CheckUserBlacklisted, isStaff } = require('../../src/utils/functions/index.js');
+const { grantChatXp } = require('../../src/utils/managers/experienceManager.js');
 
 client.on("messageCreate", async (message) => {
   try {
@@ -63,7 +63,7 @@ client.on("messageCreate", async (message) => {
       }).catch(() => {});
     }
 
-    const { findSlashCommand, executeSlashAsPrefix } = require('../../src/utils/commandBridge.js');
+    const { findSlashCommand, executeSlashAsPrefix } = require('../../src/utils/managers/commandBridge.js');
 
     const args = message.content.slice(prefixo.length).trim().split(/ +/g);
     let cmd = args.shift().toLowerCase();

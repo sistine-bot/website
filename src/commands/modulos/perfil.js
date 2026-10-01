@@ -9,8 +9,8 @@ const {
   PermissionsBitField 
 } = require('discord.js');
 const moment = require('moment-timezone');
-const { Format, getUserInventory } = require('../../utils/functions.js');
-const { generateUserProfileImage } = require('../../utils/satoriProfile.js');
+const { Format, getUserInventory } = require('../../utils/functions/index.js');
+const { generateUserProfileImage } = require('../../utils/rendering/satoriProfile.js');
 
 module.exports = {
   name: "perfil",

@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { getUser, isStaff, NumberConvert, Format } = require('../../utils/functions.js');
+const { getUser, isStaff, NumberConvert, Format } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: "removeitem",

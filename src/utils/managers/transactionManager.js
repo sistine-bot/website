@@ -479,7 +479,7 @@ async function resolveTransactionList(rawList, client, configSnapshot = null) {
     '{emoji.saida}': msgConfig.emoji_recebeu || '📤',
   };
 
-  const { Format } = require('./functions.js');
+  const { Format } = require('../functions/index.js');
 
   const resolved = [];
 

@@ -5,7 +5,7 @@ import {
   getMarriedSvgDataUri,
   buildLayoutSvgString,
   buildMarriedSvgString
-} from './layoutSvgEngine.js';
+} from '../rendering/layoutSvgEngine.js';
 
 export const BACKGROUNDS_CATALOG = [
   {

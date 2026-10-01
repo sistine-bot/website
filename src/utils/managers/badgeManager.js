@@ -5,7 +5,7 @@ const {
   BADGE_LEVELS_CONFIG, 
   BOT_CUSTOM_BADGES_MAP,
   LEGACY_BADGE_URL_MAP 
-} = require('./badgesMap.js');
+} = require('../shop/badgesMap.js');
 
 // Caminhos padrão no Firebase Realtime Database
 const DB_BADGES_PATH = 'Administração/Badges';

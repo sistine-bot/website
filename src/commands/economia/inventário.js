@@ -1,11 +1,11 @@
 const { ButtonStyle, ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, AttachmentBuilder, ButtonBuilder, ActionRowBuilder } = require('discord.js');
-const { getUserInventory, Format } = require('../../utils/functions.js');
+const { getUserInventory, Format } = require('../../utils/functions/index.js');
 const satori = require('satori').default || require('satori');
 const { Resvg } = require('@resvg/resvg-js');
 const path = require('path');
 const fs = require('fs');
-const itensAPI = require(`../../utils/itens.json`);
-const { createRegadorVNode, createVaraVNode, createEnxadaVNode } = require('../../utils/satoriItemTemplates.js');
+const itensAPI = require('../../utils/data/itens.json');
+const { createRegadorVNode, createVaraVNode, createEnxadaVNode } = require('../../utils/rendering/satoriItemTemplates.js');
 
 // ==========================================
 // MOTOR DE FONTES (SATORI)

@@ -1,5 +1,5 @@
 const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder, MessageFlags } = require('discord.js');
-const { getUserMoney, Format, CheckUserBlacklisted} = require('../../utils/functions.js');
+const { getUserMoney, Format, CheckUserBlacklisted} = require('../../utils/functions/index.js');
 
 module.exports =  {
   "name": "saldo",

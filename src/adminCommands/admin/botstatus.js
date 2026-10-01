@@ -1,6 +1,6 @@
 const { EmbedBuilder, version: djsVersion } = require('discord.js');
 const os = require('os');
-const { isStaff, FormatDuration } = require('../../utils/functions.js');
+const { isStaff, FormatDuration } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: "botstatus",

@@ -9,7 +9,7 @@ let cachedFonts = null;
 function loadFonts() {
   if (cachedFonts) return cachedFonts;
   try {
-    const fontsDir = path.join(__dirname, 'assets/fonts');
+    const fontsDir = path.join(__dirname, '../assets/fonts');
     const boldPath = path.join(fontsDir, 'Inter-Bold.woff');
     const regularPath = path.join(fontsDir, 'Inter-Regular.woff');
 

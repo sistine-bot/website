@@ -1,4 +1,4 @@
-import { getDailyShopItems, BACKGROUNDS_CATALOG, LAYOUTS_CATALOG } from './shopCatalog';
+import { getDailyShopItems, BACKGROUNDS_CATALOG, LAYOUTS_CATALOG } from '../shop/shopCatalog';
 
 // Cache em memória das URLs que já foram carregadas
 const preloadedUrls = new Set<string>();

@@ -8,7 +8,7 @@ const {
   EmbedBuilder 
 } = require('discord.js');
 
-const { findSlashCommand, SLASH_ALIASES, SUBCOMMAND_ALIASES } = require('../../utils/commandBridge.js');
+const { findSlashCommand, SLASH_ALIASES, SUBCOMMAND_ALIASES } = require('../../utils/managers/commandBridge.js');
 
 function cleanDesc(desc) {
   if (!desc) return 'Nenhuma descrição informada.';

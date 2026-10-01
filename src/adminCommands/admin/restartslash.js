@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { isStaff } = require('../../utils/functions.js');
+const { isStaff } = require('../../utils/functions/index.js');
 
 module.exports = {
   name: "rs",
